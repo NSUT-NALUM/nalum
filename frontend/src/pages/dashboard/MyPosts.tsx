@@ -86,10 +86,10 @@ const MyPosts = ({ embedded = false }: MyPostsProps) => {
           <h1 className={embedded ? "text-2xl font-bold text-white" : "text-3xl font-bold text-white"}>My Posts</h1>
         </div>
 
-        <Alert className="bg-blue-900/20 border-blue-900/50">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Coming Soon</AlertTitle>
-          <AlertDescription>
+        <Alert className="bg-blue-900/20 border-blue-500/50">
+          <AlertCircle className="h-4 w-4 text-blue-400" />
+          <AlertTitle className="text-blue-200">Coming Soon</AlertTitle>
+          <AlertDescription className="text-blue-100">
             Post management will be available for students in future.
           </AlertDescription>
         </Alert>

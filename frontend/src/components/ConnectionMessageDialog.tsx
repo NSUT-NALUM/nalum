@@ -26,12 +26,12 @@ export const ConnectionMessageDialog = ({
 }: ConnectionMessageDialogProps) => {
     const [message, setMessage] = useState("");
 
-    // Reset message when dialog opens
+    // Set pre-written message when dialog opens
     useEffect(() => {
         if (isOpen) {
-            setMessage("");
+            setMessage(`Hi ${recipientName}, I'd like to connect with you!`);
         }
-    }, [isOpen]);
+    }, [isOpen, recipientName]);
 
     const handleConfirm = () => {
         if (!message.trim()) return;

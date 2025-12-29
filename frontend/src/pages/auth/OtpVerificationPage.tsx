@@ -89,7 +89,7 @@ const OtpVerificationPage = () => {
                 Verify Your Email
               </h2>
               <p className="mt-2 text-center text-gray-600">
-                We've sent a verification code to{" "}
+                Click Send OTP to receive a verification code at{" "}
                 <span className="font-semibold text-nsut-maroon">{email}</span>
               </p>
             </>
@@ -106,7 +106,7 @@ const OtpVerificationPage = () => {
           ) : (
             <EmailVerification
               email={email || ""}
-              onEmailChange={() => {}}
+              onEmailChange={() => { }}
               onVerified={handleEmailVerified}
             />
           )}

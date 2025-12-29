@@ -48,7 +48,7 @@ const ProfileForm = () => {
   const { accessToken, user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
-  
+
   // Check if user is alumni
   const isAlumni = user?.role === 'alumni';
   const [wantsAdditionalInfo, setWantsAdditionalInfo] = useState(false);
@@ -314,6 +314,12 @@ const ProfileForm = () => {
                 <SelectContent>
                   {Array.from({ length: 50 }, (_, i) => {
                     const year = 2030 - i;
+                    const currentYear = new Date().getFullYear();
+                    // Students can only pick current year or future years
+                    // Alumni can pick any year
+                    if (!isAlumni && year < currentYear) {
+                      return null;
+                    }
                     return (
                       <SelectItem key={year} value={year.toString()}>
                         {year}
