@@ -61,7 +61,6 @@ const coreTeamMembers: TeamMember[] = [
     name: 'Aditi Gupta',
     branch: 'Mech',  // ADD BRANCH HERE
     year: '2026',   // ADD YEAR HERE
-    designation: 'Director',  // ADD DESIGNATION HERE
     image: '/about/team/core/aditigupta.webp',  // ADD IMAGE PATH HERE
     linkedinUrl: 'https://www.linkedin.com/mwlite/profile/me?trk=p_mwlite_profile_view-secondary_nav'  // ADD LINKEDIN URL HERE
   },
@@ -69,7 +68,6 @@ const coreTeamMembers: TeamMember[] = [
     name: 'Shivam Narula',
     branch: 'Mech',  // ADD BRANCH HERE
     year: '2026',   // ADD YEAR HERE
-    designation: 'Director, Operations',  // ADD DESIGNATION HERE
     image: '/about/team/core/shivamnarula.webp',  // ADD IMAGE PATH HERE
     linkedinUrl: 'https://www.linkedin.com/in/shivam-narula-b37b5b256?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=ios_app'  // ADD LINKEDIN URL HERE
   },
@@ -77,9 +75,15 @@ const coreTeamMembers: TeamMember[] = [
     name: 'Vatsal Maskara',
     branch: 'Mech',  // ADD BRANCH HERE
     year: '2026',   // ADD YEAR HERE
-    designation: 'General Secretary',  // ADD DESIGNATION HERE
     image: '/about/team/core/vatsalmaskara.webp',  // ADD IMAGE PATH HERE
     linkedinUrl: 'https://www.linkedin.com/in/vatsal-maskara?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=ios_app'  // ADD LINKEDIN URL HERE
+  },
+  {
+    name: 'Ahaan Singh',
+    branch: 'Mechanical Engineering',  // ADD BRANCH HERE
+    year: '2026',   // ADD YEAR HERE
+    image: '/about/team/core/ahaansingh.webp',  // ADD IMAGE PATH HERE
+    linkedinUrl: 'https://www.linkedin.com/in/ahaan-singh-07b7a9255'  // ADD LINKEDIN URL HERE
   }
 ];
 
