@@ -2,6 +2,8 @@ const Message = require('../../models/chat/messages.model');
 const Conversation = require('../../models/chat/conversations.model');
 const Connection = require('../../models/chat/connections.model');
 const redisClient = require('../../config/redis');
+const notificationService = require('../../services/notificationService');
+const User = require('../../models/user/user.model');
 
 async function handleSendMessage(io, socket, data) {
   try {
@@ -127,6 +129,30 @@ async function handleSendMessage(io, socket, data) {
       message: message,
       tempId
     });
+
+    // Create notification for new message
+    try {
+      const sender = await User.findById(userId).select('name');
+      const recipientId = conversation.participants.find(p => p.toString() !== userId.toString());
+      if (recipientId) {
+        await notificationService.createNotification({
+          userId: recipientId.toString(),
+          type: 'new_message',
+          title: 'New Message',
+          message: `${sender.name}: ${content.substring(0, 100)}${content.length > 100 ? '...' : ''}`,
+          actionUrl: `/dashboard/chat?conversation=${conversationId}`,
+          metadata: {
+            senderId: userId,
+            senderName: sender.name,
+            conversationId: conversationId.toString(),
+            messagePreview: content.substring(0, 100)
+          }
+        });
+      }
+    } catch (notifError) {
+      console.error('Error creating message notification:', notifError);
+      // Don't fail the message send if notification fails
+    }
 
   } catch (error) {
     console.error('Send message error:', error);

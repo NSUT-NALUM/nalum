@@ -1,0 +1,160 @@
+import { useState, useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
+import axios from 'axios';
+
+export const usePushNotifications = () => {
+  const { accessToken } = useAuth();
+  const [permission, setPermission] = useState<NotificationPermission>('default');
+  const [subscription, setSubscription] = useState<PushSubscription | null>(null);
+
+  const apiUrl = import.meta.env.MODE === 'production'
+    ? import.meta.env.VITE_API_URL_PROD
+    : import.meta.env.VITE_API_URL_DEV;
+
+  // Check if push notifications are supported
+  const isSupported = () => {
+    return 'serviceWorker' in navigator && 'PushManager' in window;
+  };
+
+  // Request notification permission
+  const requestPermission = async () => {
+    if (!isSupported()) {
+      console.warn('Push notifications not supported');
+      return false;
+    }
+
+    const result = await Notification.requestPermission();
+    setPermission(result);
+    return result === 'granted';
+  };
+
+  // Subscribe to push notifications
+  const subscribe = async () => {
+    if (!accessToken) return;
+
+    try {
+      // Register service worker
+      const registration = await navigator.serviceWorker.register('/sw.js');
+      await navigator.serviceWorker.ready;
+
+      // Get VAPID public key from server
+      const { data } = await axios.get(`${apiUrl}/api/notifications/push/vapid-public-key`);
+      const publicKey = data.publicKey;
+
+      // Subscribe to push
+      const pushSubscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(publicKey),
+      });
+
+      // Send subscription to server
+      await axios.post(
+        `${apiUrl}/api/notifications/push/subscribe`,
+        {
+          endpoint: pushSubscription.endpoint,
+          keys: {
+            p256dh: arrayBufferToBase64(pushSubscription.getKey('p256dh')!),
+            auth: arrayBufferToBase64(pushSubscription.getKey('auth')!),
+          },
+          deviceInfo: {
+            userAgent: navigator.userAgent,
+            browser: getBrowserName(),
+            os: getOSName(),
+          },
+        },
+        { headers: { Authorization: `Bearer ${accessToken}` } }
+      );
+
+      setSubscription(pushSubscription);
+      return true;
+
+    } catch (error) {
+      console.error('Error subscribing to push:', error);
+      return false;
+    }
+  };
+
+  // Unsubscribe
+  const unsubscribe = async () => {
+    if (!subscription) return;
+
+    try {
+      await axios.post(
+        `${apiUrl}/api/notifications/push/unsubscribe`,
+        { endpoint: subscription.endpoint },
+        { headers: { Authorization: `Bearer ${accessToken}` } }
+      );
+
+      await subscription.unsubscribe();
+      setSubscription(null);
+
+    } catch (error) {
+      console.error('Error unsubscribing:', error);
+    }
+  };
+
+  // Check current subscription
+  useEffect(() => {
+    if (!isSupported()) return;
+
+    navigator.serviceWorker.ready.then(async (registration) => {
+      const sub = await registration.pushManager.getSubscription();
+      setSubscription(sub);
+    });
+
+    setPermission(Notification.permission);
+  }, []);
+
+  return {
+    isSupported,
+    permission,
+    subscription,
+    requestPermission,
+    subscribe,
+    unsubscribe,
+  };
+};
+
+// Helper functions
+function urlBase64ToUint8Array(base64String: string) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding)
+    .replace(/-/g, '+')
+    .replace(/_/g, '/');
+
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+}
+
+function arrayBufferToBase64(buffer: ArrayBuffer) {
+  const bytes = new Uint8Array(buffer);
+  let binary = '';
+  for (let i = 0; i < bytes.byteLength; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return window.btoa(binary);
+}
+
+function getBrowserName() {
+  const userAgent = navigator.userAgent;
+  if (userAgent.includes('Chrome')) return 'Chrome';
+  if (userAgent.includes('Firefox')) return 'Firefox';
+  if (userAgent.includes('Safari')) return 'Safari';
+  if (userAgent.includes('Edge')) return 'Edge';
+  return 'Unknown';
+}
+
+function getOSName() {
+  const userAgent = navigator.userAgent;
+  if (userAgent.includes('Win')) return 'Windows';
+  if (userAgent.includes('Mac')) return 'macOS';
+  if (userAgent.includes('Linux')) return 'Linux';
+  if (userAgent.includes('Android')) return 'Android';
+  if (userAgent.includes('iOS')) return 'iOS';
+  return 'Unknown';
+}

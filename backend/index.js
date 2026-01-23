@@ -19,6 +19,7 @@ const postsRoutes = require("./routes/posts.js");
 const reportsRoutes = require("./routes/reports.js");
 const queriesRoutes = require("./routes/queries.js");
 const givingRoutes = require("./routes/givings.js");
+const notificationRoutes = require("./routes/notifications.js");
 const { checkBanned } = require("./middleware/checkBanned.js");
 const morgan = require("morgan");
 const redisConfig = require("./config/redis.config.js");
@@ -55,6 +56,7 @@ redisConfig.connectRedis().then(() => {
   // Initialize Socket.io for chat after Redis is ready
   initializeSocket(server).then((io) => {
     app.set('io', io);
+    global.io = io; // Make io globally accessible for notifications
     console.log('Socket.io initialization complete');
   }).catch(err => {
     console.error('Socket.io initialization failed:', err);
@@ -75,6 +77,7 @@ app.use("/api/posts", checkBanned, postsRoutes);
 app.use("/api/reports", checkBanned, reportsRoutes);
 app.use("/api/queries", checkBanned, queriesRoutes);
 app.use("/api/givings", checkBanned, givingRoutes);
+app.use("/api/notifications", checkBanned, notificationRoutes);
 
 // Admin routes (no checkBanned needed)
 app.use("/api/admin", adminRoutes);

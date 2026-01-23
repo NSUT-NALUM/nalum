@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { BRANCHES, CAMPUSES } from "@/constants/branches";
 import UserAvatar from "@/components/UserAvatar";
 import ProfileMenu from "@/components/ProfileMenu";
+import { NotificationBell } from "@/components/NotificationBell";
 import nsutLogo from "@/assets/nsut-logo.svg";
 import { useConversations } from "@/hooks/useConversations"; // Restored import
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -181,6 +182,8 @@ const DashboardContent = () => {
             >
               <Search className="h-6 w-6" />
             </button>
+
+            <NotificationBell />
 
             <Link to="/dashboard/chat" className="p-2 text-gray-400 hover:text-white transition-colors relative flex-shrink-0">
               <MessageSquare className="h-6 w-6" />

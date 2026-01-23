@@ -1,6 +1,7 @@
 const Connection = require("../../models/chat/connections.model");
 const User = require("../../models/user/user.model");
 const Profile = require("../../models/user/profile.model");
+const notificationService = require("../../services/notificationService");
 require("dotenv").config();
 // Send connection request
 exports.sendConnectionRequest = async (req, res) => {
@@ -116,6 +117,26 @@ exports.sendConnectionRequest = async (req, res) => {
       }
     }
 
+    // Create notification for connection request
+    try {
+      const requester = await User.findById(requesterId).select('name');
+      await notificationService.createNotification({
+        userId: recipientId,
+        type: 'connection_request',
+        title: 'New Connection Request',
+        message: `${requester.name} sent you a connection request`,
+        actionUrl: '/dashboard/connections',
+        metadata: {
+          requesterId: requesterId,
+          requesterName: requester.name,
+          connectionId: connection._id
+        }
+      });
+    } catch (notifError) {
+      console.error('Error creating notification:', notifError);
+      // Don't fail the request if notification fails
+    }
+
     res.status(201).json({
       message: "Connection request sent successfully",
       connection,
@@ -168,6 +189,26 @@ exports.respondToConnection = async (req, res) => {
       connection.status = "accepted";
       connection.respondedAt = new Date();
       await connection.save();
+
+      // Create notification for connection acceptance
+      try {
+        const accepter = await User.findById(userId).select('name');
+        await notificationService.createNotification({
+          userId: connection.requester.toString(),
+          type: 'connection_accepted',
+          title: 'Connection Accepted',
+          message: `${accepter.name} accepted your connection request`,
+          actionUrl: '/dashboard/connections',
+          metadata: {
+            accepterId: userId,
+            accepterName: accepter.name,
+            connectionId: connection._id
+          }
+        });
+      } catch (notifError) {
+        console.error('Error creating notification:', notifError);
+        // Don't fail the request if notification fails
+      }
     } else if (action === "reject") {
       connection.status = "rejected";
       connection.respondedAt = new Date();

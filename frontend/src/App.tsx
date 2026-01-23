@@ -3,6 +3,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
+import { NotificationProvider } from "@/context/NotificationContext";
 import { startKeepAlive, stopKeepAlive } from "@/lib/keepAlive";
 import { AppRoutes } from "@/routes";
 import { AuthErrorHandler, SessionLoadingScreen } from "@/components/app/AppComponents";
@@ -50,7 +51,9 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <AppContent />
+        <NotificationProvider>
+          <AppContent />
+        </NotificationProvider>
       </AuthProvider>
     </QueryClientProvider>
   );
