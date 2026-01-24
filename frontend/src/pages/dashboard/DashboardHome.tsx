@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useProfile } from "@/context/ProfileContext";
 import PeopleYouMightKnow from "@/pages/dashboard/PeopleYouMightKnow";
 import UpcomingEvents from "@/pages/dashboard/UpcomingEvents";
-import ConnectionsPopover from "@/components/ConnectionsPopover";
+import NotificationsPopover from "@/components/NotificationsPopover";
 import PostsFeed from "@/components/posts/PostsFeed";
 import { PenSquare, Search, X, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -90,7 +90,7 @@ const DashboardHome = () => {
               <span>Start a post</span>
             </button>
             <div className="hidden sm:block">
-              <ConnectionsPopover />
+              <NotificationsPopover />
             </div>
           </div>
 

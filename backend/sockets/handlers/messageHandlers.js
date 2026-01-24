@@ -145,12 +145,13 @@ async function handleSendMessage(io, socket, data) {
           priority: 'high',
           relatedEntity: {
             entityType: 'message',
-            entityId: conversationId.toString(),
+            entityId: message._id.toString(),
           },
           metadata: {
             senderId: userId,
             senderName: sender.name,
             conversationId: conversationId.toString(),
+            messageId: message._id.toString(),
             messagePreview: content.substring(0, 100)
           }
         });
@@ -238,6 +239,30 @@ async function handleMessageDeleted(io, socket, data) {
     if (message.sender.toString() !== userId) {
       // Only sender can delete (or add admin check here)
       return;
+    }
+
+    // Get conversation to find recipient
+    const conversation = await Conversation.findById(conversationId);
+    if (conversation) {
+      const recipientId = conversation.participants.find(p => p.toString() !== userId.toString());
+      
+      // Delete related notification for this specific message
+      if (recipientId) {
+        const Notification = require('../../models/notification.model');
+        const deletedNotif = await Notification.findOneAndDelete({
+          recipient: recipientId,
+          sender: userId,
+          type: 'new_message',
+          'metadata.messageId': messageId.toString()
+        });
+
+        // If notification was deleted, notify the recipient to remove it from their UI
+        if (deletedNotif) {
+          io.to(`user:${recipientId}`).emit('notification:removed', {
+            notificationId: deletedNotif._id.toString()
+          });
+        }
+      }
     }
 
     // Perform deletion (or soft delete)

@@ -1,5 +1,25 @@
 // Service Worker for Push Notifications
+const CACHE_NAME = 'nalum-v1';
+
+// Install event
+self.addEventListener('install', function(event) {
+  console.log('Service Worker installing...');
+  // Skip waiting to activate immediately
+  self.skipWaiting();
+});
+
+// Activate event
+self.addEventListener('activate', function(event) {
+  console.log('Service Worker activating...');
+  event.waitUntil(
+    clients.claim()
+  );
+});
+
+// Push event
 self.addEventListener('push', function(event) {
+  console.log('Push notification received:', event);
+  
   const data = event.data ? event.data.json() : {};
   
   const options = {
@@ -9,17 +29,20 @@ self.addEventListener('push', function(event) {
     data: data.data || {},
     requireInteraction: false,
     vibrate: [200, 100, 200],
+    tag: data.tag || 'default',
   };
 
   event.waitUntil(
-    self.registration.showNotification(data.title || 'Notification', options)
+    self.registration.showNotification(data.title || 'NSUT Alumni Network', options)
   );
 });
 
+// Notification click event
 self.addEventListener('notificationclick', function(event) {
+  console.log('Notification clicked:', event);
   event.notification.close();
 
-  const urlToOpen = event.notification.data?.url || '/';
+  const urlToOpen = new URL(event.notification.data?.url || '/', self.location.origin).href;
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true })

@@ -26,7 +26,7 @@ interface NotificationContextType {
   fetchNotifications: () => Promise<void>;
   markAsRead: (notificationId: string) => Promise<void>;
   markAllAsRead: () => Promise<void>;
-  deleteNotification: (notificationId: string) => Promise<void>;
+  deleteNotification: (notificationId: string, deleteAllFromSameSender?: boolean) => Promise<void>;
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
@@ -48,7 +48,13 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
         params: { page: 1, limit: 20 },
       });
 
-      setNotifications(response.data.data.notifications);
+      // Transform _id to id for consistency with socket notifications
+      const transformedNotifications = response.data.data.notifications.map((n: any) => ({
+        ...n,
+        id: n._id || n.id,
+      }));
+
+      setNotifications(transformedNotifications);
       
       // Also fetch unread count
       const countResponse = await api.get('/notifications/unread-count');
@@ -99,15 +105,39 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // Delete notification
-  const deleteNotification = async (notificationId: string) => {
+  // Delete notification (with support for bulk deletion of message notifications)
+  const deleteNotification = async (notificationId: string, deleteAllFromSameSender = false) => {
     if (!accessToken) return;
 
     try {
-      await api.delete(`/notifications/${notificationId}`);
+      // Find the notification being deleted
+      const notification = notifications.find(n => n.id === notificationId);
+      
+      // If it's a message notification and we want to delete all from same sender
+      if (deleteAllFromSameSender && notification?.type === 'new_message' && notification.sender?._id) {
+        const senderId = notification.sender._id;
+        
+        // Get all message notification IDs from this sender
+        const notificationIdsToDelete = notifications
+          .filter(n => n.type === 'new_message' && n.sender?._id === senderId)
+          .map(n => n.id);
 
-      // Update local state
-      setNotifications(prev => prev.filter(n => n.id !== notificationId));
+        // Delete all of them from backend
+        await Promise.all(
+          notificationIdsToDelete.map(id => api.delete(`/notifications/${id}`))
+        );
+
+        // Update local state - remove all message notifications from this sender
+        setNotifications(prev => prev.filter(n => 
+          !(n.type === 'new_message' && n.sender?._id === senderId)
+        ));
+      } else {
+        // Single notification deletion
+        await api.delete(`/notifications/${notificationId}`);
+
+        // Update local state
+        setNotifications(prev => prev.filter(n => n.id !== notificationId));
+      }
 
     } catch (error) {
       console.error('Error deleting notification:', error);
@@ -128,9 +158,16 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
       setUnreadCount(count);
     });
 
+    // Notification removed (e.g., when message is unsent)
+    socket.on('notification:removed', ({ notificationId }: { notificationId: string }) => {
+      setNotifications(prev => prev.filter(n => n.id !== notificationId));
+      setUnreadCount(prev => Math.max(0, prev - 1));
+    });
+
     return () => {
       socket.off('notification');
       socket.off('notification:badge');
+      socket.off('notification:removed');
     };
   }, [socket, isConnected]);
 

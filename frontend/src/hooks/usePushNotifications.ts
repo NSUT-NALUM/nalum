@@ -26,23 +26,52 @@ export const usePushNotifications = () => {
 
   // Subscribe to push notifications
   const subscribe = async () => {
-    if (!accessToken) return;
+    if (!accessToken) {
+      console.warn('No access token available');
+      return false;
+    }
 
     try {
-      // Register service worker
-      const registration = await navigator.serviceWorker.register('/sw.js');
+      // First request permission
+      const permissionGranted = await requestPermission();
+      if (!permissionGranted) {
+        console.warn('Notification permission not granted');
+        return false;
+      }
+
+      // Unregister any existing service workers first (clean slate)
+      const existingRegistrations = await navigator.serviceWorker.getRegistrations();
+      for (const registration of existingRegistrations) {
+        await registration.unregister();
+      }
+
+      // Register service worker with explicit scope
+      console.log('Registering service worker...');
+      const registration = await navigator.serviceWorker.register('/sw.js', {
+        scope: '/'
+      });
+      
+      console.log('Service worker registered, waiting for ready state...');
       await navigator.serviceWorker.ready;
+      console.log('Service worker ready');
 
       // Get VAPID public key from server
+      console.log('Fetching VAPID public key...');
       const { data } = await api.get('/notifications/push/vapid-public-key');
       const publicKey = data.publicKey;
 
+      if (!publicKey) {
+        throw new Error('VAPID public key not available from server');
+      }
+
+      console.log('Subscribing to push manager...');
       // Subscribe to push
       const pushSubscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(publicKey),
       });
 
+      console.log('Push subscription successful, sending to server...');
       // Send subscription to server
       await api.post(
         '/notifications/push/subscribe',
@@ -60,6 +89,7 @@ export const usePushNotifications = () => {
         }
       );
 
+      console.log('Subscription saved to server');
       setSubscription(pushSubscription);
       return true;
 
