@@ -136,11 +136,17 @@ async function handleSendMessage(io, socket, data) {
       const recipientId = conversation.participants.find(p => p.toString() !== userId.toString());
       if (recipientId) {
         await notificationService.createNotification({
-          userId: recipientId.toString(),
+          recipientId: recipientId.toString(),
+          senderId: userId,
           type: 'new_message',
           title: 'New Message',
           message: `${sender.name}: ${content.substring(0, 100)}${content.length > 100 ? '...' : ''}`,
           actionUrl: `/dashboard/chat?conversation=${conversationId}`,
+          priority: 'high',
+          relatedEntity: {
+            entityType: 'message',
+            entityId: conversationId.toString(),
+          },
           metadata: {
             senderId: userId,
             senderName: sender.name,

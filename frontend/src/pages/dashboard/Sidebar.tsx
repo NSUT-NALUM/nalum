@@ -1,10 +1,11 @@
 import { Link, useLocation } from "react-router-dom";
-import { Home, Users, LogOut, MessageSquare, Calendar, Sparkles, FileText, Heart } from "lucide-react";
+import { Home, Users, LogOut, MessageSquare, Calendar, Sparkles, FileText, Heart, Bell } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useProfile } from "@/context/ProfileContext";
 import UserAvatar from "@/components/UserAvatar";
 import nsutLogo from "@/assets/nsut-logo.svg";
 import { useConversations } from "@/hooks/useConversations";
+import { NotificationBell } from "@/components/NotificationBell";
 
 interface SidebarProps {
   onNavigate?: () => void;
@@ -24,14 +25,17 @@ const Sidebar = ({ onNavigate }: SidebarProps) => {
     <aside className="h-screen w-64 flex flex-col bg-slate-950/50 backdrop-blur-xl border-r border-white/10 shadow-xl sticky top-0">
       {/* Header */}
       <div className="p-6 border-b border-white/10">
-        <div className="flex items-center gap-3">
-          <img src={nsutLogo} alt="NSUT Alumni" className="h-8 w-8" />
-          <h1 className="text-lg font-bold tracking-wide">
-            <span className="text-red-600">N</span>
-            <span className="text-white">SUT</span>
-            <span className="text-red-600"> ALUM</span>
-            <span className="text-white">NI</span>
-          </h1>
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <img src={nsutLogo} alt="NSUT Alumni" className="h-8 w-8" />
+            <h1 className="text-lg font-bold tracking-wide">
+              <span className="text-red-600">N</span>
+              <span className="text-white">SUT</span>
+              <span className="text-red-600"> ALUM</span>
+              <span className="text-white">NI</span>
+            </h1>
+          </div>
+          <NotificationBell />
         </div>
       </div>
 

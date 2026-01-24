@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useAuth } from './AuthContext';
 import { useSocket } from '../hooks/useSocket';
-import axios from 'axios';
+import api from '../lib/api';
 
 interface Notification {
   id: string;
@@ -38,27 +38,20 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
 
-  const apiUrl = import.meta.env.MODE === 'production'
-    ? import.meta.env.VITE_API_URL_PROD
-    : import.meta.env.VITE_API_URL_DEV;
-
   // Fetch notifications
   const fetchNotifications = async () => {
     if (!accessToken) return;
 
     try {
       setLoading(true);
-      const response = await axios.get(`${apiUrl}/api/notifications`, {
-        headers: { Authorization: `Bearer ${accessToken}` },
+      const response = await api.get('/notifications', {
         params: { page: 1, limit: 20 },
       });
 
       setNotifications(response.data.data.notifications);
       
       // Also fetch unread count
-      const countResponse = await axios.get(`${apiUrl}/api/notifications/unread-count`, {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      });
+      const countResponse = await api.get('/notifications/unread-count');
       setUnreadCount(countResponse.data.count);
 
     } catch (error) {
@@ -73,10 +66,8 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
     if (!accessToken) return;
 
     try {
-      await axios.patch(
-        `${apiUrl}/api/notifications/${notificationId}/read`,
-        {},
-        { headers: { Authorization: `Bearer ${accessToken}` } }
+      await api.patch(
+        `/notifications/${notificationId}/read`
       );
 
       // Update local state
@@ -95,10 +86,8 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
     if (!accessToken) return;
 
     try {
-      await axios.patch(
-        `${apiUrl}/api/notifications/mark-all-read`,
-        {},
-        { headers: { Authorization: `Bearer ${accessToken}` } }
+      await api.patch(
+        '/notifications/mark-all-read'
       );
 
       // Update local state
@@ -115,9 +104,7 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
     if (!accessToken) return;
 
     try {
-      await axios.delete(`${apiUrl}/api/notifications/${notificationId}`, {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      });
+      await api.delete(`/notifications/${notificationId}`);
 
       // Update local state
       setNotifications(prev => prev.filter(n => n.id !== notificationId));

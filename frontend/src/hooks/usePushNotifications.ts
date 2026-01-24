@@ -1,15 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import axios from 'axios';
+import api from '../lib/api';
 
 export const usePushNotifications = () => {
   const { accessToken } = useAuth();
   const [permission, setPermission] = useState<NotificationPermission>('default');
   const [subscription, setSubscription] = useState<PushSubscription | null>(null);
-
-  const apiUrl = import.meta.env.MODE === 'production'
-    ? import.meta.env.VITE_API_URL_PROD
-    : import.meta.env.VITE_API_URL_DEV;
 
   // Check if push notifications are supported
   const isSupported = () => {
@@ -38,7 +34,7 @@ export const usePushNotifications = () => {
       await navigator.serviceWorker.ready;
 
       // Get VAPID public key from server
-      const { data } = await axios.get(`${apiUrl}/api/notifications/push/vapid-public-key`);
+      const { data } = await api.get('/notifications/push/vapid-public-key');
       const publicKey = data.publicKey;
 
       // Subscribe to push
@@ -48,8 +44,8 @@ export const usePushNotifications = () => {
       });
 
       // Send subscription to server
-      await axios.post(
-        `${apiUrl}/api/notifications/push/subscribe`,
+      await api.post(
+        '/notifications/push/subscribe',
         {
           endpoint: pushSubscription.endpoint,
           keys: {
@@ -61,8 +57,7 @@ export const usePushNotifications = () => {
             browser: getBrowserName(),
             os: getOSName(),
           },
-        },
-        { headers: { Authorization: `Bearer ${accessToken}` } }
+        }
       );
 
       setSubscription(pushSubscription);
@@ -79,10 +74,9 @@ export const usePushNotifications = () => {
     if (!subscription) return;
 
     try {
-      await axios.post(
-        `${apiUrl}/api/notifications/push/unsubscribe`,
-        { endpoint: subscription.endpoint },
-        { headers: { Authorization: `Bearer ${accessToken}` } }
+      await api.post(
+        '/notifications/push/unsubscribe',
+        { endpoint: subscription.endpoint }
       );
 
       await subscription.unsubscribe();
