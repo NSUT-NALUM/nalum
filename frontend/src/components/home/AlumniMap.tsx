@@ -90,7 +90,6 @@ const COUNTRY_CENTROIDS: Record<string, { lat: number; lng: number; zoom: number
   venezuela: { lat: 6.4238, lng: -66.5897, zoom: 5 },
 
   // Europe - Large countries
-  russia: { lat: 61.5240, lng: 105.3188, zoom: 3 },
   france: { lat: 46.2276, lng: 2.2137, zoom: 6 },
   germany: { lat: 51.1657, lng: 10.4515, zoom: 6 },
   spain: { lat: 40.4637, lng: -3.7492, zoom: 6 },
