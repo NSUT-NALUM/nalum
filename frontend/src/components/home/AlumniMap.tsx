@@ -48,15 +48,13 @@ function MapController({
   return null;
 }
 
-const AlumniMap = () => {
-  const [locations, setLocations] = useState<AlumniLocation[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [zoom, setZoom] = useState(2);
-  const [bounds, setBounds] = useState<[number, number, number, number]>([
-    -180, -85, 180, 85,
-  ]);
-  const [mapInstance, setMapInstance] = useState<L.Map | null>(null);
+function MapSearchControl({
+  locations,
+  mapInstance,
+}: {
+  locations: AlumniLocation[];
+  mapInstance: L.Map | null;
+}) {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResult, setSearchResult] = useState<string | null>(null);
 
@@ -66,15 +64,18 @@ const AlumniMap = () => {
     const match = locations.find(
       (loc) =>
         loc.city.toLowerCase().includes(q) ||
-        loc.country.toLowerCase().includes(q),
+        loc.country.toLowerCase().includes(q)
     );
     if (match) {
       mapInstance.flyTo([match.lat, match.lng], 7, {
         animate: true,
-        duration: 1.2,
+        duration: 0.65,
+        easeLinearity: 0.25,
       });
-      const capitalizedCity = match.city.charAt(0).toUpperCase() + match.city.slice(1);
-      const capitalizedCountry = match.country.charAt(0).toUpperCase() + match.country.slice(1);
+      const capitalizedCity =
+        match.city.charAt(0).toUpperCase() + match.city.slice(1);
+      const capitalizedCountry =
+        match.country.charAt(0).toUpperCase() + match.country.slice(1);
       setSearchResult(`Found ${capitalizedCity}, ${capitalizedCountry}`);
       setTimeout(() => setSearchResult(null), 3000);
     } else {
@@ -82,6 +83,116 @@ const AlumniMap = () => {
       setTimeout(() => setSearchResult(null), 3000);
     }
   };
+
+  if (!mapInstance) return null;
+
+  return (
+    <>
+      {searchResult && (
+        <div
+          style={{
+            position: "absolute",
+            top: "60px",
+            left: "50px",
+            zIndex: 1000,
+            background: "rgba(255, 255, 255, 0.95)",
+            color: "#333",
+            padding: "8px 16px",
+            borderRadius: "6px",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+            fontSize: "13px",
+            fontWeight: 500,
+          }}
+        >
+          {searchResult}
+        </div>
+      )}
+      <div
+        style={{
+          position: "absolute",
+          top: "12px",
+          left: "50px",
+          zIndex: 1000,
+          display: "flex",
+          gap: "6px",
+        }}
+      >
+        <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+          <input
+            type="text"
+            placeholder="Search city or country..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") handleSearch();
+            }}
+            style={{
+              padding: "7px 30px 7px 12px",
+              borderRadius: "6px",
+              border: "1px solid #ccc",
+              fontSize: "13px",
+              width: "220px",
+              boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
+              outline: "none",
+              background: "#fff",
+              color: "#333",
+            }}
+          />
+          {searchQuery && (
+            <button
+              onClick={() => {
+                setSearchQuery("");
+                setSearchResult(null);
+              }}
+              aria-label="Clear search"
+              style={{
+                position: "absolute",
+                right: "8px",
+                background: "transparent",
+                border: "none",
+                color: "#666",
+                cursor: "pointer",
+                fontSize: "16px",
+                padding: "0",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              ×
+            </button>
+          )}
+        </div>
+        <button
+          onClick={handleSearch}
+          style={{
+            padding: "7px 14px",
+            borderRadius: "6px",
+            background: "#E53935",
+            color: "#fff",
+            fontWeight: 600,
+            fontSize: "13px",
+            border: "none",
+            cursor: "pointer",
+            boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
+          }}
+        >
+          Go
+        </button>
+      </div>
+    </>
+  );
+}
+
+const AlumniMap = () => {
+  const [locations, setLocations] = useState<AlumniLocation[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [zoom, setZoom] = useState(2);
+  const [bounds, setBounds] = useState<[number, number, number, number]>([
+    -180, -85, 180, 85,
+  ]);
+  const [mapInstance, setMapInstance] = useState<L.Map | null>(null);
 
   useEffect(() => {
     const fetchLocations = async () => {
@@ -375,100 +486,7 @@ const AlumniMap = () => {
               })}
             </MapContainer>
           </div>
-          {searchResult && (
-            <div
-              style={{
-                position: "absolute",
-                top: "60px",
-                left: "50px",
-                zIndex: 1000,
-                background: "rgba(255, 255, 255, 0.95)",
-                color: "#333",
-                padding: "8px 16px",
-                borderRadius: "6px",
-                boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
-                fontSize: "13px",
-                fontWeight: 500,
-              }}
-            >
-              {searchResult}
-            </div>
-          )}
-          {mapInstance && (
-            <div
-              style={{
-                position: "absolute",
-                top: "12px",
-                left: "50px",
-                zIndex: 1000,
-                display: "flex",
-                gap: "6px",
-              }}
-            >
-              <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
-                <input
-                  type="text"
-                  placeholder="Search city or country..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") handleSearch();
-                  }}
-                  style={{
-                    padding: "7px 30px 7px 12px",
-                    borderRadius: "6px",
-                    border: "1px solid #ccc",
-                    fontSize: "13px",
-                    width: "220px",
-                    boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
-                    outline: "none",
-                    background: "#fff",
-                    color: "#333",
-                  }}
-                />
-                {searchQuery && (
-                  <button
-                    onClick={() => {
-                      setSearchQuery("");
-                      setSearchResult(null);
-                    }}
-                    aria-label="Clear search"
-                    style={{
-                      position: "absolute",
-                      right: "8px",
-                      background: "transparent",
-                      border: "none",
-                      color: "#666",
-                      cursor: "pointer",
-                      fontSize: "16px",
-                      padding: "0",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    ×
-                  </button>
-                )}
-              </div>
-              <button
-                onClick={handleSearch}
-                style={{
-                  padding: "7px 14px",
-                  borderRadius: "6px",
-                  background: "#E53935",
-                  color: "#fff",
-                  fontWeight: 600,
-                  fontSize: "13px",
-                  border: "none",
-                  cursor: "pointer",
-                  boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
-                }}
-              >
-                Go
-              </button>
-            </div>
-          )}
+          <MapSearchControl locations={locations} mapInstance={mapInstance} />
         </div>
       </div>
     </div>
