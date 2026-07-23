@@ -293,7 +293,7 @@ const AlumniMap = () => {
                   // fall through to Leaflet's marker layer — not the HTML div —
                   // so the eventHandlers.click always fires on desktop.
                   const icon = L.divIcon({
-                    html: `<div style="width:${size}px;height:${size}px;border-radius:50%;background:#E53935;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:${fontSize}px;border:2px solid #b71c1c;box-shadow:0 2px 8px rgba(0,0,0,0.3);pointer-events:none;">${displayCount}</div>`,
+                    html: `<div class="alumni-map-pin" style="width:${size}px;height:${size}px;border-radius:50%;background:#E53935;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:${fontSize}px;border:2px solid #b71c1c;box-shadow:0 2px 8px rgba(0,0,0,0.3);pointer-events:none;">${displayCount}</div>`,
                     className: "",
                     iconSize: [size, size],
                     iconAnchor: [size / 2, size / 2],
@@ -304,21 +304,18 @@ const AlumniMap = () => {
                       key={`cluster-${cluster.id}`}
                       position={[lat, lng]}
                       icon={icon}
-                      // openPopup / closePopup happens imperatively so the
-                      // Leaflet auto-open-on-click behaviour (which would
-                      // intercept the *next* click via the popup pane) is
-                      // never triggered on desktop.
                       eventHandlers={{
                         click: (e) => {
                           if (!mapInstance || !supercluster) return;
-                          L.DomEvent.stopPropagation(e);
+                          e.target.openPopup();
                           const expansionZoom = Math.min(
                             supercluster.getClusterExpansionZoom(cluster.id as number),
                             18
                           );
                           mapInstance.flyTo([lat, lng], expansionZoom, {
                             animate: true,
-                            duration: 1.2,
+                            duration: 0.65,
+                            easeLinearity: 0.25,
                           });
                         },
                       }}
@@ -339,8 +336,7 @@ const AlumniMap = () => {
                 const size = Math.max(20, 20 + Math.log(count) * 8);
                 const fontSize = Math.max(9, Math.floor(size * 0.32));
                 const icon = L.divIcon({
-                  // pointer-events:none keeps the click on the Leaflet layer
-                  html: `<div style="width:${size}px;height:${size}px;border-radius:50%;background:#E53935;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:${fontSize}px;border:2px solid #b71c1c;box-shadow:0 2px 8px rgba(0,0,0,0.3);pointer-events:none;">${count}</div>`,
+                  html: `<div class="alumni-map-pin" style="width:${size}px;height:${size}px;border-radius:50%;background:#E53935;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:${fontSize}px;border:2px solid #b71c1c;box-shadow:0 2px 8px rgba(0,0,0,0.3);pointer-events:none;">${count}</div>`,
                   className: "",
                   iconSize: [size, size],
                   iconAnchor: [size / 2, size / 2],
@@ -353,20 +349,17 @@ const AlumniMap = () => {
                     eventHandlers={{
                       click: (e) => {
                         if (!mapInstance) return;
+                        e.target.openPopup();
                         const currentZoom = mapInstance.getZoom();
 
                         if (currentZoom < 13) {
-                          // Not yet at city level: prevent popup from
-                          // auto-opening and zoom in by 2 levels instead.
-                          L.DomEvent.stopPropagation(e);
                           const targetZoom = Math.min(currentZoom + 2, 17);
                           mapInstance.flyTo([lat, lng], targetZoom, {
                             animate: true,
-                            duration: 1.2,
+                            duration: 0.65,
+                            easeLinearity: 0.25,
                           });
                         }
-                        // At city level (≥ 13): let Leaflet naturally open
-                        // the popup via its own click→popup pipeline.
                       },
                     }}
                   >
