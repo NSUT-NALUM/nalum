@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   MapContainer,
   TileLayer,
@@ -100,95 +100,57 @@ const AlumniMap = () => {
   }, []);
 
   // Format raw locations as GeoJSON features for supercluster
-  const points = locations.map((loc) => ({
-    type: "Feature" as const,
-    properties: {
-      cluster: false,
-      city: loc.city,
-      country: loc.country,
-      count: loc.count || 1,
-    },
-    geometry: { type: "Point" as const, coordinates: [loc.lng, loc.lat] },
-  }));
+  const points = useMemo(
+    () =>
+      locations.map((loc) => ({
+        type: "Feature" as const,
+        properties: {
+          cluster: false,
+          city: loc.city,
+          country: loc.country,
+          count: loc.count || 1,
+        },
+        geometry: { type: "Point" as const, coordinates: [loc.lng, loc.lat] },
+      })),
+    [locations]
+  );
+
+  const clusterOptions = useMemo(
+    () => ({
+      radius: 75,
+      maxZoom: 17,
+      map: (props: any) => ({ sum: props.count || 1 }),
+      reduce: (accumulated: any, props: any) => {
+        accumulated.sum += props.sum || props.count || 1;
+      },
+    }),
+    []
+  );
 
   const { clusters, supercluster } = useSupercluster({
     points,
     bounds,
     zoom,
-    options: {
-      radius: 75,
-      maxZoom: 17,
-      map: (props) => ({ sum: props.count || 1 }),
-      reduce: (accumulated, props) => {
-        accumulated.sum += props.sum || props.count || 1;
-      },
-    },
+    options: clusterOptions,
   });
 
   const getClusterPopupContent = (clusterId: number) => {
     if (!supercluster) return null;
     const leaves = supercluster.getLeaves(clusterId, Infinity);
-    // Use React zoom state — always consistent with the current render
-    const currentZoom = zoom;
+    const countries = Array.from(
+      new Set(leaves.map((l) => l.properties.country || "Unknown"))
+    );
+    const countryLabel = countries
+      .map((c) => c.charAt(0).toUpperCase() + c.slice(1))
+      .join(", ");
 
-    if (currentZoom <= 4) {
-      // Fully zoomed out: show country name(s)
-      const countries = Array.from(
-        new Set(leaves.map((l) => l.properties.country || "Unknown"))
-      );
-      const countryLabel = countries
-        .map((c) => c.charAt(0).toUpperCase() + c.slice(1))
-        .join(", ");
-      const totalAlumni = leaves.reduce(
-        (acc, l) => acc + (l.properties.count || 1),
-        0
-      );
-
-      return (
-        <div className="text-sm p-1" style={{ color: "#333" }}>
-          <div className="font-semibold text-gray-800 border-b pb-1 mb-1">
-            {countryLabel}
-          </div>
-          <div className="text-gray-600">
-            <strong>{totalAlumni} alumni</strong> in this region
-          </div>
+    return (
+      <div className="text-sm p-1" style={{ color: "#333" }}>
+        <div className="font-semibold text-gray-800">
+          {countryLabel}
         </div>
-      );
-    } else {
-      // Intermediate zoom: show multiple cities within region
-      const cityCounts: { [key: string]: { count: number; country: string } } = {};
-      leaves.forEach((l) => {
-        const cityKey = l.properties.city || "Unknown";
-        const countryKey = l.properties.country || "Unknown";
-        if (!cityCounts[cityKey]) {
-          cityCounts[cityKey] = { count: 0, country: countryKey };
-        }
-        cityCounts[cityKey].count += l.properties.count || 1;
-      });
-
-      const totalAlumni = leaves.reduce(
-        (acc, l) => acc + (l.properties.count || 1),
-        0
-      );
-
-      return (
-        <div className="text-sm p-1 max-h-48 overflow-y-auto" style={{ color: "#333" }}>
-          <div className="font-semibold text-gray-800 border-b pb-1 mb-1">
-            Region Cities ({totalAlumni} alumni)
-          </div>
-          <ul className="space-y-1 mt-1">
-            {Object.entries(cityCounts).map(([city, data]) => (
-              <li key={city} className="flex justify-between gap-4">
-                <span className="capitalize text-gray-700">
-                  {city}, <span className="text-xs text-gray-500 uppercase">{data.country.substring(0, 3)}</span>
-                </span>
-                <span className="font-bold text-red-600">{data.count}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      );
-    }
+      </div>
+    );
   };
 
   const bgPattern = `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23FFD700' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`;
@@ -348,30 +310,16 @@ const AlumniMap = () => {
                       // never triggered on desktop.
                       eventHandlers={{
                         click: (e) => {
-                          if (!mapInstance) return;
-                          const activeZoom = mapInstance.getZoom();
-
-                          if (activeZoom > 8 && supercluster) {
-                            // High zoom → stop propagation to prevent the popup
-                            // from auto-opening, then fly to the expansion zoom
-                            // level to reveal individual city markers.
-                            L.DomEvent.stopPropagation(e);
-                            const expansionZoom = Math.min(
-                              supercluster.getClusterExpansionZoom(cluster.id as number),
-                              18
-                            );
-                            mapInstance.flyTo([lat, lng], expansionZoom, {
-                              animate: true,
-                              duration: 1.2,
-                            });
-                          }
-                          // Low / intermediate zoom (≤ 8): do NOT stop
-                          // propagation — let Leaflet's native click→popup
-                          // pipeline open the <Popup> naturally. Calling
-                          // stopPropagation here (even unconditionally before
-                          // the if-check) poisons the Leaflet event and silently
-                          // prevents the popup from ever opening on both mouse
-                          // AND touch, which was the supercluster popup bug.
+                          if (!mapInstance || !supercluster) return;
+                          L.DomEvent.stopPropagation(e);
+                          const expansionZoom = Math.min(
+                            supercluster.getClusterExpansionZoom(cluster.id as number),
+                            18
+                          );
+                          mapInstance.flyTo([lat, lng], expansionZoom, {
+                            animate: true,
+                            duration: 1.2,
+                          });
                         },
                       }}
                     >
@@ -427,14 +375,6 @@ const AlumniMap = () => {
                         <strong className="capitalize">{city}</strong>
                         <br />
                         <span className="capitalize">{country}</span>
-                        {count > 1 && (
-                          <>
-                            <br />
-                            <span className="text-xs text-gray-500">
-                              ({count} alumni)
-                            </span>
-                          </>
-                        )}
                       </div>
                     </Popup>
                   </Marker>
