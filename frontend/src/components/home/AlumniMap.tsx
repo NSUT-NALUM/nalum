@@ -48,6 +48,30 @@ function MapController({
   return null;
 }
 
+const COUNTRY_CENTROIDS: Record<string, { lat: number; lng: number; zoom: number }> = {
+  india: { lat: 20.5937, lng: 78.9629, zoom: 4 },
+  bharat: { lat: 20.5937, lng: 78.9629, zoom: 4 },
+  "united states": { lat: 37.0902, lng: -95.7129, zoom: 4 },
+  "united states of america": { lat: 37.0902, lng: -95.7129, zoom: 4 },
+  usa: { lat: 37.0902, lng: -95.7129, zoom: 4 },
+  us: { lat: 37.0902, lng: -95.7129, zoom: 4 },
+  "united kingdom": { lat: 55.3781, lng: -3.4360, zoom: 5 },
+  uk: { lat: 55.3781, lng: -3.4360, zoom: 5 },
+  england: { lat: 55.3781, lng: -3.4360, zoom: 5 },
+  canada: { lat: 56.1304, lng: -106.3468, zoom: 3 },
+  australia: { lat: -25.2744, lng: 133.7751, zoom: 4 },
+  germany: { lat: 51.1657, lng: 10.4515, zoom: 5 },
+  france: { lat: 46.2276, lng: 2.2137, zoom: 5 },
+  singapore: { lat: 1.3521, lng: 103.8198, zoom: 11 },
+  "united arab emirates": { lat: 23.4241, lng: 53.8478, zoom: 6 },
+  uae: { lat: 23.4241, lng: 53.8478, zoom: 6 },
+  japan: { lat: 36.2048, lng: 138.2529, zoom: 5 },
+  china: { lat: 35.8617, lng: 104.1954, zoom: 4 },
+  brazil: { lat: -14.2350, lng: -51.9253, zoom: 4 },
+  russia: { lat: 61.5240, lng: 105.3188, zoom: 3 },
+  "south africa": { lat: -30.5595, lng: 22.9375, zoom: 5 },
+};
+
 function MapSearchControl({
   locations,
   mapInstance,
@@ -61,21 +85,72 @@ function MapSearchControl({
   const handleSearch = () => {
     const q = searchQuery.trim().toLowerCase();
     if (!q || !mapInstance) return;
-    const match = locations.find(
+
+    // 1. Check if query matches a country name or alias
+    const matchingCountryLocations = locations.filter(
       (loc) =>
-        loc.city.toLowerCase().includes(q) ||
-        loc.country.toLowerCase().includes(q)
+        loc.country.toLowerCase().includes(q) ||
+        q.includes(loc.country.toLowerCase())
     );
-    if (match) {
-      mapInstance.flyTo([match.lat, match.lng], 7, {
+
+    const exactCountryKey = Object.keys(COUNTRY_CENTROIDS).find(
+      (cKey) =>
+        q === cKey ||
+        (matchingCountryLocations.length > 0 &&
+          matchingCountryLocations[0].country.toLowerCase() === cKey)
+    );
+
+    if (exactCountryKey || matchingCountryLocations.length > 0) {
+      let targetLat: number;
+      let targetLng: number;
+      let targetZoom: number;
+      const rawCountryName = exactCountryKey
+        ? exactCountryKey
+        : matchingCountryLocations[0].country;
+      const countryName =
+        rawCountryName.charAt(0).toUpperCase() + rawCountryName.slice(1);
+
+      if (exactCountryKey && COUNTRY_CENTROIDS[exactCountryKey]) {
+        const entry = COUNTRY_CENTROIDS[exactCountryKey];
+        targetLat = entry.lat;
+        targetLng = entry.lng;
+        targetZoom = entry.zoom;
+      } else {
+        targetLat =
+          matchingCountryLocations.reduce((sum, l) => sum + l.lat, 0) /
+          matchingCountryLocations.length;
+        targetLng =
+          matchingCountryLocations.reduce((sum, l) => sum + l.lng, 0) /
+          matchingCountryLocations.length;
+        targetZoom = 4;
+      }
+
+      mapInstance.flyTo([targetLat, targetLng], targetZoom, {
+        animate: true,
+        duration: 0.65,
+        easeLinearity: 0.25,
+      });
+
+      setSearchResult(`Found ${countryName}`);
+      setTimeout(() => setSearchResult(null), 3000);
+      return;
+    }
+
+    // 2. Fallback to City Search
+    const cityMatch = locations.find((loc) =>
+      loc.city.toLowerCase().includes(q)
+    );
+
+    if (cityMatch) {
+      mapInstance.flyTo([cityMatch.lat, cityMatch.lng], 7, {
         animate: true,
         duration: 0.65,
         easeLinearity: 0.25,
       });
       const capitalizedCity =
-        match.city.charAt(0).toUpperCase() + match.city.slice(1);
+        cityMatch.city.charAt(0).toUpperCase() + cityMatch.city.slice(1);
       const capitalizedCountry =
-        match.country.charAt(0).toUpperCase() + match.country.slice(1);
+        cityMatch.country.charAt(0).toUpperCase() + cityMatch.country.slice(1);
       setSearchResult(`Found ${capitalizedCity}, ${capitalizedCountry}`);
       setTimeout(() => setSearchResult(null), 3000);
     } else {
