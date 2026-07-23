@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   MapContainer,
   TileLayer,
@@ -49,28 +49,96 @@ function MapController({
 }
 
 const COUNTRY_CENTROIDS: Record<string, { lat: number; lng: number; zoom: number }> = {
-  india: { lat: 20.5937, lng: 78.9629, zoom: 4 },
-  bharat: { lat: 20.5937, lng: 78.9629, zoom: 4 },
+  // Asia - Large countries
+  india: { lat: 20.5937, lng: 78.9629, zoom: 5 },
+  bharat: { lat: 20.5937, lng: 78.9629, zoom: 5 },
+  china: { lat: 35.8617, lng: 104.1954, zoom: 4 },
+  russia: { lat: 61.5240, lng: 105.3188, zoom: 3 },
+  indonesia: { lat: -0.7893, lng: 113.9213, zoom: 4 },
+  pakistan: { lat: 30.3753, lng: 69.3451, zoom: 5 },
+  bangladesh: { lat: 23.6850, lng: 90.3563, zoom: 6 },
+
+  // Asia - Medium/Small countries
+  japan: { lat: 36.2048, lng: 138.2529, zoom: 6 },
+  "south korea": { lat: 35.9078, lng: 127.7669, zoom: 7 },
+  korea: { lat: 35.9078, lng: 127.7669, zoom: 7 },
+  thailand: { lat: 15.8700, lng: 100.9925, zoom: 6 },
+  malaysia: { lat: 4.2105, lng: 101.6964, zoom: 6 },
+  philippines: { lat: 12.8797, lng: 121.7740, zoom: 6 },
+  vietnam: { lat: 14.0583, lng: 108.2772, zoom: 6 },
+  singapore: { lat: 1.3521, lng: 103.8198, zoom: 11 },
+  "united arab emirates": { lat: 23.4241, lng: 53.8478, zoom: 7 },
+  uae: { lat: 23.4241, lng: 53.8478, zoom: 7 },
+  israel: { lat: 31.0461, lng: 34.8516, zoom: 8 },
+  "saudi arabia": { lat: 23.8859, lng: 45.0792, zoom: 5 },
+  turkey: { lat: 38.9637, lng: 35.2433, zoom: 6 },
+
+  // Americas - North & Central
   "united states": { lat: 37.0902, lng: -95.7129, zoom: 4 },
   "united states of america": { lat: 37.0902, lng: -95.7129, zoom: 4 },
   usa: { lat: 37.0902, lng: -95.7129, zoom: 4 },
   us: { lat: 37.0902, lng: -95.7129, zoom: 4 },
-  "united kingdom": { lat: 55.3781, lng: -3.4360, zoom: 5 },
-  uk: { lat: 55.3781, lng: -3.4360, zoom: 5 },
-  england: { lat: 55.3781, lng: -3.4360, zoom: 5 },
   canada: { lat: 56.1304, lng: -106.3468, zoom: 3 },
-  australia: { lat: -25.2744, lng: 133.7751, zoom: 4 },
-  germany: { lat: 51.1657, lng: 10.4515, zoom: 5 },
-  france: { lat: 46.2276, lng: 2.2137, zoom: 5 },
-  singapore: { lat: 1.3521, lng: 103.8198, zoom: 11 },
-  "united arab emirates": { lat: 23.4241, lng: 53.8478, zoom: 6 },
-  uae: { lat: 23.4241, lng: 53.8478, zoom: 6 },
-  japan: { lat: 36.2048, lng: 138.2529, zoom: 5 },
-  china: { lat: 35.8617, lng: 104.1954, zoom: 4 },
+  mexico: { lat: 23.6345, lng: -102.5528, zoom: 5 },
+
+  // Americas - South
   brazil: { lat: -14.2350, lng: -51.9253, zoom: 4 },
+  argentina: { lat: -38.4161, lng: -63.6167, zoom: 4 },
+  peru: { lat: -9.1900, lng: -75.0152, zoom: 5 },
+  chile: { lat: -35.6751, lng: -71.5430, zoom: 5 },
+  colombia: { lat: 4.5709, lng: -74.2973, zoom: 5 },
+  venezuela: { lat: 6.4238, lng: -66.5897, zoom: 5 },
+
+  // Europe - Large countries
   russia: { lat: 61.5240, lng: 105.3188, zoom: 3 },
+  france: { lat: 46.2276, lng: 2.2137, zoom: 6 },
+  germany: { lat: 51.1657, lng: 10.4515, zoom: 6 },
+  spain: { lat: 40.4637, lng: -3.7492, zoom: 6 },
+  italy: { lat: 41.8719, lng: 12.5674, zoom: 6 },
+  poland: { lat: 51.9194, lng: 19.1451, zoom: 6 },
+  ukraine: { lat: 48.3794, lng: 31.1656, zoom: 5 },
+
+  // Europe - Medium countries
+  "united kingdom": { lat: 55.3781, lng: -3.4360, zoom: 6 },
+  uk: { lat: 55.3781, lng: -3.4360, zoom: 6 },
+  england: { lat: 55.3781, lng: -3.4360, zoom: 6 },
+  sweden: { lat: 60.1282, lng: 18.6435, zoom: 5 },
+  norway: { lat: 60.4720, lng: 8.4689, zoom: 5 },
+  greece: { lat: 39.0742, lng: 21.8243, zoom: 6 },
+  romania: { lat: 45.9432, lng: 24.9668, zoom: 6 },
+  portugal: { lat: 39.3999, lng: -8.2245, zoom: 6 },
+  austria: { lat: 47.5162, lng: 14.5501, zoom: 7 },
+  hungary: { lat: 47.1625, lng: 19.5033, zoom: 7 },
+  czechia: { lat: 49.8175, lng: 15.4730, zoom: 7 },
+  "czech republic": { lat: 49.8175, lng: 15.4730, zoom: 7 },
+
+  // Europe - Small countries
+  netherlands: { lat: 52.1326, lng: 5.2913, zoom: 8 },
+  switzerland: { lat: 46.8182, lng: 8.2275, zoom: 7 },
+  denmark: { lat: 56.2639, lng: 9.5018, zoom: 7 },
+  belgium: { lat: 50.5039, lng: 4.4699, zoom: 8 },
+  ireland: { lat: 53.4129, lng: -8.2439, zoom: 7 },
+
+  // Africa
+  egypt: { lat: 26.8206, lng: 30.8025, zoom: 5 },
   "south africa": { lat: -30.5595, lng: 22.9375, zoom: 5 },
+  kenya: { lat: -0.0236, lng: 37.9062, zoom: 6 },
+  nigeria: { lat: 9.0820, lng: 8.6753, zoom: 5 },
+
+  // Oceania
+  australia: { lat: -25.2744, lng: 133.7751, zoom: 4 },
+  "new zealand": { lat: -40.9006, lng: 174.8860, zoom: 6 },
 };
+
+interface SuggestionItem {
+  type: "city" | "country";
+  city?: string;
+  country: string;
+  label: string;
+  lat: number;
+  lng: number;
+  zoom?: number;
+}
 
 function MapSearchControl({
   locations,
@@ -81,82 +149,112 @@ function MapSearchControl({
 }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResult, setSearchResult] = useState<string | null>(null);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const suggestions = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return [];
+
+    const results: SuggestionItem[] = [];
+    const seenKeys = new Set<string>();
+
+    // 1. Check matching countries from centroids map
+    Object.keys(COUNTRY_CENTROIDS).forEach((cKey) => {
+      if (cKey.startsWith(q) || cKey.includes(q)) {
+        const formattedCountry = cKey.charAt(0).toUpperCase() + cKey.slice(1);
+        const key = `country:${formattedCountry.toLowerCase()}`;
+        if (!seenKeys.has(key)) {
+          seenKeys.add(key);
+          const centroid = COUNTRY_CENTROIDS[cKey];
+          results.push({
+            type: "country",
+            country: formattedCountry,
+            label: `${formattedCountry}`,
+            lat: centroid.lat,
+            lng: centroid.lng,
+            zoom: centroid.zoom,
+          });
+        }
+      }
+    });
+
+    // 2. Match cities from active alumni locations
+    locations.forEach((loc) => {
+      const cityLower = loc.city.toLowerCase();
+      const countryLower = loc.country.toLowerCase();
+
+      if (cityLower.includes(q) || countryLower.includes(q)) {
+        const capCity = loc.city.charAt(0).toUpperCase() + loc.city.slice(1);
+        const capCountry = loc.country.charAt(0).toUpperCase() + loc.country.slice(1);
+        const key = `city:${capCity.toLowerCase()}-${capCountry.toLowerCase()}`;
+
+        if (!seenKeys.has(key)) {
+          seenKeys.add(key);
+          results.push({
+            type: "city",
+            city: capCity,
+            country: capCountry,
+            label: `${capCity}, ${capCountry}`,
+            lat: loc.lat,
+            lng: loc.lng,
+            zoom: 7,
+          });
+        }
+      }
+    });
+
+    // Rank: items starting with query come first
+    results.sort((a, b) => {
+      const aName = a.city ? a.city.toLowerCase() : a.country.toLowerCase();
+      const bName = b.city ? b.city.toLowerCase() : b.country.toLowerCase();
+      const aStartsWith = aName.startsWith(q);
+      const bStartsWith = bName.startsWith(q);
+      if (aStartsWith && !bStartsWith) return -1;
+      if (!aStartsWith && bStartsWith) return 1;
+      return aName.localeCompare(bName);
+    });
+
+    return results.slice(0, 5);
+  }, [searchQuery, locations]);
+
+  const selectSuggestion = (item: SuggestionItem) => {
+    const selectedText = item.type === "city" ? item.city! : item.country;
+    setSearchQuery(selectedText);
+    setShowDropdown(false);
+
+    const targetZoom = item.zoom || (item.type === "country" ? 4 : 7);
+    mapInstance?.flyTo([item.lat, item.lng], targetZoom, {
+      animate: true,
+      duration: 0.65,
+      easeLinearity: 0.25,
+    });
+
+    setSearchResult(item.type === "country" ? `Found ${item.country}` : `Found ${item.city}, ${item.country}`);
+    setTimeout(() => setSearchResult(null), 3000);
+  };
 
   const handleSearch = () => {
+    setShowDropdown(false);
+    if (suggestions.length > 0) {
+      selectSuggestion(suggestions[0]);
+      return;
+    }
     const q = searchQuery.trim().toLowerCase();
     if (!q || !mapInstance) return;
 
-    // 1. Check if query matches a country name or alias
-    const matchingCountryLocations = locations.filter(
-      (loc) =>
-        loc.country.toLowerCase().includes(q) ||
-        q.includes(loc.country.toLowerCase())
-    );
-
-    const exactCountryKey = Object.keys(COUNTRY_CENTROIDS).find(
-      (cKey) =>
-        q === cKey ||
-        (matchingCountryLocations.length > 0 &&
-          matchingCountryLocations[0].country.toLowerCase() === cKey)
-    );
-
-    if (exactCountryKey || matchingCountryLocations.length > 0) {
-      let targetLat: number;
-      let targetLng: number;
-      let targetZoom: number;
-      const rawCountryName = exactCountryKey
-        ? exactCountryKey
-        : matchingCountryLocations[0].country;
-      const countryName =
-        rawCountryName.charAt(0).toUpperCase() + rawCountryName.slice(1);
-
-      if (exactCountryKey && COUNTRY_CENTROIDS[exactCountryKey]) {
-        const entry = COUNTRY_CENTROIDS[exactCountryKey];
-        targetLat = entry.lat;
-        targetLng = entry.lng;
-        targetZoom = entry.zoom;
-      } else {
-        targetLat =
-          matchingCountryLocations.reduce((sum, l) => sum + l.lat, 0) /
-          matchingCountryLocations.length;
-        targetLng =
-          matchingCountryLocations.reduce((sum, l) => sum + l.lng, 0) /
-          matchingCountryLocations.length;
-        targetZoom = 4;
-      }
-
-      mapInstance.flyTo([targetLat, targetLng], targetZoom, {
-        animate: true,
-        duration: 0.65,
-        easeLinearity: 0.25,
-      });
-
-      setSearchResult(`Found ${countryName}`);
-      setTimeout(() => setSearchResult(null), 3000);
-      return;
-    }
-
-    // 2. Fallback to City Search
-    const cityMatch = locations.find((loc) =>
-      loc.city.toLowerCase().includes(q)
-    );
-
-    if (cityMatch) {
-      mapInstance.flyTo([cityMatch.lat, cityMatch.lng], 7, {
-        animate: true,
-        duration: 0.65,
-        easeLinearity: 0.25,
-      });
-      const capitalizedCity =
-        cityMatch.city.charAt(0).toUpperCase() + cityMatch.city.slice(1);
-      const capitalizedCountry =
-        cityMatch.country.charAt(0).toUpperCase() + cityMatch.country.slice(1);
-      setSearchResult(`Found ${capitalizedCity}, ${capitalizedCountry}`);
-      setTimeout(() => setSearchResult(null), 3000);
-    } else {
-      setSearchResult(`No results found for "${q}"`);
-      setTimeout(() => setSearchResult(null), 3000);
-    }
+    setSearchResult(`No results found for "${q}"`);
+    setTimeout(() => setSearchResult(null), 3000);
   };
 
   if (!mapInstance) return null;
@@ -183,6 +281,7 @@ function MapSearchControl({
         </div>
       )}
       <div
+        ref={dropdownRef}
         style={{
           position: "absolute",
           top: "12px",
@@ -197,9 +296,16 @@ function MapSearchControl({
             type="text"
             placeholder="Search city or country..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setShowDropdown(true);
+            }}
+            onFocus={() => {
+              if (searchQuery.trim()) setShowDropdown(true);
+            }}
             onKeyDown={(e) => {
               if (e.key === "Enter") handleSearch();
+              if (e.key === "Escape") setShowDropdown(false);
             }}
             style={{
               padding: "7px 30px 7px 12px",
@@ -218,6 +324,7 @@ function MapSearchControl({
               onClick={() => {
                 setSearchQuery("");
                 setSearchResult(null);
+                setShowDropdown(false);
               }}
               aria-label="Clear search"
               style={{
@@ -236,6 +343,69 @@ function MapSearchControl({
             >
               ×
             </button>
+          )}
+
+          {showDropdown && suggestions.length > 0 && (
+            <div
+              style={{
+                position: "absolute",
+                top: "100%",
+                left: 0,
+                right: 0,
+                marginTop: "4px",
+                background: "#ffffff",
+                borderRadius: "6px",
+                boxShadow: "0 4px 16px rgba(0, 0, 0, 0.18)",
+                border: "1px solid #e2e8f0",
+                overflow: "hidden",
+                zIndex: 1001,
+                maxHeight: "220px",
+                overflowY: "auto",
+              }}
+            >
+              {suggestions.map((item) => (
+                <div
+                  key={`${item.type}-${item.label}`}
+                  onClick={() => selectSuggestion(item)}
+                  style={{
+                    padding: "8px 12px",
+                    fontSize: "13px",
+                    color: "#1e293b",
+                    cursor: "pointer",
+                    borderBottom: "1px solid #f1f5f9",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    transition: "background 0.15s ease",
+                  }}
+                  className="hover:bg-red-50"
+                >
+                  <div>
+                    <span style={{ fontWeight: 600 }}>
+                      {item.city || item.country}
+                    </span>
+                    {item.city && (
+                      <span style={{ color: "#64748b", fontSize: "12px", marginLeft: "6px" }}>
+                        {item.country}
+                      </span>
+                    )}
+                  </div>
+                  <span
+                    style={{
+                      fontSize: "10px",
+                      padding: "2px 6px",
+                      borderRadius: "4px",
+                      background: item.type === "country" ? "#fee2e2" : "#f1f5f9",
+                      color: item.type === "country" ? "#b91c1c" : "#475569",
+                      fontWeight: 600,
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    {item.type}
+                  </span>
+                </div>
+              ))}
+            </div>
           )}
         </div>
         <button
