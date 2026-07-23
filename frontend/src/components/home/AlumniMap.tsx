@@ -168,21 +168,46 @@ function MapSearchControl({
     const results: SuggestionItem[] = [];
     const seenKeys = new Set<string>();
 
-    // 1. Check matching countries from centroids map
-    Object.keys(COUNTRY_CENTROIDS).forEach((cKey) => {
-      if (cKey.startsWith(q) || cKey.includes(q)) {
-        const formattedCountry = cKey.charAt(0).toUpperCase() + cKey.slice(1);
-        const key = `country:${formattedCountry.toLowerCase()}`;
+    // Extract unique countries where alumni actually reside
+    const activeCountries = Array.from(
+      new Set(locations.map((loc) => loc.country.trim()))
+    );
+
+    // 1. Match active countries where alumni reside
+    activeCountries.forEach((countryStr) => {
+      const countryLower = countryStr.toLowerCase();
+      if (countryLower.startsWith(q) || countryLower.includes(q) || q.includes(countryLower)) {
+        const capCountry = countryStr.charAt(0).toUpperCase() + countryStr.slice(1);
+        const key = `country:${capCountry.toLowerCase()}`;
+
         if (!seenKeys.has(key)) {
           seenKeys.add(key);
-          const centroid = COUNTRY_CENTROIDS[cKey];
+
+          const centroidEntry = COUNTRY_CENTROIDS[countryLower];
+          let lat: number;
+          let lng: number;
+          let zoom: number;
+
+          if (centroidEntry) {
+            lat = centroidEntry.lat;
+            lng = centroidEntry.lng;
+            zoom = centroidEntry.zoom;
+          } else {
+            const countryLocs = locations.filter(
+              (l) => l.country.toLowerCase() === countryLower
+            );
+            lat = countryLocs.reduce((sum, l) => sum + l.lat, 0) / countryLocs.length;
+            lng = countryLocs.reduce((sum, l) => sum + l.lng, 0) / countryLocs.length;
+            zoom = 4;
+          }
+
           results.push({
             type: "country",
-            country: formattedCountry,
-            label: `${formattedCountry}`,
-            lat: centroid.lat,
-            lng: centroid.lng,
-            zoom: centroid.zoom,
+            country: capCountry,
+            label: `${capCountry}`,
+            lat,
+            lng,
+            zoom,
           });
         }
       }
@@ -191,9 +216,8 @@ function MapSearchControl({
     // 2. Match cities from active alumni locations
     locations.forEach((loc) => {
       const cityLower = loc.city.toLowerCase();
-      const countryLower = loc.country.toLowerCase();
 
-      if (cityLower.includes(q) || countryLower.includes(q)) {
+      if (cityLower.startsWith(q) || cityLower.includes(q)) {
         const capCity = loc.city.charAt(0).toUpperCase() + loc.city.slice(1);
         const capCountry = loc.country.charAt(0).toUpperCase() + loc.country.slice(1);
         const key = `city:${capCity.toLowerCase()}-${capCountry.toLowerCase()}`;
