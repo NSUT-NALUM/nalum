@@ -541,8 +541,12 @@ const AlumniDirectory = () => {
                       />
                     ) : (
                       <>
-                        {/* Alumni Grid */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                        {/* 
+                          Alumni Grid 
+                          'auto-rows-fr' ensures all rows in the grid match the height of the tallest card on the page. 
+                          This prevents uneven card heights across different rows when card content varies.
+                        */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8 auto-rows-fr">
                           {filteredAlumni.map((alumnus) => (
                             <AlumniCard
                               key={alumnus._id}
