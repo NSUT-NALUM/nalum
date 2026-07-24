@@ -4,12 +4,12 @@ import { Link } from 'react-router-dom';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { 
-  Users, 
-  UserCheck, 
-  UserX, 
-  Calendar, 
-  FileText, 
+import {
+  Users,
+  UserCheck,
+  UserX,
+  Calendar,
+  FileText,
   TrendingUp,
   Clock,
   CheckCircle,
@@ -214,46 +214,46 @@ const AdminDashboard = () => {
   const givingsCount = pendingGivingsCount !== null ? pendingGivingsCount : 0;
 
   const students = stats?.users.students || 0;
-  const alumni = stats?.users.alumni || 0;
+  const totalAlumni = stats?.users.alumni || 0;
   const verifiedAlumni = stats?.users.verified_alumni || 0;
   const bannedUsers = stats?.users.banned || 0;
 
-  const totalUsers = students + alumni + verifiedAlumni + bannedUsers;
+  const totalUsers = stats?.users.total || (students + totalAlumni + bannedUsers);
 
   const CustomTooltip = ({ active, payload, coordinate }: any) => {
     if (active && payload && payload.length && coordinate) {
       const data = payload[0].payload;
       const percent = totalUsers > 0 ? ((data.value / totalUsers) * 100).toFixed(0) : 0;
-      
+
       // Calculate shift vector from SVG center (80, 80)
       const cx = 80;
       const cy = 80;
       const x = coordinate.x ?? cx;
       const y = coordinate.y ?? cy;
-      
+
       const vx = x - cx;
       const vy = y - cy;
       const len = Math.sqrt(vx * vx + vy * vy);
-      
+
       // Normalize direction vector
       const dx = len > 0 ? vx / len : 0;
       const dy = len > 0 ? vy / len : 0;
-      
+
       // Offset shift distance (pixels) to place the tooltip over the outer arc
       const shift = 60;
       const tx = dx * shift;
       const ty = dy * shift;
-      
+
       return (
-        <div 
-          className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-2.5 shadow-md text-xs select-none pointer-events-none"
+        <div
+          className="bg-white border border-gray-200 rounded-lg p-2.5 shadow-md text-xs select-none pointer-events-none"
           style={{
             transform: `translate(calc(-50% + ${tx}px), calc(-50% + ${ty}px))`,
             transition: 'transform 0.15s ease-out',
           }}
         >
-          <p className="font-semibold text-gray-900 dark:text-gray-100">{data.name}</p>
-          <p className="text-gray-600 dark:text-gray-400 mt-0.5 whitespace-nowrap">
+          <p className="font-semibold text-gray-900">{data.name}</p>
+          <p className="text-gray-600 mt-0.5 whitespace-nowrap">
             {data.value} {data.value === 1 ? 'User' : 'Users'} ({percent}%)
           </p>
         </div>
@@ -265,7 +265,7 @@ const AdminDashboard = () => {
 
   const chartData = [
     { name: 'Students', value: students, color: '#3b82f6', fill: 'url(#gradient-students)' },
-    { name: 'Alumni', value: alumni, color: '#22c55e', fill: 'url(#gradient-alumni)' },
+    { name: 'Alumni', value: totalAlumni, color: '#22c55e', fill: 'url(#gradient-alumni)' },
     { name: 'Verified Alumni', value: verifiedAlumni, color: '#f97316', fill: 'url(#gradient-verified)' },
     { name: 'Banned Users', value: bannedUsers, color: '#ef4444', fill: 'url(#gradient-banned)' },
   ];
@@ -281,7 +281,7 @@ const AdminDashboard = () => {
       route: '/admin-panel/verifications',
       icon: Shield,
       count: verificationsCount,
-      activeColor: 'text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300',
+      activeColor: 'text-purple-600 hover:text-purple-700',
     },
     {
       id: 'posts',
@@ -289,7 +289,7 @@ const AdminDashboard = () => {
       route: '/admin-panel/posts-approval',
       icon: FileText,
       count: postsCount,
-      activeColor: 'text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300',
+      activeColor: 'text-blue-600 hover:text-blue-700',
     },
     {
       id: 'events',
@@ -297,7 +297,7 @@ const AdminDashboard = () => {
       route: '/admin-panel/events',
       icon: Calendar,
       count: eventsCount,
-      activeColor: 'text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300',
+      activeColor: 'text-red-600 hover:text-red-700',
     },
     {
       id: 'queries',
@@ -305,7 +305,7 @@ const AdminDashboard = () => {
       route: '/admin-panel/queries',
       icon: MessageSquare,
       count: queriesCount,
-      activeColor: 'text-amber-600 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300',
+      activeColor: 'text-amber-600 hover:text-amber-700',
     },
     {
       id: 'givings',
@@ -313,7 +313,7 @@ const AdminDashboard = () => {
       route: '/admin-panel/givings',
       icon: Wallet,
       count: givingsCount,
-      activeColor: 'text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300',
+      activeColor: 'text-green-600 hover:text-green-700',
     },
   ];
 
@@ -403,38 +403,24 @@ const AdminDashboard = () => {
           </Card>
 
           {/* Pending Posts Approval */}
-          <Card className="hover:shadow-lg transition-shadow flex flex-col justify-between">
-            <div>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600">
-                  Pending Posts Approval
-                </CardTitle>
-                <FileText className="h-4 w-4 text-purple-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-gray-900">
-                  {pendingPostsCount !== null ? pendingPostsCount : 0}
-                </div>
-                <p className="text-xs text-gray-500 mt-2">
-                  Posts awaiting admin approval
+          <Card className="hover:shadow-lg transition-shadow">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-gray-600">
+                Pending Posts Approval
+              </CardTitle>
+              <FileText className="h-4 w-4 text-purple-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-gray-900">
+                {pendingPostsCount !== null ? pendingPostsCount : 0}
+              </div>
+              <div className="flex items-center justify-between mt-2">
+                <p className="text-xs text-gray-500">
+                  Posts awaiting approval
                 </p>
-              </CardContent>
-            </div>
-            <CardContent className="pt-0">
-              <div className="grid grid-cols-2 gap-2 mt-4 pt-3 border-t border-gray-100 dark:border-gray-800">
-                <Button variant="default" size="sm" className="px-1 text-center" asChild>
+                <Button variant="outline" size="sm" asChild>
                   <Link to="/admin-panel/posts-approval">
                     Review Pending
-                  </Link>
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="border-purple-200 text-purple-600 hover:bg-purple-50 hover:text-purple-700 dark:border-purple-900/50 dark:text-purple-400 dark:hover:bg-purple-950/30 dark:hover:text-purple-300 transition-colors px-1 text-center"
-                  asChild
-                >
-                  <Link to="/admin-panel/current-posts">
-                    Current Posts
                   </Link>
                 </Button>
               </div>
@@ -458,23 +444,23 @@ const AdminDashboard = () => {
                   <filter id="pie-3d-shadow" x="-30%" y="-30%" width="160%" height="160%">
                     <feDropShadow dx="2" dy="3.5" stdDeviation="3.5" floodOpacity="0.25" />
                   </filter>
-                  
+
                   {/* Linear gradients for cylindrical 3D visual curvature */}
                   <linearGradient id="gradient-students" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor="#60a5fa" />
                     <stop offset="100%" stopColor="#2563eb" />
                   </linearGradient>
-                  
+
                   <linearGradient id="gradient-alumni" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor="#4ade80" />
                     <stop offset="100%" stopColor="#16a34a" />
                   </linearGradient>
-                  
+
                   <linearGradient id="gradient-verified" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor="#f97316" />
                     <stop offset="100%" stopColor="#c2410c" />
                   </linearGradient>
-                  
+
                   <linearGradient id="gradient-banned" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor="#f87171" />
                     <stop offset="100%" stopColor="#dc2626" />
@@ -497,9 +483,9 @@ const AdminDashboard = () => {
                         dataKey="value"
                       >
                         {activeChartData.map((entry, index) => (
-                          <Cell 
-                            key={`cell-${index}`} 
-                            fill={entry.fill} 
+                          <Cell
+                            key={`cell-${index}`}
+                            fill={entry.fill}
                             filter="url(#pie-3d-shadow)"
                             stroke={theme === 'dark' ? '#111827' : '#ffffff'}
                             strokeWidth={2}
@@ -511,10 +497,10 @@ const AdminDashboard = () => {
                   </ResponsiveContainer>
                   {/* Center Label */}
                   <div className="absolute flex flex-col items-center justify-center pointer-events-none text-center">
-                    <span className="text-xl font-bold text-gray-900 dark:text-gray-100 leading-tight">
+                    <span className="text-xl font-bold text-gray-900 leading-tight">
                       {totalUsers}
                     </span>
-                    <span className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wider font-semibold mt-0.5">
+                    <span className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold mt-0.5">
                       Total Users
                     </span>
                   </div>
@@ -527,16 +513,16 @@ const AdminDashboard = () => {
                     return (
                       <div key={item.name} className="flex items-center justify-between text-xs">
                         <div className="flex items-center gap-2">
-                          <div 
-                            className="w-2.5 h-2.5 rounded-sm shrink-0" 
+                          <div
+                            className="w-2.5 h-2.5 rounded-sm shrink-0"
                             style={{ backgroundColor: item.color }}
                           />
-                          <span className="text-gray-600 dark:text-gray-400 font-medium">
+                          <span className="text-gray-600 font-medium">
                             {item.name}
                           </span>
                         </div>
-                        <span className="font-bold text-gray-900 dark:text-gray-100 ml-4">
-                          {item.value} <span className="font-normal text-gray-400 dark:text-gray-500">({percent}%)</span>
+                        <span className="font-bold text-gray-900 ml-4">
+                          {item.value} <span className="font-normal text-gray-400">({percent}%)</span>
                         </span>
                       </div>
                     );
@@ -587,11 +573,11 @@ const AdminDashboard = () => {
                     {stats?.events.total || 0}
                   </span>
                 </div>
-                <div className="grid grid-cols-2 gap-2 pt-3 border-t border-gray-100 dark:border-gray-800">
+                <div className="grid grid-cols-2 gap-2 pt-3 border-t border-gray-100">
                   <Button
                     variant="default"
                     size="sm"
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-emerald-500 dark:hover:bg-emerald-600 dark:text-gray-900 transition-colors px-1 text-center border border-transparent"
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white transition-colors px-1 text-center border border-transparent"
                     asChild
                   >
                     <Link to="/admin-panel/events">
@@ -601,7 +587,7 @@ const AdminDashboard = () => {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="border-emerald-200 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 dark:border-emerald-900/50 dark:text-emerald-400 dark:hover:bg-emerald-950/30 dark:hover:text-emerald-300 transition-colors px-1 text-center"
+                    className="border-emerald-200 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 transition-colors px-1 text-center"
                     asChild
                   >
                     <Link to="/admin-panel/current-events">
@@ -639,11 +625,11 @@ const AdminDashboard = () => {
                   <span className="font-semibold">{stats?.newsletters.total_downloads || 0}</span>
                 </div>
               </div>
-              <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-800 flex justify-end">
+              <div className="mt-4 pt-3 border-t border-gray-100 flex justify-end">
                 <Button
                   variant="outline"
                   size="sm"
-                  className="border-blue-200 text-blue-600 hover:bg-blue-50 hover:text-blue-700 dark:border-blue-900/50 dark:text-blue-400 dark:hover:bg-blue-950/30 dark:hover:text-blue-300 transition-colors"
+                  className="border-blue-200 text-blue-600 hover:bg-blue-50 hover:text-blue-700 transition-colors"
                   asChild
                 >
                   <Link to="/admin-panel/newsletters">
@@ -674,11 +660,11 @@ const AdminDashboard = () => {
                 </div>
                 <div className="h-4" /> {/* Spacer to align divider with Newsletters card */}
               </div>
-              <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-800 flex justify-end">
+              <div className="mt-4 pt-3 border-t border-gray-100 flex justify-end">
                 <Button
                   variant="outline"
                   size="sm"
-                  className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 dark:border-red-900/50 dark:text-red-400 dark:hover:bg-red-950/30 dark:hover:text-red-300 transition-colors"
+                  className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors"
                   asChild
                 >
                   <Link to="/admin-panel/banned">
@@ -715,9 +701,9 @@ const AdminDashboard = () => {
                         <Link
                           key={action.id}
                           to={action.route}
-                          className="flex items-center gap-2 text-sm font-medium text-gray-400 hover:text-gray-500 dark:text-gray-600 dark:hover:text-gray-500 transition-colors py-1 opacity-60 cursor-pointer"
+                          className="flex items-center gap-2 text-sm font-medium text-gray-400 hover:text-gray-500 transition-colors py-1 opacity-60 cursor-pointer"
                         >
-                          <Icon className="h-4 w-4 text-gray-300 dark:text-gray-700 shrink-0" />
+                          <Icon className="h-4 w-4 text-gray-300 shrink-0" />
                           <span>{action.title}</span>
                         </Link>
                       );
