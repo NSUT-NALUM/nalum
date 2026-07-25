@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Bell, UserCheck, UserX, Users, GraduationCap } from "lucide-react";
 import api from "@/lib/api";
@@ -188,15 +188,18 @@ const NotificationsPopover = () => {
           )}
         </button>
       </PopoverTrigger>
-      <PopoverContent className="w-96 p-0 bg-slate-900 border-white/10" align="end">
-        <div className="flex flex-col h-[500px]">
+      <PopoverContent
+        className="w-[calc(100vw-2rem)] sm:w-96 max-h-[calc(100vh-2rem)] p-0 overflow-hidden bg-slate-900 border-white/10"
+        align="end"
+      >
+        <div className="flex flex-col h-[min(500px,calc(100vh-2rem))] min-h-0">
           {/* Header */}
           <div className="p-4 border-b border-white/10">
             <h3 className="font-semibold text-lg text-white">Notifications</h3>
           </div>
 
           {/* Main Tabs */}
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 min-h-0 flex flex-col overflow-hidden">
             <TabsList className="w-full rounded-none border-b border-white/10 bg-transparent p-0 h-auto">
               <TabsTrigger
                 value="general"
@@ -223,7 +226,10 @@ const NotificationsPopover = () => {
             </TabsList>
 
             {/* General Notifications Tab */}
-            <TabsContent value="general" className="mt-0 flex-1 overflow-hidden">
+            <TabsContent
+              value="general"
+              className="mt-0 flex-1 min-h-0 overflow-hidden data-[state=active]:flex data-[state=active]:flex-col data-[state=inactive]:hidden"
+            >
               {showPushPrompt && (
                 <div className="p-3 bg-blue-500/10 border-b border-white/10">
                   <p className="text-sm text-blue-200 mb-2">
@@ -234,7 +240,7 @@ const NotificationsPopover = () => {
                   </Button>
                 </div>
               )}
-              <ScrollArea className="h-full">
+              <ScrollArea className="flex-1 min-h-0">
                 {loading ? (
                   <div className="flex items-center justify-center h-32">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
@@ -283,9 +289,12 @@ const NotificationsPopover = () => {
             </TabsContent>
 
             {/* Connection Requests Tab */}
-            <TabsContent value="connections" className="mt-0 flex-1 flex flex-col overflow-hidden">
+            <TabsContent
+              value="connections"
+              className="mt-0 flex-1 min-h-0 overflow-hidden data-[state=active]:flex data-[state=active]:flex-col data-[state=inactive]:hidden"
+            >
               {/* Connection Sub-tabs: Alumni | Students | Sent */}
-              <Tabs value={connectionTab} onValueChange={setConnectionTab} className="flex-1 flex flex-col">
+              <Tabs value={connectionTab} onValueChange={setConnectionTab} className="flex-1 min-h-0 flex flex-col overflow-hidden">
                 <TabsList className="w-full rounded-none border-b border-white/10 bg-transparent p-0 h-auto">
                   <TabsTrigger
                     value="alumni"
@@ -323,8 +332,11 @@ const NotificationsPopover = () => {
                 </TabsList>
 
                 {/* Alumni Requests */}
-                <TabsContent value="alumni" className="mt-0 flex-1 overflow-hidden">
-                  <ScrollArea className="h-full">
+                <TabsContent
+                  value="alumni"
+                  className="mt-0 flex-1 min-h-0 overflow-hidden data-[state=inactive]:hidden"
+                >
+                  <ScrollArea className="h-full min-h-0">
                     {isLoadingReceived ? (
                       <div className="flex items-center justify-center h-32">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500"></div>
@@ -394,8 +406,11 @@ const NotificationsPopover = () => {
                 </TabsContent>
 
                 {/* Student Requests */}
-                <TabsContent value="students" className="mt-0 flex-1 overflow-hidden">
-                  <ScrollArea className="h-full">
+                <TabsContent
+                  value="students"
+                  className="mt-0 flex-1 min-h-0 overflow-hidden data-[state=inactive]:hidden"
+                >
+                  <ScrollArea className="h-full min-h-0">
                     {isLoadingReceived ? (
                       <div className="flex items-center justify-center h-32">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
@@ -465,8 +480,11 @@ const NotificationsPopover = () => {
                 </TabsContent>
 
                 {/* Sent Requests */}
-                <TabsContent value="sent" className="mt-0 flex-1 overflow-hidden">
-                  <ScrollArea className="h-full">
+                <TabsContent
+                  value="sent"
+                  className="mt-0 flex-1 min-h-0 overflow-hidden data-[state=inactive]:hidden"
+                >
+                  <ScrollArea className="h-full min-h-0">
                     {isLoadingSent ? (
                       <div className="flex items-center justify-center h-32">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
