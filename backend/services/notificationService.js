@@ -502,6 +502,43 @@ class NotificationService {
   }
 
   /**
+   * Delete post activity notifications once the recipient visits the post.
+   * Matching metadata and relatedEntity keeps this compatible with both current
+   * and older notification records.
+   */
+  async clearPostNotifications(userId, postId) {
+    const escapedPostId = String(postId).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const notifications = await Notification.find({
+      recipient: userId,
+      type: {
+        $in: ['post_like', 'post_comment', 'comment_reply', 'comment_mention', 'post_mention'],
+      },
+      $or: [
+        { 'metadata.postId': postId },
+        { 'relatedEntity.entityType': 'post', 'relatedEntity.entityId': postId },
+        { actionUrl: { $regex: `^/dashboard/posts/${escapedPostId}(?:\\?|$)` } },
+      ],
+    }).select('_id');
+
+    if (notifications.length > 0) {
+      await Notification.deleteMany({ _id: { $in: notifications.map(item => item._id) } });
+    }
+
+    const notificationIds = notifications.map(item => item._id.toString());
+    const unreadCount = await this.getUnreadCount(userId);
+    const io = global.io;
+
+    if (io) {
+      for (const notificationId of notificationIds) {
+        io.to(`user:${userId}`).emit('notification:removed', { notificationId });
+      }
+      io.to(`user:${userId}`).emit('notification:badge', { count: unreadCount });
+    }
+
+    return { deletedCount: notificationIds.length, notificationIds, unreadCount };
+  }
+
+  /**
    * Delete notification
    */
   async deleteNotification(notificationId, userId) {
