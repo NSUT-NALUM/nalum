@@ -1,9 +1,0 @@
-<component name="libraryTable">
-  <library name="mongodb-windows-x86_64-7.0.24">
-    <CLASSES>
-      <root url="jar://$PROJECT_DIR$/backend/node_modules/.cache/mongodb-memory-server/mongodb-windows-x86_64-7.0.24.zip!/" />
-    </CLASSES>
-    <JAVADOC />
-    <SOURCES />
-  </library>
-</component>
