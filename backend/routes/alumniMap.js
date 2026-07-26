@@ -15,6 +15,20 @@ const mapRateLimiter = rateLimit({
 // GET /api/alumni-map - Return alumni locations for map visualization
 router.get("/", mapRateLimiter, async (req, res) => {
   try {
+    // Try to serve from Redis cache if available
+    try {
+      const { getRedisClient } = require("../config/redis.config");
+      const redis = getRedisClient();
+      if (redis) {
+        const cachedData = await redis.get("alumni-map:locations");
+        if (cachedData) {
+          return res.status(200).json({ locations: JSON.parse(cachedData) });
+        }
+      }
+    } catch (cacheErr) {
+      // Non-blocking catch if Redis is unavailable or unconfigured
+    }
+
     // Find all profiles with valid location coordinates
     const locations = await Profile.aggregate([
       {
@@ -58,6 +72,17 @@ router.get("/", mapRateLimiter, async (req, res) => {
         },
       },
     ]);
+
+    // Store in Redis cache if available
+    try {
+      const { getRedisClient } = require("../config/redis.config");
+      const redis = getRedisClient();
+      if (redis) {
+        await redis.set("alumni-map:locations", JSON.stringify(locations));
+      }
+    } catch (cacheErr) {
+      // Non-blocking catch if Redis fails
+    }
 
     res.status(200).json({ locations });
   } catch (error) {
