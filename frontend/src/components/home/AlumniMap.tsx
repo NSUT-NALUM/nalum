@@ -511,7 +511,7 @@ const AlumniMap = () => {
     bounds,
     zoom,
     options: clusterOptions,
-  });
+  })test;
 
   const getClusterPopupContent = (clusterId: number) => {
     if (!supercluster) return null;
