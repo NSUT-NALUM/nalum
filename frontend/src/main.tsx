@@ -6,9 +6,9 @@ import './index.css';
 import { ThemeProvider } from "@/components/theme-provider"
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
-		<BrowserRouter>
-			<ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
-				<App />
-			</ThemeProvider>
-		</BrowserRouter>
+	<BrowserRouter>
+		<ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
+			<App />
+		</ThemeProvider>
+	</BrowserRouter>
 );

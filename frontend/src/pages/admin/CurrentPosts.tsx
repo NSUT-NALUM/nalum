@@ -127,6 +127,7 @@ const CurrentPosts = () => {
     setFilteredPosts(filtered);
   };
 
+  // Cleaned up Edit click handler
   const handleEditClick = (post: Post) => {
     setSelectedPost(post);
     setEditModalOpen(true);

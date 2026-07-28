@@ -128,6 +128,7 @@ const EditPostModal = ({
           <DialogTitle className="text-xl font-semibold">Edit post</DialogTitle>
         </DialogHeader>
 
+        {/* User Info Section: Now takes props instead of Context */}
         <div className="flex items-center gap-3 py-4">
           <UserAvatar src={userAvatar} name={userName || "User"} size="md" />
           <div>
