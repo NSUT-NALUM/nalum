@@ -11,7 +11,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../componen
 import { toast } from "sonner";
 import PostCardAdmin, { Post } from "../../components/posts/PostCardAdmin";
 import AdminCreatePostModal from "../../components/posts/AdminCreatePostModal";
-// NEW: Ab hum proper EditPostModal import kar rahe hain
 import EditPostModal from "../../components/posts/EditPostModal";
 
 const CurrentPosts = () => {
@@ -27,7 +26,7 @@ const CurrentPosts = () => {
 
   const [createPostModalOpen, setCreatePostModalOpen] = useState(false);
 
-  // Edit Modal State (Updated Type)
+  // Edit Modal State
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
 
@@ -132,6 +131,20 @@ const CurrentPosts = () => {
   const handleEditClick = (post: Post) => {
     setSelectedPost(post);
     setEditModalOpen(true);
+  };
+
+  
+  const handleAdminEditSubmit = async (formData: FormData) => {
+    if (!selectedPost) return;
+    try {
+      await api.put(`/admin/posts/${selectedPost._id}`, {
+        title: formData.get("title") as string,
+        content: formData.get("content") as string,
+      });
+      
+    } catch (error: any) {
+      throw error; 
+    }
   };
 
   const handleDeleteClick = (post: Post) => {
@@ -280,12 +293,13 @@ const CurrentPosts = () => {
           </div>
         )}
 
-        {/* NEW: Cleaned up Edit Post Modal Integration */}
+        {/* Edit Post Modal */}
         <EditPostModal
           open={editModalOpen}
-          post={selectedPost}
+          post={selectedPost as any}
           userName={selectedPost?.userId?.name}
           userAvatar={selectedPost?.userId?.profile_picture}
+          customSubmit={handleAdminEditSubmit} 
           onClose={() => {
             setEditModalOpen(false);
             setSelectedPost(null);
