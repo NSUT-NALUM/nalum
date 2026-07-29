@@ -1,8 +1,8 @@
 process.env.NODE_ENV = "test";
 process.env.JWT_SECRET = "auth-integration-test-secret";
 
-jest.mock("../../mail/transporter.js", () => ({
-  sendMail: jest.fn().mockResolvedValue({ error: false }),
+jest.mock("../../mail/mailService.js", () => ({
+  send: jest.fn().mockResolvedValue({ error: false }),
 }));
 
 const express = require("express");
@@ -14,7 +14,7 @@ const mongoose = require("mongoose");
 const { MongoMemoryServer } = require("mongodb-memory-server");
 
 const authRoutes = require("../../routes/auth");
-const mailer = require("../../mail/transporter.js");
+const mailer = require("../../mail/mailService.js");
 const User = require("../../models/user/user.model");
 const Session = require("../../models/auth/session.model");
 const OTP = require("../../models/auth/otp.model");
@@ -133,12 +133,12 @@ describe("auth Mongo integration", () => {
       error: false,
       message: "Verification link sent to email.",
     });
-    expect(mailer.sendMail).toHaveBeenCalledWith(
-      "link-user@example.com",
-      "Verify Your Account - NSUT AlumniNet",
-      expect.any(String),
-      expect.any(String),
-    );
+    expect(mailer.send).toHaveBeenCalledWith({
+      to: "link-user@example.com",
+      subject: "Verify Your Account - NSUT AlumniNet",
+      template: "verification",
+      data: { verificationLink: expect.any(String) },
+    });
 
     const token = await VerificationToken.findOne({
       email: "link-user@example.com",
@@ -180,12 +180,12 @@ describe("auth Mongo integration", () => {
       message: "Verification code sent successfully to your registered email",
       code: 200,
     });
-    expect(mailer.sendMail).toHaveBeenCalledWith(
-      user.email,
-      "Your Alumni Portal Access Code",
-      expect.any(String),
-      expect.any(String),
-    );
+    expect(mailer.send).toHaveBeenCalledWith({
+      to: user.email,
+      subject: "Your Alumni Portal Access Code",
+      template: "otp",
+      data: { otp: expect.any(String) },
+    });
 
     const otp = await OTP.findOne({ email: user.email });
     expect(otp).not.toBeNull();
@@ -349,15 +349,15 @@ describe("auth Mongo integration", () => {
       error: false,
       message: "If this email exists, a reset link has been sent.",
     });
-    expect(mailer.sendMail).toHaveBeenCalledWith(
-      user.email,
-      "Reset Your Password - NSUT AlumniNet",
-      expect.any(String),
-      expect.any(String),
-    );
+    expect(mailer.send).toHaveBeenCalledWith({
+      to: user.email,
+      subject: "Reset Your Password - NSUT AlumniNet",
+      template: "password-reset",
+      data: { resetLink: expect.any(String) },
+    });
 
-    const textBody = mailer.sendMail.mock.calls[0][2];
-    const token = textBody.match(/token=([^ \n]+)/)[1];
+    const resetLink = mailer.send.mock.calls[0][0].data.resetLink;
+    const token = resetLink.match(/token=([^ \n]+)/)[1];
     expect(jwt.verify(token, process.env.JWT_SECRET)).toMatchObject({
       email: user.email,
     });
