@@ -2,7 +2,7 @@ import AlumniMap from "@/components/home/AlumniMap";
 
 const AlumniMapPage = () => {
   return (
-    <div className="min-h-screen">
+    <div className="w-full flex-1 flex flex-col min-h-[calc(100vh-80px)]">
       <AlumniMap />
     </div>
   );
