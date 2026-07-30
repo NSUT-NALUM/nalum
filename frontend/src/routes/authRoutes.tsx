@@ -1,6 +1,7 @@
 import { lazy } from "react";
 import { Route } from "react-router-dom";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import SignUpV2 from "@/pages/auth/SignUpV2";
 import {
   loadLogin,
   loadSignUp,
@@ -26,6 +27,7 @@ export function AuthRoutes() {
       <Route path="/profile-form" element={<ProtectedRoute><ProfileForm /></ProtectedRoute>} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path="/signup-v2" element={<SignUpV2 />} />
     </>
   );
 }
