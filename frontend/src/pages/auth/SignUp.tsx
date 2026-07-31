@@ -19,6 +19,7 @@ import nsutCampusHero from "@/assets/hero.webp";
 import { useAuth } from "@/context/AuthContext";
 import { resolvePostLoginPath } from "@/lib/roleConfig";
 import { trackSignUp, trackEvent } from "@/lib/analytics";
+import { validatePassword } from "@/lib/passwordPolicy";
 
 const Signup = () => {
   const navigate = useNavigate();
@@ -86,28 +87,11 @@ const Signup = () => {
       newErrors.email = "Students must use their @nsut.ac.in email address";
     }
 
-    // Strong Password validation
     if (!formData.password) {
       newErrors.password = "Password is required";
     } else {
-      const password = formData.password;
-      const minLength = 8;
-      const hasUppercase = /[A-Z]/.test(password);
-      const hasLowercase = /[a-z]/.test(password);
-      const hasDigit = /[0-9]/.test(password);
-      const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password);
-
-      if (password.length < minLength) {
-        newErrors.password = "Password must be at least 8 characters long";
-      } else if (!hasUppercase) {
-        newErrors.password = "Password must contain at least one uppercase letter (A-Z)";
-      } else if (!hasLowercase) {
-        newErrors.password = "Password must contain at least one lowercase letter (a-z)";
-      } else if (!hasDigit) {
-        newErrors.password = "Password must contain at least one number (0-9)";
-      } else if (!hasSpecial) {
-        newErrors.password = "Password must contain at least one special character (e.g. !@#$%)";
-      }
+      const passwordError = validatePassword(formData.password);
+      if (passwordError) newErrors.password = passwordError;
     }
 
     if (!confirmPassword) {

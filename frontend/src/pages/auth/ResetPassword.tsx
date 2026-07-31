@@ -9,6 +9,7 @@ import nsutLogo from "@/assets/nsut-logo.svg";
 import nsutCampusHero from "@/assets/hero.webp";
 import apiClient from "@/lib/api";
 import axios from "axios";
+import { validatePassword, PASSWORD_REQUIREMENTS } from "@/lib/passwordPolicy";
 
 const ResetPassword = () => {
   const [searchParams] = useSearchParams();
@@ -47,24 +48,8 @@ const ResetPassword = () => {
     if (!formData.password) {
       newErrors.password = "Password is required";
     } else {
-      const password = formData.password;
-      const minLength = 8;
-      const hasUppercase = /[A-Z]/.test(password);
-      const hasLowercase = /[a-z]/.test(password);
-      const hasDigit = /[0-9]/.test(password);
-      const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password);
-
-      if (password.length < minLength) {
-        newErrors.password = "Password must be at least 8 characters long";
-      } else if (!hasUppercase) {
-        newErrors.password = "Password must contain at least one uppercase letter (A-Z)";
-      } else if (!hasLowercase) {
-        newErrors.password = "Password must contain at least one lowercase letter (a-z)";
-      } else if (!hasDigit) {
-        newErrors.password = "Password must contain at least one number (0-9)";
-      } else if (!hasSpecial) {
-        newErrors.password = "Password must contain at least one special character (e.g. !@#$%)";
-      }
+      const passwordError = validatePassword(formData.password);
+      if (passwordError) newErrors.password = passwordError;
     }
     
     if (!formData.confirmPassword) {
@@ -439,11 +424,9 @@ const ResetPassword = () => {
             <div className="text-sm text-gray-600 bg-gray-100 p-3 rounded-md">
               <p className="font-semibold mb-1">Password must contain:</p>
               <ul className="list-disc list-inside space-y-1">
-                <li>At least 8 characters</li>
-                <li>One uppercase letter (A-Z)</li>
-                <li>One lowercase letter (a-z)</li>
-                <li>One number (0-9)</li>
-                <li>One special character (e.g. !@#$%)</li>
+                {PASSWORD_REQUIREMENTS.map((requirement) => (
+                  <li key={requirement}>{requirement}</li>
+                ))}
                 <li>Match in both fields</li>
               </ul>
             </div>

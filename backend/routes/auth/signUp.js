@@ -3,35 +3,11 @@ const bcrypt = require("bcrypt");
 const router = express.Router();
 
 const users = require("../../controllers/user.controller");
+const { validatePassword } = require("../../utils/passwordPolicy");
 
 const validateEmail = (email) => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return emailRegex.test(email);
-};
-
-const validatePassword = (password) => {
-  const minLength = 8;
-  const hasUppercase = /[A-Z]/.test(password);
-  const hasLowercase = /[a-z]/.test(password);
-  const hasDigit = /[0-9]/.test(password);
-  const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password);
-
-  if (password.length < minLength) {
-    return "Password must be at least 8 characters long";
-  }
-  if (!hasUppercase) {
-    return "Password must contain at least one uppercase letter (A-Z)";
-  }
-  if (!hasLowercase) {
-    return "Password must contain at least one lowercase letter (a-z)";
-  }
-  if (!hasDigit) {
-    return "Password must contain at least one number (0-9)";
-  }
-  if (!hasSpecial) {
-    return "Password must contain at least one special character";
-  }
-  return null;
 };
 
 router.post("/",async (req,res) => {
