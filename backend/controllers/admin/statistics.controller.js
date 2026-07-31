@@ -14,7 +14,7 @@ exports.getDashboardStats = async (req, res) => {
     const totalUsers = await User.countDocuments();
     const totalStudents = await User.countDocuments({ role: "student" });
     const totalAlumni = await User.countDocuments({ role: "alumni" });
-    const verifiedAlumni = await User.countDocuments({ verified_alumni: true });
+    const verifiedAlumni = await User.countDocuments({ role: "alumni", verified_alumni: true });
     const bannedUsers = await User.countDocuments({ banned: true });
 
     console.log('[Dashboard Stats] User stats:', { totalUsers, totalStudents, totalAlumni, verifiedAlumni, bannedUsers });
