@@ -36,8 +36,8 @@ jest.mock("../../controllers/otp.controller.js", () => ({
   remove: jest.fn(),
 }));
 
-jest.mock("../../mail/transporter.js", () => ({
-  sendMail: jest.fn(),
+jest.mock("../../mail/mailService.js", () => ({
+  send: jest.fn(),
 }));
 
 jest.mock("../../models/user/user.model.js", () => ({
@@ -50,7 +50,7 @@ const users = require("../../controllers/user.controller.js");
 const sessions = require("../../controllers/session.controller.js");
 const verificationTokens = require("../../controllers/verificationToken.controller.js");
 const otpController = require("../../controllers/otp.controller.js");
-const mailer = require("../../mail/transporter.js");
+const mailer = require("../../mail/mailService.js");
 const User = require("../../models/user/user.model.js");
 const authRoutes = require("../../routes/auth");
 
@@ -519,7 +519,7 @@ describe("auth routes", () => {
         data: verifiedUser({ email: "test@example.com" }),
       });
       jwt.sign.mockReturnValue("reset-token-123");
-      mailer.sendMail.mockResolvedValue({ error: false });
+      mailer.send.mockResolvedValue({ error: false });
 
       const response = await request(app).post("/api/auth/forget-password").send({
         email: "Test@Example.com",
@@ -532,12 +532,12 @@ describe("auth routes", () => {
         expect.any(String),
         { expiresIn: "5m" },
       );
-      expect(mailer.sendMail).toHaveBeenCalledWith(
-        "test@example.com",
-        "Reset Your Password - NSUT AlumniNet",
-        expect.stringContaining("reset-token-123"),
-        expect.stringContaining("reset-token-123"),
-      );
+      expect(mailer.send).toHaveBeenCalledWith({
+        to: "test@example.com",
+        subject: "Reset Your Password - NSUT AlumniNet",
+        template: "password-reset",
+        data: { resetLink: expect.stringContaining("reset-token-123") },
+      });
       expect(response.body).toEqual({
         error: false,
         message: "If this email exists, a reset link has been sent.",
@@ -562,7 +562,7 @@ describe("auth routes", () => {
       });
 
       expect(response.status).toBe(200);
-      expect(mailer.sendMail).not.toHaveBeenCalled();
+      expect(mailer.send).not.toHaveBeenCalled();
       expect(response.body).toEqual({
         error: false,
         message: "If this email exists, a reset link has been sent.",
@@ -655,7 +655,7 @@ describe("auth routes", () => {
           expires_at: new Date("2030-01-01T00:00:00.000Z"),
         },
       });
-      mailer.sendMail.mockResolvedValue({ error: false });
+      mailer.send.mockResolvedValue({ error: false });
 
       const response = await request(app)
         .post("/api/auth/send-verification-link")
@@ -664,12 +664,12 @@ describe("auth routes", () => {
       expect(response.status).toBe(200);
       expect(users.findOne).toHaveBeenCalledWith("test@example.com");
       expect(verificationTokens.create).toHaveBeenCalledWith("test@example.com");
-      expect(mailer.sendMail).toHaveBeenCalledWith(
-        "test@example.com",
-        "Verify Your Account - NSUT AlumniNet",
-        expect.stringContaining("verify-token-123"),
-        expect.stringContaining("verify-token-123"),
-      );
+      expect(mailer.send).toHaveBeenCalledWith({
+        to: "test@example.com",
+        subject: "Verify Your Account - NSUT AlumniNet",
+        template: "verification",
+        data: { verificationLink: expect.stringContaining("verify-token-123") },
+      });
       expect(response.body).toEqual({
         error: false,
         message: "Verification link sent to email.",
@@ -697,7 +697,7 @@ describe("auth routes", () => {
 
       expect(response.status).toBe(200);
       expect(verificationTokens.create).not.toHaveBeenCalled();
-      expect(mailer.sendMail).not.toHaveBeenCalled();
+      expect(mailer.send).not.toHaveBeenCalled();
       expect(response.body).toEqual({
         error: false,
         message: "Verification link sent to email.",
@@ -711,7 +711,7 @@ describe("auth routes", () => {
         error: false,
         data: { otp: "123456" },
       });
-      mailer.sendMail.mockResolvedValue({ error: false });
+      mailer.send.mockResolvedValue({ error: false });
 
       const response = await request(app).post("/api/auth/send-otp").send({
         email: "test@example.com",
@@ -719,12 +719,12 @@ describe("auth routes", () => {
 
       expect(response.status).toBe(200);
       expect(otpController.create).toHaveBeenCalledWith("test@example.com");
-      expect(mailer.sendMail).toHaveBeenCalledWith(
-        "test@example.com",
-        "Your Alumni Portal Access Code",
-        expect.stringContaining("123456"),
-        expect.stringContaining("123456"),
-      );
+      expect(mailer.send).toHaveBeenCalledWith({
+        to: "test@example.com",
+        subject: "Your Alumni Portal Access Code",
+        template: "otp",
+        data: { otp: "123456" },
+      });
       expect(response.body).toEqual({
         error: false,
         message: "Verification code sent successfully to your registered email",

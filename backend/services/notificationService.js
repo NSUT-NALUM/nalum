@@ -2,7 +2,7 @@ const Notification = require('../models/notification.model');
 const NotificationPreferences = require('../models/notificationPreferences.model');
 const PushSubscription = require('../models/pushSubscription.model');
 const webPush = require('web-push');
-const { sendEmail } = require('../mail/notificationMailer');
+const mailService = require('../mail/mailService');
 
 // Configure web-push with VAPID keys
 if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
@@ -312,7 +312,7 @@ class NotificationService {
         return false;
       }
 
-      await sendEmail({
+      await mailService.send({
         to: user.email,
         subject: notification.title,
         template: 'notification',
