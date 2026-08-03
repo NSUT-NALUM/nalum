@@ -62,9 +62,18 @@ const NotificationsPopover = () => {
   const [isLoadingSent, setIsLoadingSent] = useState(false);
 
   // General notifications
-  const { notifications, unreadCount, loading, fetchNotifications } = useNotifications();
+  const { notifications, unreadCount, loading, fetchNotifications, clearAllNotifications } = useNotifications();
   const { isSupported, permission, subscribe } = usePushNotifications();
   const [showPushPrompt, setShowPushPrompt] = useState(false);
+
+  const handleClearAll = async () => {
+    try {
+      await clearAllNotifications();
+      toast.success("All notifications cleared");
+    } catch (error) {
+      toast.error("Failed to clear notifications");
+    }
+  };
 
   // Fetch received connection requests
   const fetchReceivedRequests = useCallback(async () => {
@@ -178,8 +187,16 @@ const NotificationsPopover = () => {
       <PopoverContent className="w-96 p-0 bg-slate-900 border-white/10" align="end">
         <div className="flex flex-col h-[500px]">
           {/* Header */}
-          <div className="p-4 border-b border-white/10">
+          <div className="p-4 border-b border-white/10 flex items-center justify-between">
             <h3 className="font-semibold text-lg text-white">Notifications</h3>
+            {activeTab === "general" && notifications.length > 0 && (
+              <button
+                onClick={handleClearAll}
+                className="text-xs text-blue-400 hover:text-blue-300 font-medium transition-colors"
+              >
+                Clear all
+              </button>
+            )}
           </div>
 
           {/* Main Tabs */}

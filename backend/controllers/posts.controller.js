@@ -2,6 +2,8 @@ const Post = require("../models/posts/post.model");
 const User = require("../models/user/user.model");
 const Settings = require("../models/admin/settings.model");
 const { notifyMentions } = require("../services/mentionHelper");
+const { assertDeletePermission } = require("../utils/deleteHelper");
+const { cascadeDeletePost } = require("../utils/cascadeDelete");
 
 // Helper function to check if posts should be auto-approved
 async function shouldAutoApprove() {
@@ -312,26 +314,16 @@ exports.deletePost = async (req, res) => {
       });
     }
 
-    if (post.userId.toString() !== user_id.toString()) {
-      return res.status(403).json({
-        success: false,
-        message: "You are not authorized to delete this post",
-      });
-    }
+    // Task 2.2: allow owner OR admin to delete
+    assertDeletePermission({
+      ownerId: post.userId,
+      requestUserId: user_id,
+      userRole: req.user.role,
+    });
 
-    // Delete associated image files
-    if (post.images && post.images.length > 0) {
-      const fs = require('fs');
-      const path = require('path');
-      post.images.forEach((filename) => {
-        const filePath = path.join(__dirname, "../uploads/posts", filename);
-        if (fs.existsSync(filePath)) {
-          fs.unlinkSync(filePath);
-        }
-      });
-    }
-
-    await Post.findByIdAndDelete(req.params.id);
+    // Task 2.1: cascade — deletes child Comments + image files
+    await cascadeDeletePost(post);
+    await Post.findByIdAndDelete(post._id);
 
     return res.status(200).json({
       success: true,
@@ -339,7 +331,7 @@ exports.deletePost = async (req, res) => {
       message: "Post deleted successfully",
     });
   } catch (error) {
-    return res.status(500).json({
+    return res.status(error.statusCode || 500).json({
       success: false,
       message: error.message || "Error deleting post",
     });

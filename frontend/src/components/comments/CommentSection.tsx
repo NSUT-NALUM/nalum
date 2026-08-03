@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
+import { DeleteConfirmDialog } from "@/components/ui/DeleteConfirmDialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import MentionTextarea from "@/components/MentionTextarea";
@@ -103,6 +104,7 @@ function CommentCard({
   const [editValue, setEditValue] = useState(comment.content || "");
   const [isSaving, setIsSaving] = useState(false);
   const [showReplies, setShowReplies] = useState(true);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const currentUserId = user?.user_id ?? user?.id;
   const commentAuthorId = comment.author?._id ?? comment.authorId;
@@ -149,6 +151,7 @@ function CommentCard({
     try {
       setIsSaving(true);
       await deletePostComment(postId, comment._id);
+      setConfirmOpen(false);
       await onChanged();
     } catch (error) {
       console.error("Failed to delete comment:", error);
@@ -221,7 +224,7 @@ function CommentCard({
                     variant="ghost"
                     size="icon"
                     className="h-8 w-8 text-gray-400 hover:text-red-300"
-                    onClick={handleDelete}
+                    onClick={() => setConfirmOpen(true)}
                     disabled={isSaving}
                   >
                     <Trash2 className="h-4 w-4" />
@@ -330,6 +333,15 @@ function CommentCard({
           )}
         </div>
       </div>
+
+      <DeleteConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title="Delete comment?"
+        description="This will permanently remove your comment."
+        isDeleting={isSaving}
+        onConfirm={handleDelete}
+      />
     </div>
   );
 }

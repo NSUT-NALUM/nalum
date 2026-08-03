@@ -28,6 +28,7 @@ interface NotificationContextType {
   markAsRead: (notificationId: string) => Promise<void>;
   markAllAsRead: () => Promise<void>;
   deleteNotification: (notificationId: string, deleteAllFromSameSender?: boolean) => Promise<void>;
+  clearAllNotifications: () => Promise<void>;
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
@@ -168,6 +169,20 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  // Clear all notifications (Task 3.4)
+  const clearAllNotifications = async () => {
+    if (!accessToken) return;
+
+    try {
+      await api.delete('/notifications');
+      setNotifications([]);
+      setUnreadCount(0);
+    } catch (error) {
+      console.error('Error clearing notifications:', error);
+      throw error;
+    }
+  };
+
   // Listen for real-time notifications via Socket.io
   useEffect(() => {
     if (!socket || !isConnected) return;
@@ -281,6 +296,7 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
         markAsRead,
         markAllAsRead,
         deleteNotification,
+        clearAllNotifications,
       }}
     >
       {children}
@@ -296,6 +312,7 @@ const defaultContext: NotificationContextType = {
   markAsRead: async () => {},
   markAllAsRead: async () => {},
   deleteNotification: async () => {},
+  clearAllNotifications: async () => {},
 };
 
 export const useNotifications = () => {

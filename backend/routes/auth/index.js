@@ -15,6 +15,7 @@ const sendVerificationLink = require("./sendVerificationLink");
 const sendOTP = require("./sendOTP");
 const verifyAccountUsingLink = require("./verifyAccountUsingLink");
 const verifyAccountUsingOTP = require("./verifyAccountUsingOTP");
+const deleteAccount = require("./deleteAccount");
 
 // define routes without rate limiting
 
@@ -24,6 +25,7 @@ router.use("/sign-up", signUp);
 router.use("/refresh", refresh);
 router.use("/revoke-token", revokeToken);
 router.use("/logout", logout);
+router.use("/account", deleteAccount);
 
 // Email routes
 router.use("/forget-password", forgetPassword);

@@ -9,6 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { trackFormSubmit, trackEvent } from "@/lib/analytics";
+import { DeleteConfirmDialog } from "@/components/ui/DeleteConfirmDialog";
+import { useDelete } from "@/hooks/useDelete";
 
 interface Giving {
   _id: string;
@@ -28,6 +30,17 @@ const Giving = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [givingToDelete, setGivingToDelete] = useState<Giving | null>(null);
+
+  const { isDeleting, confirmOpen, setConfirmOpen, confirmDelete } = useDelete({
+    endpoint: givingToDelete ? `/givings/${givingToDelete._id}` : "",
+    onSuccess: () => {
+      setGivings((prev) => prev.filter((g) => g._id !== givingToDelete?._id));
+      setGivingToDelete(null);
+    },
+    successMessage: "Giving submission deleted successfully",
+    errorMessage: "Failed to delete giving submission",
+  });
 
   // Form state
   const [title, setTitle] = useState("");
@@ -328,11 +341,27 @@ const Giving = () => {
         ) : (
           <div className="flex flex-col gap-4">
             {givings.map((giving) => (
-              <GivingCard key={giving._id} giving={giving} />
+              <GivingCard
+                key={giving._id}
+                giving={giving}
+                onDelete={(id) => {
+                  setGivingToDelete(giving);
+                  setConfirmOpen(true);
+                }}
+              />
             ))}
           </div>
         )}
       </div>
+
+      <DeleteConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title="Delete giving contribution?"
+        description="Are you sure you want to delete this giving submission?"
+        isDeleting={isDeleting}
+        onConfirm={confirmDelete}
+      />
     </div>
   );
 };
