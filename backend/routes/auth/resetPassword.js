@@ -4,6 +4,7 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const users = require("../../controllers/user.controller.js");
 const { JWT_SECRET } = require("../../config/jwt.config.js");
+const { validatePassword } = require("../../utils/passwordPolicy");
 
 router.post("/", async (req, res) => {
   const { token, password } = req.body;
@@ -27,11 +28,11 @@ router.post("/", async (req, res) => {
   }
   
   const { email } = decoded;
-  // Basic password validation  
-  if (password.length < 8) {
+  const passwordError = validatePassword(password);
+  if (passwordError) {
     return res.status(400).json({
       error: true,
-      message: "Password must be at least 8 characters long",
+      message: passwordError,
     });
   }
 

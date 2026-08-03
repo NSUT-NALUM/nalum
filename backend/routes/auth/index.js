@@ -16,6 +16,7 @@ const sendOTP = require("./sendOTP");
 const verifyAccountUsingLink = require("./verifyAccountUsingLink");
 const verifyAccountUsingOTP = require("./verifyAccountUsingOTP");
 
+
 // define routes without rate limiting
 
 // Auth routes

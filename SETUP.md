@@ -6,29 +6,24 @@ it as a reference.
 
 ## How we work
 
-### Fork model
+### Branch model
 
-Only 3rd years and seniors have push access to the original repo
-(`https://github.com/nalumnsut/nalum`). Everyone else — all 2nd years — works from
-a personal fork and contributes back only through Pull Requests. Nobody but a 3rd
-year ever pushes directly to `main` or `test` on the original repo.
+Everyone — Developers and Maintainers alike — works directly in this repo (`https://github.com/nalumnsut/nalum`). There are no forks anymore; access is controlled by GitHub team instead: 
+
+- **Maintainers** (the 3rd yr seniors) — can review, approve, and merge into `main` and `ctest`. 
+- **Developers** (all 2nd yr juniors) — can push freely to their own branches, but cannot push or merge directly into `main` or `ctest`. Both are protected branches that only accept changes through an approved Pull Request, merged by a Maintainer — this is enforced by GitHub, not just a rule to remember. 
+
+Branches: 
 
 - `main` is the production branch.
-- `test` is where all in-progress work lands before it's considered done.
-- You do your own work on **your fork** — on your fork's `main` branch
-  (preferred), or any other branch there if you'd rather keep things separate.
-  It's your own space, no naming convention required.
-- When a piece of work is ready, push it to your fork, then open a Pull Request
-  **from your fork into `test` on the original repo** — never into `main`.
-  GitHub defaults a fork's PR to target the original repo's default branch, which
-  is `main`, so **double-check the base branch is `test`** before you create the
-  PR — this is an easy mistake to make.
-- A 3rd year reviews and approves your PR before it merges into `test`.
-- Once merged into `test`, the tester assigned to that piece of work tests it
-  there (see "Working in pairs" below).
-- Once testing passes, a 3rd year merges `test` into `main`.
+- `ctest` is where all in-progress work lands and gets checked before it's considered done. (`test` has been retired and deleted — `ctest` replaces it.)
+- You do your own work on **your own branch**, created off the latest `ctest` — never off `main`, and never by committing straight to `ctest` yourself. Suggested naming: `<yourname>` (e.g. `priya`)
+- When a piece of work is ready, push your branch and tell your assigned senior it's done — **don't open a PR yet**. Only once they give you a thumbs up do you open the Pull Request, **from your branch into `ctest`** — never into `main`. 
+- Your senior reviews the PR by looking at your branch's diff directly (that's what the PR shows), then approves and merges it into `ctest`. You cannot merge your own PR — GitHub blocks that regardless of write access. 
+- There are 3 Maintainers, each responsible for their own group of Developers — send your PR to the senior who owns your piece of work. 
+- Once every group's assigned work for the round has landed in `ctest` and it's been checked there, a Maintainer merges `ctest` into `main`. 
 
-See "2. Fork the repo and set up your clone" below for the exact commands.
+Before starting **any** new piece of work, sync your local `ctest` with the remote first — see "2. Clone the repo and create your branch" below.
 
 ---
 
@@ -113,38 +108,35 @@ Optional, not required to get started — install later only if you want them:
 - **A Postgres GUI** (e.g. TablePlus, pgAdmin) — for browsing the local
   `alumni` table; connect to `postgresql://postgres:alumni_dev@localhost:5433/postgres`
 
-## 2. Fork the repo and set up your clone
+## 2. Clone the repo and create your branch 
 
-1. Fork the repo on GitHub: open `https://github.com/nalumnsut/nalum` and click
-   **Fork**. This creates `https://github.com/<your-username>/nalum` under your
-   own account.
-2. Clone your fork (not the original repo):
+1. Clone the repo directly — no fork needed: 
+
    ```bash
-   git clone https://github.com/<your-username>/nalum.git
+   git clone https://github.com/nalumnsut/nalum.git
    cd nalum
    ```
-3. Add the original repo as `upstream` — you'll use this to pull the `test`
-   branch when it's your turn to test your pair's work:
+
+2. Check out `ctest` and make sure it's up to date. Do this every time you're about to start a new piece of work, not just the first time: 
+
    ```bash
-   git remote add upstream https://github.com/nalumnsut/nalum.git
-   ```
-4. Confirm both remotes are set up:
-   ```bash
-   git remote -v
-   # origin    -> your fork (fetch/push)
-   # upstream  -> https://github.com/nalumnsut/nalum.git (fetch/push)
-   ```
-5. Before starting new work, sync your fork with upstream so you're not working
-   off stale code:
-   ```bash
-   git fetch upstream
-   git checkout main
-   git merge upstream/main
+   git checkout ctest
+   git pull origin ctest
    ```
 
-Do your work on your fork's `main` branch (preferred) or any other branch there,
-then push to your fork (`git push origin main`) and open a PR into `test` on the
-original repo — see "Fork model" above for details.
+3. Create your own branch off `ctest` for the piece of work you've been assigned: 
+
+   ```bash
+   git checkout -b <yourname>
+   ```
+
+4. Push it so it exists on GitHub and you can open a PR from it later:
+
+   ```bash
+   git push -u origin <yourname> 
+   ```
+
+Do your work on this branch, committing and pushing as you go (plain `git push` from now on, since `-u` set the upstream). When it's ready, open a PR from your branch into `ctest` — see "Branch model" above, and  "9. Review and merge, in practice" below for the full flow. 
 
 ## 3. Create your local config files
 
@@ -292,6 +284,25 @@ cd frontend && npm run dev   # terminal 2
 Edit backend or frontend code — both reload automatically. No restart needed for
 either. Stop everything with `npm run dev:down`.
 
+## 8. Review and merge, in practice 
+
+### Opening your PR 
+When your branch is ready: 
+
+```bash 
+git push 
+``` 
+
+Tell your assigned senior it's done and wait for their thumbs up — **don't open the PR before that**. Once they've given the go-ahead, open a Pull Request on GitHub with **base: `ctest`**, **compare: your branch**. 
+Double-check the base branch before submitting — a PR opened against `main` by mistake won't go anywhere, since only Maintainers can merge there, and only for the whole-group `ctest` → `main` promotion, not individual work.    
+
+### The `ctest` → `main` promotion  
+
+This part isn't something individual Developers do. Once all 3 groups' work for the round is merged into `ctest`, the Maintainers check it together and, once satisfied, one of them merges `ctest` into `main`. 
+If you're waiting on something reaching production, check with a senior on the status of that round rather than assuming your own PR landing in `ctest` is the last step. 
+
+--- 
+
 ## 8. Useful commands
 
 - Start all 5 services including the unused Docker frontend build (only if you
@@ -305,76 +316,7 @@ either. Stop everything with `npm run dev:down`.
 - Bring stashed changes back: `git stash pop`.
 - Browse MongoDB with a GUI: connect Compass to `mongodb://localhost:27018/nalum`
 - Browse Postgres with a GUI: connect to `postgresql://postgres:alumni_dev@localhost:5433/postgres`
-
----
-
-## 9. Working in pairs
-
-You'll be paired with another developer, who is also working from their own
-fork. You're each assigned separate pieces of work — but you also test *each
-other's* work once it's ready. When your own task is done and merged into
-`test`, hand it to your pair to test; when they're done, you test theirs.
-
-### 1. Development
-
-Before you start a new piece of work, sync your fork's `main` with
-`upstream/main` so you're building on the latest code, not something stale:
-```bash
-git checkout main
-git fetch upstream
-git merge upstream/main
-```
-
-Then do your work on `main` (preferred) or a separate branch in your fork. When
-it's ready, push to your fork and open a PR into `test` on the original repo —
-see "Fork model" above for details.
-
-### 2. Testing
-
-Testing always happens off the **original repo's `test` branch**, not off your
-pair's fork — you don't need to know about or add your pair's individual fork as
-a remote. You already have `upstream` (the original repo) set up from cloning.
-
-Your fork already has its own `test` branch — GitHub copies all branches that
-existed on the original repo at the moment you forked. But that copy is frozen
-from fork time; it does **not** stay in sync automatically. So before testing,
-sync your fork's local `test` branch to match `upstream/test` exactly:
-
-**The first time**, check out your fork's `test` branch locally (it already
-exists on `origin` from forking, you just need a local copy tracking it):
-```bash
-git checkout test
-```
-
-**Every time you go to test something**, sync it to the real latest state from
-upstream before you look at anything:
-```bash
-git checkout test
-git pull upstream test
-```
-
-This fast-forwards your local `test` branch to match `upstream/test` — it only
-works cleanly because you never commit on this branch yourself, so there's
-nothing to conflict with.
-
-- Check the board card (or the PR description) for what the piece of work is
-  supposed to do, then go do that in the browser: sign in with one of the seeded
-  accounts if needed (`npm run dev:seed` first if you haven't seeded yet),
-  exercise the actual feature, and try the obvious edge cases (empty input,
-  wrong role signing in, etc.), not just the happy path.
-- If something's broken, comment on the PR (or message your pair directly) with
-  what you did and what went wrong, so they can fix it on the same PR — don't
-  move the card to **Done** until a re-test passes.
-- If it works, move the card to **Done** yourself.
-
-### 3. Board (To Do / Testing / Done)
-
-All work is tracked on the team board in three columns:
-- **To Do** — a senior assigns work here.
-- **Testing** — move your card here yourself once you're done developing, and tell
-  your pair it's ready for them to test.
-- **Done** — your pair (the tester) moves it here once testing passes.
-
+- Need to keep notes, plans, or scratch files for your own use? Make a `docs/` folder at the repo root rather than leaving loose files there.
 ---
 
 ## Troubleshooting
@@ -402,7 +344,3 @@ still fails. Real Neon credentials are never needed locally for this.
 **First `npm run dev:up` after cloning feels slow.**
 Normal — it's building images and installing dependencies for the first time.
 Every run after that is fast.
-
-**I'm on Mac and something behaves differently than expected.**
-This setup hasn't been extensively tested on Mac yet — tell a senior what you're
-seeing so we can fix the guide for the next Mac developer.

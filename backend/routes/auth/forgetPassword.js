@@ -4,6 +4,7 @@ const jwt = require("jsonwebtoken");
 const users = require("../../controllers/user.controller.js");
 const mailService = require("../../mail/mailService.js");
 const JWT_SECRET = require("../../config/jwt.config.js").JWT_SECRET;
+
 router.post("/", async (req, res) => {
   try {
   const { email } = req.body;
