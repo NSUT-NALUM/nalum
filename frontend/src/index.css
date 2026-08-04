@@ -2,50 +2,150 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ==========================================================================
+   NSUT Alumni — "Academic Prestige" design system
+   Source: design.md (Stitch). Where the frontmatter and the prose disagreed,
+   the prose won for neutrals (true slate, not the Material-derived rose tints)
+   and #990000 is the primary. See the notes on each block.
+
+   Colours are stored as bare HSL triplets so they compose with the existing
+   shadcn/ui convention: hsl(var(--token)) and hsl(var(--token) / 0.5).
+   ========================================================================== */
+
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    /* ---- Typography -------------------------------------------------- */
+    --font-sans: "Hanken Grotesk", ui-sans-serif, system-ui, -apple-system,
+      BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial,
+      "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+
+    /* ---- Core shadcn tokens (consumed by components/ui/*) ------------- */
+    --background: 210 17% 98%;          /* #F8F9FA  surface        */
+    --foreground: 195 7% 11%;           /* #191C1D  on-surface     */
+
+    --card: 0 0% 100%;                  /* #FFFFFF  cards lift off the canvas */
+    --card-foreground: 195 7% 11%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
-    --radius: 0.5rem;
+    --popover-foreground: 195 7% 11%;
+
+    --primary: 0 100% 30%;              /* #990000  CTAs, active states, brand */
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 214 32% 95%;           /* light slate surface     */
+    --secondary-foreground: 218 17% 35%;/* #4A5568  slate          */
+
+    --muted: 210 6% 93%;                /* #EDEEEF  surface-container */
+    --muted-foreground: 218 17% 35%;    /* #4A5568  metadata, captions */
+
+    --accent: 0 100% 97%;               /* 2% crimson tint — row/menu hover */
+    --accent-foreground: 0 100% 22%;
+
+    --destructive: 0 75% 42%;           /* #BA1A1A                 */
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 214 32% 91%;              /* #E2E8F0  1px slate edges */
+    --input: 214 32% 91%;
+    --ring: 0 100% 30%;                 /* focus ring follows the primary */
+
+    --radius: 0.5rem;                   /* buttons + inputs        */
+
+    /* ---- Tonal surface ramp ------------------------------------------ */
+    --surface-lowest: 0 0% 100%;        /* #FFFFFF */
+    --surface-low: 210 9% 96%;          /* #F3F4F5 */
+    --surface: 210 17% 98%;             /* #F8F9FA */
+    --surface-container: 210 6% 93%;    /* #EDEEEF */
+    --surface-container-high: 210 4% 91%;    /* #E7E8E9 */
+    --surface-container-highest: 200 5% 89%; /* #E1E3E4 */
+    --inverse-surface: 195 4% 19%;      /* #2E3132 — tooltips, toasts */
+    --inverse-foreground: 210 7% 95%;   /* #F0F1F2 */
+
+    /* ---- Crimson family ---------------------------------------------- */
+    --primary-hover: 0 100% 22%;        /* #6E0000  hover / pressed */
+    --primary-active: 0 100% 13%;       /* #410000 */
+    --primary-subtle: 8 100% 92%;       /* #FFDAD4  chips, badges  */
+    --primary-subtle-foreground: 0 100% 13%;
+
+    /* ---- Structural slate + semantics --------------------------------- */
+    --slate: 218 17% 35%;               /* #4A5568  icons, borders, 2nd text */
+    --tertiary: 218 25% 21%;            /* #293344  deep navy accents */
+    --tertiary-foreground: 0 0% 100%;
+
+    /* Desaturated to sit beside the slate tones, per design.md */
+    --success: 150 48% 35%;
+    --success-foreground: 0 0% 100%;
+    --success-subtle: 146 39% 93%;
+    --warning: 36 71% 42%;
+    --warning-foreground: 0 0% 100%;
+    --warning-subtle: 38 73% 93%;
+
+    /* ---- Elevation (ambient, never harsh) ----------------------------- */
+    --elevation-0: none;
+    --elevation-1: 0 4px 20px rgb(0 0 0 / 0.04);   /* cards            */
+    --elevation-2: 0 12px 32px rgb(0 0 0 / 0.08);  /* dropdowns/modals */
+
+    /* ---- Layout rhythm (8px scale, 1440px fixed grid) ------------------ */
+    --content-max: 1440px;
+    --gutter: 24px;
+    --page-margin: 32px;
+    --card-padding: 16px;
   }
 
+  @media (max-width: 768px) {
+    :root {
+      --page-margin: 16px;
+    }
+  }
+
+  /*
+   * Dark mode is NOT part of the Academic Prestige spec — design.md ships a
+   * light scale only, and the app is pinned to light in main.tsx. This block
+   * exists purely so that a stray `.dark` class degrades gracefully instead of
+   * rendering black-on-black. Do not treat these values as designed.
+   */
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 6.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 6.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    --background: 195 7% 11%;
+    --foreground: 210 7% 95%;
+    --card: 195 6% 14%;
+    --card-foreground: 210 7% 95%;
+    --popover: 195 6% 14%;
+    --popover-foreground: 210 7% 95%;
+    --primary: 6 100% 76%;              /* inverse-primary #FFB4A8 */
+    --primary-foreground: 0 100% 13%;
+    --secondary: 218 20% 22%;
+    --secondary-foreground: 210 7% 95%;
+    --muted: 218 15% 20%;
+    --muted-foreground: 214 15% 70%;
+    --accent: 218 20% 24%;
+    --accent-foreground: 210 7% 95%;
+    --destructive: 0 62% 45%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 218 14% 24%;
+    --input: 218 14% 24%;
+    --ring: 6 100% 76%;
+
+    --surface-lowest: 195 7% 8%;
+    --surface-low: 195 7% 11%;
+    --surface: 195 7% 11%;
+    --surface-container: 195 6% 14%;
+    --surface-container-high: 195 6% 17%;
+    --surface-container-highest: 195 6% 20%;
+    --inverse-surface: 210 7% 95%;
+    --inverse-foreground: 195 7% 11%;
+
+    --primary-hover: 6 100% 82%;
+    --primary-active: 6 100% 88%;
+    --primary-subtle: 0 100% 18%;
+    --primary-subtle-foreground: 6 100% 85%;
+
+    --slate: 214 15% 70%;
+    --tertiary: 218 20% 78%;
+    --tertiary-foreground: 218 25% 21%;
+
+    --success-subtle: 150 30% 16%;
+    --warning-subtle: 36 40% 16%;
+
+    --elevation-1: 0 4px 20px rgb(0 0 0 / 0.4);
+    --elevation-2: 0 12px 32px rgb(0 0 0 / 0.55);
   }
 }
 
@@ -54,19 +154,43 @@
     @apply border-border;
   }
 
-  body {
-    @apply bg-background text-foreground;
-    font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  html {
+    -webkit-text-size-adjust: 100%;
   }
 
-  /* Prevent font swap layout shift */
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-sans);
+    font-size: 16px;
+    line-height: 24px;
+    font-weight: 400;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Headlines are authoritative: heavier weight, tighter tracking. */
   h1,
   h2,
   h3,
   h4,
   h5,
   h6 {
+    font-family: var(--font-sans);
+    font-weight: 600;
+    letter-spacing: -0.01em;
     font-display: swap;
+  }
+
+  h1 {
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  /* Focus follows the container radius with a 2px offset ring. */
+  :focus-visible {
+    outline: none;
+    @apply ring-2 ring-ring ring-offset-2 ring-offset-background;
   }
 
   /* Mobile-only: Prevent overscroll bounce (rubber band effect) */
@@ -94,7 +218,121 @@
   }
 }
 
+@layer components {
+  /* ---- Layout primitives -------------------------------------------- */
+
+  /* Centred 1440px canvas with responsive margins. */
+  .ap-container {
+    width: 100%;
+    max-width: var(--content-max);
+    margin-inline: auto;
+    padding-inline: var(--page-margin);
+  }
+
+  /* 12-column desktop grid that collapses to a single column on mobile. */
+  .ap-grid {
+    display: grid;
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+    gap: var(--gutter);
+  }
+
+  @media (min-width: 768px) {
+    .ap-grid {
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+    }
+  }
+
+  /* ---- Elevation ----------------------------------------------------- */
+  .ap-elevation-1 {
+    box-shadow: var(--elevation-1);
+  }
+
+  .ap-elevation-2 {
+    box-shadow: var(--elevation-2);
+  }
+
+  /* ---- Card ----------------------------------------------------------- */
+  /* Every dashboard module: white, 16px radius, 1px slate edge, ambient lift. */
+  .ap-card {
+    @apply rounded-card border border-border bg-card text-card-foreground;
+    padding: var(--card-padding);
+    box-shadow: var(--elevation-1);
+  }
+
+  .ap-card-header {
+    @apply flex items-center justify-between gap-4;
+    margin-bottom: var(--card-padding);
+  }
+
+  /* ---- Chips & badges -------------------------------------------------- */
+  /* Grad years, donation tiers: pill, subtle fill, dark text. */
+  .ap-chip {
+    @apply inline-flex items-center gap-1.5 rounded-full px-3 py-1;
+    @apply bg-secondary text-secondary-foreground;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 14px;
+  }
+
+  .ap-chip-primary {
+    background-color: hsl(var(--primary-subtle));
+    color: hsl(var(--primary-subtle-foreground));
+  }
+
+  /* ---- Tables ---------------------------------------------------------- */
+  /* Minimal decoration: horizontal slate dividers, 2% crimson row hover. */
+  .ap-table {
+    @apply w-full border-collapse text-left;
+  }
+
+  .ap-table th {
+    @apply border-b border-border text-muted-foreground;
+    padding: 12px var(--card-padding);
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .ap-table td {
+    @apply border-b border-border;
+    padding: 12px var(--card-padding);
+    font-size: 14px;
+    line-height: 20px;
+  }
+
+  .ap-table tbody tr {
+    transition: background-color 0.15s ease;
+  }
+
+  .ap-table tbody tr:hover {
+    background-color: hsl(var(--primary) / 0.02);
+  }
+
+  /* ---- Overline -------------------------------------------------------- */
+  /* Small labels that must not read as body text. */
+  .ap-overline {
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    @apply text-muted-foreground;
+  }
+}
+
 @layer utilities {
+  /* Used by DashboardLayout's scroll containers — previously a no-op class. */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
   .animation-delay-300 {
     animation-delay: 300ms;
   }
@@ -123,16 +361,16 @@
 
     0%,
     100% {
-      border-color: rgb(59 130 246);
+      border-color: hsl(var(--primary));
     }
 
     25%,
     75% {
-      border-color: rgb(147 197 253);
+      border-color: hsl(var(--primary) / 0.35);
     }
 
     50% {
-      border-color: rgb(59 130 246);
+      border-color: hsl(var(--primary));
     }
   }
 
@@ -189,7 +427,7 @@
 
   .alumni-map-pin:hover {
     transform: scale(1.15) !important;
-    box-shadow: 0 4px 14px rgba(229, 57, 53, 0.5) !important;
+    box-shadow: 0 4px 14px hsl(var(--primary) / 0.5) !important;
     z-index: 999;
   }
 

@@ -1,14 +1,22 @@
 import { useLocation } from "react-router-dom";
 import { PreloadLink } from "@/components/PreloadLink";
-import { Home, Users, LogOut, MessageSquare, Calendar, Sparkles, FileText, Heart } from "lucide-react";
+import { LayoutGrid, Users, LogOut, MessageSquare, Calendar, FileText, HelpCircle, Heart } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useProfile } from "@/context/ProfileContext";
 import UserAvatar from "@/components/UserAvatar";
 import nsutLogo from "@/assets/nsut-logo.svg";
 import { useConversations } from "@/hooks/useConversations";
+import { cn } from "@/lib/utils";
 
 interface SidebarProps {
   onNavigate?: () => void;
+}
+
+interface NavItem {
+  to: string;
+  label: string;
+  icon: typeof LayoutGrid;
+  badge?: number;
 }
 
 const Sidebar = ({ onNavigate }: SidebarProps) => {
@@ -19,146 +27,72 @@ const Sidebar = ({ onNavigate }: SidebarProps) => {
 
   const unreadCount = conversations.reduce((acc: number, conv: any) => acc + (conv.unreadCount || 0), 0);
 
-  const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(path + "/");
+  const isActive = (path: string) =>
+    path === "/dashboard"
+      ? location.pathname === "/dashboard"
+      : location.pathname === path || location.pathname.startsWith(path + "/");
+
+  const isAlumni = user?.role === "alumni";
+
+  const navItems: NavItem[] = [
+    { to: "/dashboard", label: "Overview", icon: LayoutGrid },
+    { to: "/dashboard/alumni", label: "Directory", icon: Users },
+    { to: "/dashboard/chat", label: "Messages", icon: MessageSquare, badge: unreadCount },
+    { to: "/dashboard/events", label: "Events", icon: Calendar },
+    ...(isAlumni ? [{ to: "/dashboard/my-posts", label: "Posts", icon: FileText }] : []),
+    { to: "/dashboard/queries", label: "Queries", icon: HelpCircle },
+  ];
 
   return (
-    <aside className="h-screen w-64 flex flex-col bg-slate-950/50 backdrop-blur-xl border-r border-white/10 shadow-xl sticky top-0">
-      {/* Header */}
-      <div className="p-6 border-b border-white/10">
-        <div className="flex items-center gap-3">
-          <img src={nsutLogo} alt="NSUT Alumni" className="h-8 w-8" />
-          <h1 className="text-lg font-bold tracking-wide">
-            <span className="text-red-600">N</span>
-            <span className="text-white">SUT</span>
-            <span className="text-red-600"> ALUM</span>
-            <span className="text-white">NI</span>
-          </h1>
-        </div>
+    <aside className="h-screen w-64 flex flex-col bg-card border-r border-border sticky top-0">
+      {/* Header — h-20 is the single source of truth for this app's header
+          height; the page Header component (Header.tsx) is pinned to the
+          same value so the two borders line up exactly. */}
+      <div className="h-20 max-h-20 px-4 border-b border-border flex items-center gap-3 shrink-0">
+        <img src={nsutLogo} alt="NSUT Alumni" className="h-9 w-9" />
+        <h1 className="text-xl font-bold tracking-wide">
+          <span className="text-primary">N</span>
+          <span className="text-foreground">SUT</span>
+          <span className="text-primary"> ALUM</span>
+          <span className="text-foreground">NI</span>
+        </h1>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
-        <PreloadLink
-          to="/dashboard"
-          onClick={onNavigate}
-          className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 border ${
-            location.pathname === "/dashboard"
-              ? "bg-blue-500/20 text-blue-200 border-blue-500/30 shadow-[0_0_15px_rgba(59,130,246,0.15)]"
-              : "border-transparent text-gray-400 hover:bg-white/5 hover:text-white"
-          }`}
-        >
-          <Home className="h-5 w-5" />
-          <span className="font-medium">Dashboard</span>
-        </PreloadLink>
-
-        <PreloadLink
-          to="/dashboard/alumni"
-          onClick={onNavigate}
-          className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 border ${
-            isActive("/dashboard/alumni")
-              ? "bg-blue-500/20 text-blue-200 border-blue-500/30 shadow-[0_0_15px_rgba(59,130,246,0.15)]"
-              : "border-transparent text-gray-400 hover:bg-white/5 hover:text-white"
-          }`}
-        >
-          <Users className="h-5 w-5" />
-          <span className="font-medium">Directory</span>
-        </PreloadLink>
-
-        <PreloadLink
-          to="/dashboard/chat"
-          onClick={onNavigate}
-          className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 border ${
-            isActive("/dashboard/chat")
-              ? "bg-blue-500/20 text-blue-200 border-blue-500/30 shadow-[0_0_15px_rgba(59,130,246,0.15)]"
-              : "border-transparent text-gray-400 hover:bg-white/5 hover:text-white"
-          }`}
-        >
-          <div className="relative">
-            <MessageSquare className="h-5 w-5" />
-            {unreadCount > 0 && (
-              <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-blue-500 border-2 border-slate-900" />
-            )}
-          </div>
-          <span className="font-medium">Messages</span>
-        </PreloadLink>
-
-        <PreloadLink
-          to="/dashboard/events"
-          onClick={onNavigate}
-          className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 border ${
-            isActive("/dashboard/events")
-              ? "bg-blue-500/20 text-blue-200 border-blue-500/30 shadow-[0_0_15px_rgba(59,130,246,0.15)]"
-              : "border-transparent text-gray-400 hover:bg-white/5 hover:text-white"
-          }`}
-        >
-          <Calendar className="h-5 w-5" />
-          <span className="font-medium">Events</span>
-        </PreloadLink>
-
-        <PreloadLink
-          to="/dashboard/queries"
-          onClick={onNavigate}
-          className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 border ${
-            isActive("/dashboard/queries")
-              ? "bg-blue-500/20 text-blue-200 border-blue-500/30 shadow-[0_0_15px_rgba(59,130,246,0.15)]"
-              : "border-transparent text-gray-400 hover:bg-white/5 hover:text-white"
-          }`}
-        >
-          <MessageSquare className="h-5 w-5" />
-          <span className="font-medium">Queries</span>
-        </PreloadLink>
-
-        {user?.role === "alumni" && (
-          <>
+      <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+        {navItems.map(({ to, label, icon: Icon, badge }) => {
+          const active = isActive(to);
+          return (
             <PreloadLink
-              to="/dashboard/my-posts"
+              key={to}
+              to={to}
               onClick={onNavigate}
-              className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 border ${
-                isActive("/dashboard/my-posts")
-                  ? "bg-blue-500/20 text-blue-200 border-blue-500/30 shadow-[0_0_15px_rgba(59,130,246,0.15)]"
-                  : "border-transparent text-gray-400 hover:bg-white/5 hover:text-white"
-              }`}
+              className={cn(
+                "relative flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors duration-200",
+                active
+                  ? "bg-primary-subtle text-primary before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-6 before:w-1 before:rounded-full before:bg-primary before:content-['']"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              )}
             >
-              <FileText className="h-5 w-5" />
-              <span className="font-medium">My Posts</span>
+              <div className="relative">
+                <Icon className="h-5 w-5" />
+                {!!badge && badge > 0 && (
+                  <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-primary ring-2 ring-card" />
+                )}
+              </div>
+              <span>{label}</span>
             </PreloadLink>
-
-            <PreloadLink
-              to="/dashboard/host-event"
-              onClick={onNavigate}
-              className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 border ${
-                isActive("/dashboard/host-event")
-                  ? "bg-blue-500/20 text-blue-200 border-blue-500/30 shadow-[0_0_15px_rgba(59,130,246,0.15)]"
-                  : "border-transparent text-gray-400 hover:bg-white/5 hover:text-white"
-              }`}
-            >
-              <Sparkles className="h-5 w-5" />
-              <span className="font-medium">Host Event</span>
-            </PreloadLink>
-
-            <PreloadLink
-              to="/dashboard/giving"
-              onClick={onNavigate}
-              className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 border ${
-                isActive("/dashboard/giving")
-                  ? "bg-blue-500/20 text-blue-200 border-blue-500/30 shadow-[0_0_15px_rgba(59,130,246,0.15)]"
-                  : "border-transparent text-gray-400 hover:bg-white/5 hover:text-white"
-              }`}
-            >
-              <Heart className="h-5 w-5" />
-              <span className="font-medium">Giving</span>
-            </PreloadLink>
-          </>
-        )}
+          );
+        })}
       </nav>
 
       {/* Footer */}
-      <div className="p-4 border-t border-white/10 space-y-3">
+      <div className="p-4 border-t border-border space-y-3">
         {profile && (
           <PreloadLink
             to="/dashboard/profile"
             onClick={onNavigate}
-            className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-white/5 transition-colors border border-transparent hover:border-white/10"
+            className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-muted transition-colors"
           >
             <UserAvatar
               src={profile.profile_picture}
@@ -167,15 +101,24 @@ const Sidebar = ({ onNavigate }: SidebarProps) => {
               className="flex-shrink-0"
             />
             <div className="flex flex-col min-w-0">
-              <span className="text-sm font-medium text-gray-200 truncate">{profile.user.name}</span>
-              <span className="text-xs text-gray-500 truncate">View Profile</span>
+              <span className="text-sm font-medium text-foreground truncate">{profile.user.name}</span>
+              <span className="text-xs text-muted-foreground truncate">View Profile</span>
             </div>
           </PreloadLink>
         )}
 
+        <PreloadLink
+          to="/dashboard/giving"
+          onClick={onNavigate}
+          className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary-hover transition-colors"
+        >
+          <Heart className="h-4 w-4" />
+          <span>Give</span>
+        </PreloadLink>
+
         <button
           onClick={logout}
-          className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-gray-400 hover:bg-red-500/10 hover:text-red-400 transition-colors border border-transparent hover:border-red-500/20"
+          className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
         >
           <LogOut className="h-5 w-5" />
           <span className="font-medium">Logout</span>
