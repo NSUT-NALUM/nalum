@@ -175,7 +175,6 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-<<<<<<< HEAD
   // Clear all notifications (Task 3.4)
   const clearAllNotifications = async () => {
     if (!accessToken) return;
