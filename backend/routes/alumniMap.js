@@ -48,24 +48,28 @@ router.get("/", mapRateLimiter, async (req, res) => {
       {
         $match: {
           "userInfo.role": "alumni",
+          "userInfo.banned": { $ne: true },
+          "userInfo.verified_alumni": true,
         },
       },
       {
         $group: {
           _id: {
-            city: "$location.city",
-            country: "$location.country",
+            city: { $toLower: { $trim: { input: { $ifNull: ["$location.city", "unknown"] } } } },
+            country: { $toLower: { $trim: { input: { $ifNull: ["$location.country", "unknown"] } } } },
           },
           count: { $sum: 1 },
           lat: { $first: "$location.lat" },
           lng: { $first: "$location.lng" },
+          rawCity: { $first: "$location.city" },
+          rawCountry: { $first: "$location.country" },
         },
       },
       {
         $project: {
           _id: 0,
-          city: { $ifNull: ["$_id.city", "Unknown"] },
-          country: { $ifNull: ["$_id.country", "Unknown"] },
+          city: { $ifNull: ["$rawCity", "Unknown"] },
+          country: { $ifNull: ["$rawCountry", "Unknown"] },
           count: 1,
           lat: 1,
           lng: 1,
@@ -73,12 +77,12 @@ router.get("/", mapRateLimiter, async (req, res) => {
       },
     ]);
 
-    // Store in Redis cache if available
+    // Store in Redis cache if available (TTL: 1 hour / 3600 seconds)
     try {
       const { getRedisClient } = require("../config/redis.config");
       const redis = getRedisClient();
       if (redis) {
-        await redis.set("alumni-map:locations", JSON.stringify(locations));
+        await redis.set("alumni-map:locations", JSON.stringify(locations), { EX: 3600 });
       }
     } catch (cacheErr) {
       // Non-blocking catch if Redis fails

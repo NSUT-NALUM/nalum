@@ -111,6 +111,13 @@ async function processNextItem() {
       );
       console.log(`✓ Geocoded user ${userId}: lat=${lat}, lng=${lng}`);
 
+      // Invalidate alumni-map cache
+      try {
+        await redis.del("alumni-map:locations");
+      } catch (cacheErr) {
+        console.error("Failed to invalidate alumni-map cache in geocoding worker:", cacheErr);
+      }
+
       // Reset error count on success
       await redis.set(ERROR_COUNT_KEY, 0);
     } else {

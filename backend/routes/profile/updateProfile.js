@@ -4,6 +4,7 @@ const Profile = require("../../models/user/profile.model");
 const User = require("../../models/user/user.model");
 const { protect } = require("../../middleware/auth");
 const { addToQueue } = require("../../services/geocodingQueue");
+const { getRedisClient } = require("../../config/redis.config");
 
 // PUT /profile/update - Update existing profile
 router.put("/", protect, async (req, res) => {
