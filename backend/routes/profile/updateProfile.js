@@ -4,7 +4,7 @@ const Profile = require("../../models/user/profile.model");
 const User = require("../../models/user/user.model");
 const { protect } = require("../../middleware/auth");
 const { addToQueue } = require("../../services/geocodingQueue");
-const { getRedisClient } = require("../../config/redis.config");
+const { invalidateAlumniMapCache } = require("../../config/cacheKeys");
 
 // PUT /profile/update - Update existing profile
 router.put("/", protect, async (req, res) => {
@@ -81,14 +81,11 @@ router.put("/", protect, async (req, res) => {
 
     await profile.save();
 
-    // Invalidate alumni-map cache if location was updated
-    if (location && (location.city || location.country)) {
-      try {
-        const redis = getRedisClient();
-        await redis.del("alumni-map:locations");
-      } catch (cacheError) {
-        console.error("Failed to invalidate cache:", cacheError);
-      }
+    // Invalidate alumni-map cache whenever the location is provided at all —
+    // even when it is cleared to {} — so removed pins disappear immediately
+    // instead of lingering for up to the 1h cache TTL.
+    if (location !== undefined) {
+      await invalidateAlumniMapCache();
     }
 
     // Queue for geocoding if location updated but no coordinates
@@ -98,7 +95,16 @@ router.put("/", protect, async (req, res) => {
       location.country &&
       (!location.lat || !location.lng)
     ) {
-      await addToQueue(userId, location.city, location.country);
+      try {
+        await addToQueue(userId, location.city, location.country);
+      } catch (queueError) {
+        // Geocoding is a background task — a Redis blip must NOT fail a profile
+        // update that already succeeded, nor return a misleading 500.
+        console.error(
+          "Failed to enqueue geocoding job; coordinates will be filled later:",
+          queueError,
+        );
+      }
     }
 
     res.status(200).json({ message: "Profile updated successfully.", profile });

@@ -13,6 +13,7 @@ import { MapPin } from "lucide-react";
 import { COUNTRIES } from "@/constants/countries";
 import { toast } from "sonner";
 import { validateTextInput } from "@/lib/validation";
+import api from "@/lib/api";
 
 interface LocationSelectorProps {
   city: string;
@@ -48,25 +49,30 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
       async (position) => {
         const { latitude, longitude } = position.coords;
         try {
-          const response = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`,
-            { headers: { "User-Agent": "NSUT-Alumni-Network/1.0" } },
-          );
-          const data = await response.json();
-          const detectedCity =
-            data.address.city ||
-            data.address.town ||
-            data.address.village ||
-            "";
-          const detectedCountry = data.address.country || "";
-          setCityInput(detectedCity.toLowerCase());
-          setCountryInput(detectedCountry.toLowerCase());
-          onLocationChange(
-            detectedCity.toLowerCase(),
-            detectedCountry.toLowerCase(),
-            latitude,
-            longitude,
-          );
+          // Reverse geocode through our backend proxy (Nominatim doesn't
+          // allow direct browser usage and requires a server-side User-Agent).
+          const response = await api.post("/geocode/reverse", {
+            lat: latitude,
+            lng: longitude,
+          });
+          const data = response.data;
+          const detectedCity = data.city || "";
+          const detectedCountry = data.country || "";
+
+          if (!detectedCity && !detectedCountry) {
+            toast.error(
+              "Could not detect your location. Please type it manually.",
+            );
+          } else {
+            setCityInput(detectedCity.toLowerCase());
+            setCountryInput(detectedCountry.toLowerCase());
+            onLocationChange(
+              detectedCity.toLowerCase(),
+              detectedCountry.toLowerCase(),
+              latitude,
+              longitude,
+            );
+          }
         } catch (error) {
           console.error("Error fetching location:", error);
           toast.error("Failed to detect location. Please type manually.");
@@ -100,20 +106,26 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
       }
 
       try {
-        const query = `${effectiveCity}, ${effectiveCountry}`;
-        const response = await fetch(
-          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`,
-          { headers: { "User-Agent": "NSUT-Alumni-Network/1.0" } },
-        );
-        const data = await response.json();
-        if (data && data.length > 0) {
-          const lat = parseFloat(data[0].lat);
-          const lng = parseFloat(data[0].lon);
+        // Forward geocode through our backend proxy. If geocoding fails or
+        // finds nothing, we still save city/country — the server-side
+        // geocoding queue fills in coordinates later.
+        const response = await api.post("/geocode/search", {
+          city: effectiveCity,
+          country: effectiveCountry,
+        });
+        const data = response.data;
+        if (
+          data &&
+          data.lat != null &&
+          data.lng != null &&
+          Number.isFinite(Number(data.lat)) &&
+          Number.isFinite(Number(data.lng))
+        ) {
           onLocationChange(
             effectiveCity.toLowerCase(),
             effectiveCountry.toLowerCase(),
-            lat,
-            lng,
+            Number(data.lat),
+            Number(data.lng),
           );
         } else {
           onLocationChange(effectiveCity.toLowerCase(), effectiveCountry.toLowerCase());

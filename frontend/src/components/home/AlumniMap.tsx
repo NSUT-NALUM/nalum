@@ -463,11 +463,25 @@ const AlumniMap = () => {
   const [mapInstance, setMapInstance] = useState<L.Map | null>(null);
 
   useEffect(() => {
+    const abortController = new AbortController();
+
     const fetchLocations = async () => {
       try {
-        const { data } = await api.get("/alumni-map");
-        setLocations(data.locations || []);
+        const { data } = await api.get("/alumni-map", {
+          signal: abortController.signal,
+        });
+        // Defensive: drop any entries with non-finite coordinates (legacy or
+        // malformed data) so Leaflet never receives an invalid LatLng.
+        const sanitized = (data.locations || []).filter(
+          (loc: AlumniLocation) =>
+            loc.lat != null &&
+            loc.lng != null &&
+            Number.isFinite(Number(loc.lat)) &&
+            Number.isFinite(Number(loc.lng))
+        );
+        setLocations(sanitized);
       } catch (err) {
+        if ((err as { code?: string })?.code === "ERR_CANCELED") return;
         console.error("Error fetching alumni locations:", err);
         setError("Failed to load alumni map");
       } finally {
@@ -476,6 +490,9 @@ const AlumniMap = () => {
     };
 
     fetchLocations();
+
+    // Cancel the in-flight request if the map unmounts before it resolves
+    return () => abortController.abort();
   }, []);
 
   // Format raw locations as GeoJSON features for supercluster
@@ -498,8 +515,11 @@ const AlumniMap = () => {
     () => ({
       radius: 75,
       maxZoom: 17,
-      map: (props: any) => ({ sum: props.count || 1 }),
-      reduce: (accumulated: any, props: any) => {
+      map: (props: { count?: number }) => ({ sum: props.count || 1 }),
+      reduce: (
+        accumulated: { sum: number },
+        props: { count?: number; sum?: number }
+      ) => {
         accumulated.sum += props.sum || props.count || 1;
       },
     }),

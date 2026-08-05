@@ -1,6 +1,7 @@
 const User = require("../../models/user/user.model");
 const Ban = require("../../models/admin/ban.model");
 const { logAdminActivity } = require("../../middleware/adminAuth");
+const { invalidateAlumniMapCache } = require("../../config/cacheKeys");
 
 // Calculate ban expiry date
 const calculateBanExpiry = (duration) => {
@@ -67,6 +68,10 @@ exports.banUser = async (req, res) => {
     user.ban_expires_at = banExpiresAt;
     user.ban_reason = reason;
     await user.save();
+
+    // Banned users must disappear from the public map immediately, not after
+    // the 1h cache TTL.
+    await invalidateAlumniMapCache();
 
     // Create ban record
     await Ban.create({
@@ -140,6 +145,9 @@ exports.unbanUser = async (req, res) => {
     user.ban_expires_at = null;
     user.ban_reason = null;
     await user.save();
+
+    // Unbanned users may now be eligible for the map again
+    await invalidateAlumniMapCache();
 
     // Update ban record
     await Ban.updateMany(

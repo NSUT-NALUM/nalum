@@ -46,5 +46,33 @@ describe("alumni map routes", () => {
       expect(response.status).toBe(500);
       expect(response.body).toEqual({ error: "Failed to load alumni map data" });
     });
+
+    it("only matches numeric coordinates and sorts before grouping", async () => {
+      Profile.aggregate.mockResolvedValue([]);
+
+      await request(app).get("/api/alumni-map");
+
+      const pipeline = Profile.aggregate.mock.calls[0][0];
+      const matchStage = pipeline[0].$match;
+
+      // Legacy string coordinates must be excluded (NaN marker guard)
+      expect(matchStage["location.lat"]).toMatchObject({
+        $type: ["double", "int"],
+      });
+      expect(matchStage["location.lng"]).toMatchObject({
+        $type: ["double", "int"],
+      });
+
+      // $sort must come before $group so $first is deterministic
+      const sortIndex = pipeline.findIndex((stage) => stage.$sort);
+      const groupIndex = pipeline.findIndex((stage) => stage.$group);
+      expect(sortIndex).toBeGreaterThan(-1);
+      expect(sortIndex).toBeLessThan(groupIndex);
+
+      // Blank city/country values must map to a readable label
+      const projectStage = pipeline.find((stage) => stage.$project);
+      expect(projectStage.$project.city.$cond).toBeDefined();
+      expect(projectStage.$project.country.$cond).toBeDefined();
+    });
   });
 });

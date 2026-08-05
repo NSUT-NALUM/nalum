@@ -1,6 +1,7 @@
 const VerificationQueue = require("../../models/verificationQueue.model");
 const User = require("../../models/user/user.model");
 const { logAdminActivity } = require("../../middleware/adminAuth");
+const { invalidateAlumniMapCache } = require("../../config/cacheKeys");
 
 // Get all pending verifications
 exports.getVerificationQueue = async (req, res) => {
@@ -72,6 +73,10 @@ exports.approveVerification = async (req, res) => {
     // Update user's alumni verification status
     user.verified_alumni = true;
     await user.save();
+
+    // Newly verified alumni are eligible for the map — invalidate so they show
+    // up without waiting for the 1h cache TTL.
+    await invalidateAlumniMapCache();
 
     // Remove from queue
     await VerificationQueue.findByIdAndDelete(verificationRequest._id);
