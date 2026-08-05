@@ -2,6 +2,7 @@ const Connection = require("../../models/chat/connections.model");
 const User = require("../../models/user/user.model");
 const Profile = require("../../models/user/profile.model");
 const notificationService = require("../../services/notificationService");
+const Notification = require("../../models/notification.model");
 require("dotenv").config();
 // Send connection request
 exports.sendConnectionRequest = async (req, res) => {
@@ -120,7 +121,7 @@ exports.sendConnectionRequest = async (req, res) => {
     try {
       const requester = await User.findById(requesterId).select('name role');
       await notificationService.createNotification({
-        userId: recipientId,
+        recipientId: recipientId,
         type: 'connection_request',
         title: 'New Connection Request',
         message: `${requester.name} sent you a connection request`,
@@ -129,7 +130,7 @@ exports.sendConnectionRequest = async (req, res) => {
           requesterId: requesterId,
           requesterName: requester.name,
           requesterRole: requester.role,
-          connectionId: connection._id
+          connectionId: connection._id.toString()
         }
       });
     } catch (notifError) {
@@ -194,7 +195,7 @@ exports.respondToConnection = async (req, res) => {
       try {
         const accepter = await User.findById(userId).select('name');
         await notificationService.createNotification({
-          userId: connection.requester.toString(),
+          recipientId: connection.requester.toString(),
           type: 'connection_accepted',
           title: 'Connection Accepted',
           message: `${accepter.name} accepted your connection request`,
@@ -226,11 +227,52 @@ exports.respondToConnection = async (req, res) => {
         await Message.deleteMany({ conversation: conversation._id });
         await Conversation.findByIdAndDelete(conversation._id);
       }
+
+      // Create notification for connection rejection
+      try {
+        const rejecter = await User.findById(userId).select('name');
+        await notificationService.createNotification({
+          recipientId: connection.requester.toString(),
+          type: 'connection_rejected',
+          title: 'Connection Request Declined',
+          message: `${rejecter.name} has declined your connection request.`,
+          actionUrl: '/dashboard/connections',
+          metadata: {
+            rejecterId: userId,
+            rejecterName: rejecter.name,
+            connectionId: connection._id.toString()
+          }
+        });
+      } catch (notifError) {
+        console.error('Error creating rejection notification:', notifError);
+      }
     } else if (action === "block") {
       connection.status = "blocked";
       connection.blockedBy = userId;
       connection.respondedAt = new Date();
       await connection.save();
+    }
+
+    // Delete the original connection_request notification to prevent stale state
+    try {
+      console.log('Attempting to delete notification for connection:', connection._id);
+      const deletedNotification = await Notification.findOneAndDelete({
+        type: 'connection_request',
+        recipient: userId,
+        'metadata.connectionId': connection._id.toString()
+      });
+      console.log('Deleted notification result:', deletedNotification);
+      
+      if (deletedNotification) {
+        const io = global.io || req.app.get("io");
+        console.log('IO instance found?', !!io);
+        if (io) {
+          console.log(`Emitting notification:removed to user:${userId} for notificationId: ${deletedNotification._id.toString()}`);
+          io.to(`user:${userId}`).emit('notification:removed', { notificationId: deletedNotification._id.toString() });
+        }
+      }
+    } catch (err) {
+      console.error('Error removing connection_request notification:', err);
     }
 
     await connection.populate(
@@ -379,6 +421,24 @@ exports.cancelConnectionRequest = async (req, res) => {
       return res.status(404).json({
         error: "Request not found or already processed",
       });
+    }
+
+    // Delete the original connection_request notification for the recipient
+    try {
+      const deletedNotification = await Notification.findOneAndDelete({
+        type: 'connection_request',
+        recipient: recipientId,
+        'metadata.connectionId': connection._id.toString()
+      });
+      
+      if (deletedNotification) {
+        const io = global.io || req.app.get("io");
+        if (io) {
+          io.to(`user:${recipientId}`).emit('notification:removed', { notificationId: deletedNotification._id.toString() });
+        }
+      }
+    } catch (err) {
+      console.error('Error removing connection_request notification on cancel:', err);
     }
 
     res.json({ message: "Connection request cancelled" });

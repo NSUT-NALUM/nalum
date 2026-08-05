@@ -23,6 +23,7 @@ const notificationSchema = new Schema({
     enum: [
       'connection_request',
       'connection_accepted',
+      'connection_rejected',
       'post_like',
       'post_comment',
       'comment_reply',

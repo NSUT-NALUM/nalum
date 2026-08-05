@@ -5,6 +5,8 @@ import { formatDistanceToNow } from 'date-fns';
 import { X } from 'lucide-react';
 import { Button } from './ui/button';
 import { cn } from '@/lib/utils';
+import api from '../lib/api';
+import { toast } from 'sonner';
 
 interface NotificationItemProps {
   notification: {
@@ -36,6 +38,17 @@ export const NotificationItem = ({ notification, onClose }: NotificationItemProp
     }
 
     if (notification.actionUrl) {
+      try {
+        const { data } = await api.get(`/notifications/${notification.id}/verify`);
+        if (data?.data?.valid === false) {
+          toast.error("This content no longer exists.");
+          await deleteNotification(notification.id);
+          return;
+        }
+      } catch (err) {
+        console.error("Failed to verify notification entity:", err);
+      }
+
       navigate(notification.actionUrl);
       onClose();
     }

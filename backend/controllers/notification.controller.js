@@ -132,6 +132,72 @@ exports.deleteNotification = async (req, res) => {
 };
 
 /**
+ * Verify if notification entity still exists before navigation
+ */
+exports.verifyNotificationEntity = async (req, res) => {
+  try {
+    const userId = req.user.user_id;
+    const { notificationId } = req.params;
+
+    const Notification = require('../models/notification.model');
+    const notification = await Notification.findOne({ _id: notificationId, recipient: userId });
+
+    if (!notification) {
+      // If notification is gone, technically it's invalid to navigate
+      return res.status(200).json({ success: true, data: { valid: false } });
+    }
+
+    let isValid = true;
+
+    // Based on notification type, verify the entity exists
+    if (notification.type === 'new_message') {
+      const Conversation = require('../models/chat/conversations.model');
+      const convId = notification.metadata?.conversationId;
+      if (convId) {
+        const conv = await Conversation.findById(convId);
+        if (!conv) isValid = false;
+      }
+    } else if (['post_like', 'post_comment', 'comment_reply', 'comment_mention', 'post_mention'].includes(notification.type)) {
+      if (notification.actionUrl) {
+        const match = notification.actionUrl.match(/\/posts\/([a-fA-F0-9]{24})/);
+        if (match) {
+          const Post = require('../models/post.model');
+          const post = await Post.findById(match[1]);
+          if (!post) isValid = false;
+        }
+      }
+    } else if (['connection_request', 'connection_accepted'].includes(notification.type)) {
+      const connId = notification.metadata?.connectionId;
+      if (connId) {
+        const Connection = require('../models/chat/connections.model');
+        const conn = await Connection.findById(connId);
+        if (!conn) isValid = false;
+      }
+    } else if (['event_invitation', 'event_reminder', 'event_update'].includes(notification.type)) {
+      if (notification.actionUrl) {
+        const match = notification.actionUrl.match(/\/events\/([a-fA-F0-9]{24})/);
+        if (match) {
+          const Event = require('../models/admin/event.model');
+          const event = await Event.findById(match[1]);
+          if (!event) isValid = false;
+        }
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      data: { valid: isValid }
+    });
+  } catch (error) {
+    console.error('Error verifying notification entity:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to verify notification'
+    });
+  }
+};
+
+/**
  * Subscribe to push notifications
  */
 exports.subscribePush = async (req, res) => {

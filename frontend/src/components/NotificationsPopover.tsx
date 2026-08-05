@@ -62,7 +62,7 @@ const NotificationsPopover = () => {
   const [isLoadingSent, setIsLoadingSent] = useState(false);
 
   // General notifications
-  const { notifications, unreadCount, loading, fetchNotifications } = useNotifications();
+  const { notifications, unreadCount, loading, fetchNotifications, markAllAsRead } = useNotifications();
   const { isSupported, permission, subscribe } = usePushNotifications();
   const [showPushPrompt, setShowPushPrompt] = useState(false);
 
@@ -70,7 +70,7 @@ const NotificationsPopover = () => {
   const fetchReceivedRequests = useCallback(async () => {
     setIsLoadingReceived(true);
     try {
-      const { data } = await api.get("/chat/connections/pending");
+      const { data } = await api.get("/chat/connections/pending", { params: { t: Date.now() } });
       setReceivedRequests(data?.data || []);
     } catch (error) {
       console.error("Failed to load received requests:", error);
@@ -83,7 +83,7 @@ const NotificationsPopover = () => {
   const fetchSentRequests = useCallback(async () => {
     setIsLoadingSent(true);
     try {
-      const { data } = await api.get("/chat/connections/sent");
+      const { data } = await api.get("/chat/connections/sent", { params: { t: Date.now() } });
       setSentRequests(data?.data || []);
     } catch (error) {
       console.error("Failed to load sent requests:", error);
@@ -100,6 +100,13 @@ const NotificationsPopover = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
+
+  // Mark notifications as read when viewing the general tab
+  useEffect(() => {
+    if (isOpen && activeTab === "general" && unreadCount > 0) {
+      markAllAsRead();
+    }
+  }, [isOpen, activeTab, unreadCount, markAllAsRead]);
 
   useEffect(() => {
     if (isSupported() && permission === 'default') {

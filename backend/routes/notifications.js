@@ -7,6 +7,7 @@ const {
   markAsRead,
   markAllAsRead,
   deleteNotification,
+  verifyNotificationEntity,
   subscribePush,
   unsubscribePush,
   getPreferences,
@@ -20,6 +21,7 @@ router.get('/unread-count', protect, getUnreadCount);
 router.patch('/:notificationId/read', protect, markAsRead);
 router.patch('/mark-all-read', protect, markAllAsRead);
 router.delete('/:notificationId', protect, deleteNotification);
+router.get('/:notificationId/verify', protect, verifyNotificationEntity);
 
 // Push subscriptions
 router.post('/push/subscribe', protect, subscribePush);

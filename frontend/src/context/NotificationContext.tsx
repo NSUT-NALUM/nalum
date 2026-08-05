@@ -46,7 +46,7 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
     try {
       setLoading(true);
       const response = await api.get('/notifications', {
-        params: { page: 1, limit: 20 },
+        params: { page: 1, limit: 20, t: Date.now() },
       });
 
       // Transform _id to id for consistency with socket notifications
@@ -174,6 +174,7 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
 
     // New notification received
     socket.on('notification', (notification: Notification) => {
+      console.log('Socket event received: notification', notification);
       setNotifications(prev => {
         // Check if this notification ID already exists (backend updated existing one)
         const existingIndex = prev.findIndex(n => n.id === notification.id);
@@ -247,8 +248,10 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
 
     // Notification removed (e.g., when message is unsent)
     socket.on('notification:removed', ({ notificationId }: { notificationId: string }) => {
+      console.log('Socket event received: notification:removed', notificationId);
       setNotifications(prev => {
         const notifToRemove = prev.find(n => n.id === notificationId);
+        console.log('Found notification to remove:', notifToRemove);
         // Only decrease count if the removed notification was unread
         if (notifToRemove && !notifToRemove.read) {
           setUnreadCount(prevCount => Math.max(0, prevCount - 1));
