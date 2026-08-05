@@ -15,32 +15,79 @@ const mapRateLimiter = rateLimit({
 // GET /api/alumni-map - Return alumni locations for map visualization
 router.get("/", mapRateLimiter, async (req, res) => {
   try {
-    // Find all profiles with valid location coordinates
-    const profilesWithLocations = await Profile.find({
-      "location.lat": { $exists: true, $ne: null },
-      "location.lng": { $exists: true, $ne: null },
-    })
-      .populate({
-        path: "user",
-        match: { role: "alumni" },
-        select: "role",
-      })
-      .select("location");
+    // Try to serve from Redis cache if available
+    try {
+      const { getRedisClient } = require("../config/redis.config");
+      const redis = getRedisClient();
+      if (redis) {
+        const cachedData = await redis.get("alumni-map:locations");
+        if (cachedData) {
+          return res.status(200).json({ locations: JSON.parse(cachedData) });
+        }
+      }
+    } catch (cacheErr) {
+      // Non-blocking catch if Redis is unavailable or unconfigured
+    }
 
-    // Filter out profiles where user didn't match (not alumni or user deleted)
-    const locations = profilesWithLocations
-      .filter((profile) => profile.user !== null)
-      .map((profile) => ({
-        city: profile.location?.city || "Unknown",
-        country: profile.location?.country || "Unknown",
-        lat: profile.location?.lat || 0,
-        lng: profile.location?.lng || 0,
-      }));
+    // Find all profiles with valid location coordinates
+    const locations = await Profile.aggregate([
+      {
+        $match: {
+          "location.lat": { $exists: true, $ne: null },
+          "location.lng": { $exists: true, $ne: null },
+        },
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "user",
+          foreignField: "_id",
+          as: "userInfo",
+        },
+      },
+      {
+        $match: {
+          "userInfo.role": "alumni",
+        },
+      },
+      {
+        $group: {
+          _id: {
+            city: "$location.city",
+            country: "$location.country",
+          },
+          count: { $sum: 1 },
+          lat: { $first: "$location.lat" },
+          lng: { $first: "$location.lng" },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          city: { $ifNull: ["$_id.city", "Unknown"] },
+          country: { $ifNull: ["$_id.country", "Unknown"] },
+          count: 1,
+          lat: 1,
+          lng: 1,
+        },
+      },
+    ]);
+
+    // Store in Redis cache if available
+    try {
+      const { getRedisClient } = require("../config/redis.config");
+      const redis = getRedisClient();
+      if (redis) {
+        await redis.set("alumni-map:locations", JSON.stringify(locations));
+      }
+    } catch (cacheErr) {
+      // Non-blocking catch if Redis fails
+    }
 
     res.status(200).json({ locations });
   } catch (error) {
     console.error("Error fetching alumni map data:", error);
-    res.status(200).json({ locations: [] });
+    res.status(500).json({ error: "Failed to load alumni map data" });
   }
 });
 

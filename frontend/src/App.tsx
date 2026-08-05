@@ -1,12 +1,17 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { NotificationProvider } from "@/context/NotificationContext";
+import { SocketProvider } from "@/hooks/useSocket";
 import { startKeepAlive, stopKeepAlive } from "@/lib/keepAlive";
 import { AppRoutes } from "@/routes";
 import { AuthErrorHandler, SessionLoadingScreen } from "@/components/app/AppComponents";
+import {
+  AuthenticatedCacheBoundary,
+  ConnectionLifecycleSync,
+} from "@/components/AppLifecycleSync";
 import { LoadingAnimation } from "@/components/LoadingAnimation";
 import { useLocation } from "react-router-dom";
 import { usePageTracking } from "@/hooks/usePageTracking";
@@ -18,7 +23,7 @@ const queryClient = new QueryClient({
       staleTime: 1000 * 60 * 5, // 5 minutes
       retry: (failureCount, error: unknown) => {
         const axiosError = error as AxiosError;
-        if (axiosError?.response?.status === 401) {
+        if ([401, 403, 404].includes(axiosError?.response?.status ?? 0)) {
           return false;
         }
         return failureCount < 1;
@@ -58,9 +63,14 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <NotificationProvider>
-          <AppContent />
-        </NotificationProvider>
+        <AuthenticatedCacheBoundary>
+          <SocketProvider>
+            <NotificationProvider>
+              <ConnectionLifecycleSync />
+              <AppContent />
+            </NotificationProvider>
+          </SocketProvider>
+        </AuthenticatedCacheBoundary>
       </AuthProvider>
     </QueryClientProvider>
   );

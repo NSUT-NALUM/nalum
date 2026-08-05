@@ -17,6 +17,7 @@ const verifyAccountUsingLink = require("./verifyAccountUsingLink");
 const verifyAccountUsingOTP = require("./verifyAccountUsingOTP");
 const deleteAccount = require("./deleteAccount");
 
+
 // define routes without rate limiting
 
 // Auth routes

@@ -9,6 +9,7 @@ import nsutLogo from "@/assets/nsut-logo.svg";
 import nsutCampusHero from "@/assets/hero.webp";
 import apiClient from "@/lib/api";
 import axios from "axios";
+import { validatePassword, PASSWORD_REQUIREMENTS } from "@/lib/passwordPolicy";
 
 const ResetPassword = () => {
   const [searchParams] = useSearchParams();
@@ -46,8 +47,9 @@ const ResetPassword = () => {
     
     if (!formData.password) {
       newErrors.password = "Password is required";
-    } else if (formData.password.length < 8) {
-      newErrors.password = "Password must be at least 8 characters long";
+    } else {
+      const passwordError = validatePassword(formData.password);
+      if (passwordError) newErrors.password = passwordError;
     }
     
     if (!formData.confirmPassword) {
@@ -420,9 +422,11 @@ const ResetPassword = () => {
             </div>
 
             <div className="text-sm text-gray-600 bg-gray-100 p-3 rounded-md">
-              <p className="font-semibold mb-1">Password must:</p>
+              <p className="font-semibold mb-1">Password must contain:</p>
               <ul className="list-disc list-inside space-y-1">
-                <li>Be at least 8 characters long</li>
+                {PASSWORD_REQUIREMENTS.map((requirement) => (
+                  <li key={requirement}>{requirement}</li>
+                ))}
                 <li>Match in both fields</li>
               </ul>
             </div>

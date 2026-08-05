@@ -1,6 +1,19 @@
 
-import { Link } from 'react-router-dom';
-import { Facebook, Twitter, Instagram, Youtube, Linkedin } from 'lucide-react';
+import { PreloadLink } from "@/components/PreloadLink";
+import { Facebook, Instagram, Youtube, Linkedin } from 'lucide-react';
+
+const XLogo = ({ size = 20, className }: { size?: number; className?: string }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    aria-hidden="true"
+    className={className}
+  >
+    <path d="M18.244 2H21l-6.96 7.965L22.23 22h-6.844l-5.35-6.912L3.985 22H1.227l7.448-8.527L1 2h6.97l4.892 6.32L18.244 2Zm-1.2 18h1.92L7.93 3.993H5.873L17.044 20Z" />
+  </svg>
+);
 
 const Footer = () => {
   const quickNav = [
@@ -8,18 +21,19 @@ const Footer = () => {
     { text: "Events", link: "/events/attend" }, // UPDATE THIS LINK
     { text: "Benefits", link: "/benefits/learning" }, // UPDATE THIS LINK
     { text: "Giving", link: "/giving" }, // ✓ Already configured
-    { text: "Stories", link: "/stories" }, // UPDATE THIS LINK
+    { text: "Stories", link: "/stories/notable-alumni" },
   ];
   const secondaryNav = [
-    { text: "About", link: "/about", external: false }, // ✓ Already configured
     { text: "myNSUT Login", link: "/login", external: false }, // ✓ Already configured
+    { text: "About", link: "/about", external: false }, // ✓ Already configured
+    { text: "NALUM Team", link: "/about#team", external: false },
     { text: "Contact", link: "/about#contact", external: false }, // ✓ Links to Get in Touch section on About page
     { text: "NSUT.edu", link: "https://www.nsut.ac.in/", external: true }, // ✓ EXAMPLE: External link
   ];
 
   const socialLinks = [
-    { icon: Facebook, href: "#", label: "Facebook" },
-    { icon: Twitter, href: "#", label: "Twitter" },
+    { icon: Facebook, href: "https://www.facebook.com/nsutofficial/", label: "Facebook" },
+    { icon: XLogo, href: "https://x.com/NSUT_OFFICIAL", label: "X" },
     { icon: Instagram, href: "https://www.instagram.com/nsut.official?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==", label: "Instagram" },
     { icon: Youtube, href: "https://youtube.com/@nsutdelhi?si=GSi2n3m78a3JvbiK", label: "YouTube" },
     { icon: Linkedin, href: "https://www.linkedin.com/company/officialnsut/", label: "LinkedIn" },
@@ -137,13 +151,13 @@ const Footer = () => {
                   <ul className="space-y-3">
                     {quickNav.map(item => (
                       <li key={item.text}>
-                        <Link 
+                        <PreloadLink 
                           to={item.link} 
                           className="footer-link text-gray-200"
                           onClick={() => window.scrollTo(0, 0)}
                         >
                           {item.text}
-                        </Link>
+                        </PreloadLink>
                       </li>
                     ))}
                   </ul>
@@ -163,7 +177,7 @@ const Footer = () => {
                             {item.text}
                           </a>
                         ) : (
-                          <Link 
+                          <PreloadLink 
                             to={item.link} 
                             className="footer-link text-gray-200"
                             onClick={() => {
@@ -174,7 +188,7 @@ const Footer = () => {
                             }}
                           >
                             {item.text}
-                          </Link>
+                          </PreloadLink>
                         )}
                       </li>
                     ))}
@@ -185,12 +199,12 @@ const Footer = () => {
 
             {/* Call to Action & Social */}
             <div className="space-y-6">
-              <a 
-                href="/giving" 
+              <PreloadLink
+                to="/giving"
                 className="gift-button-footer block w-full text-center bg-nsut-yellow text-nsut-maroon font-bold py-3 px-6 rounded-lg relative z-10"
               >
                 Make a Gift
-              </a>
+              </PreloadLink>
               <div>
                 <h3 className="font-serif text-lg font-semibold mb-4 text-center footer-heading">Connect With Us</h3>
                 <div className="flex justify-center space-x-3">
@@ -214,16 +228,7 @@ const Footer = () => {
             <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-gray-300">
               <p className="text-center md:text-left">
                 &copy; {new Date().getFullYear()} NSUT University / Netaji Subhas University of Technology
-              </p>
-              <div className="flex items-center gap-4">
-                <Link to="/accessibility" className="footer-link">
-                  Accessibility
-                </Link>
-                <span className="text-gray-500">|</span>
-                <Link to="/privacy" className="footer-link">
-                  Privacy
-                </Link>
-              </div>
+              </p>              
             </div>
           </div>
         </div>
