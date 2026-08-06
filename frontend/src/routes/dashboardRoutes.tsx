@@ -41,6 +41,7 @@ const ViewPost = lazy(loadViewPost);
 const Queries = lazy(loadQueries);
 const Giving = lazy(loadGiving);
 const MobileNotifications = lazy(loadMobileNotifications);
+const ChangePassword = lazy(() => import("@/pages/dashboard/ChangePassword"));
 
 export function DashboardRoutes() {
   return (
@@ -72,6 +73,7 @@ export function DashboardRoutes() {
         <Route path="/dashboard" element={<DashboardHome />} />
         <Route path="/dashboard/profile" element={<ShowProfile />} />
         <Route path="/dashboard/update-profile" element={<UpdateProfile />} />
+        <Route path="/dashboard/change-password" element={<ChangePassword />} />
         <Route path="/dashboard/alumni" element={<AlumniDirectory />} />
         <Route path="/dashboard/alumni/:userId" element={<ViewProfile />} />
         <Route path="/dashboard/connections" element={<ConnectionsPage />} />

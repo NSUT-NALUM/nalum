@@ -26,21 +26,28 @@ const ResetPassword = () => {
   const navigate = useNavigate();
 
   const token = searchParams.get("token");
+  const email = searchParams.get("email");
+  const [isVerifying, setIsVerifying] = useState(true);
 
   useEffect(() => {
-    if (!token) {
-      setTokenError(true);
-      toast.error("Invalid Reset Link", {
-        description: "This password reset link is invalid or has expired.",
-        style: {
-          background: "#800000",
-          color: "white",
-          border: "2px solid #FFD700",
-          fontSize: "16px",
-        },
-      });
-    }
-  }, [token]);
+    const verifyToken = async () => {
+      if (!token || !email) {
+        setTokenError(true);
+        setIsVerifying(false);
+        return;
+      }
+
+      try {
+        await apiClient.get("/auth/verify-reset-token", { params: { email, token } });
+        setIsVerifying(false);
+      } catch (error) {
+        setTokenError(true);
+        setIsVerifying(false);
+      }
+    };
+
+    verifyToken();
+  }, [token, email]);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -72,11 +79,12 @@ const ResetPassword = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validateForm() || !token) return;
+    if (!validateForm() || !token || !email) return;
 
     setIsLoading(true);
     try {
       await apiClient.post("/auth/reset-password", {
+        email,
         token,
         password: formData.password,
       });
@@ -133,6 +141,14 @@ const ResetPassword = () => {
       setIsLoading(false);
     }
   };
+
+  if (isVerifying) {
+    return (
+      <div className="flex items-center justify-center min-h-[100dvh] bg-gray-50">
+        <span className="animate-spin rounded-full h-8 w-8 border-2 border-nsut-maroon border-t-transparent"></span>
+      </div>
+    );
+  }
 
   if (tokenError) {
     return (
