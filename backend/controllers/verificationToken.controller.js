@@ -59,3 +59,24 @@ exports.remove = async (email, token) => {
     };
   }
 };
+
+exports.findByToken = async (token) => {
+    try {
+        const data = await VerificationToken.findOne({ token });
+
+        if (!data) {
+            return { error: true, message: "Verification token not found" };
+        }
+
+        if (data.expires_at < new Date()) {
+            return { error: true, message: "Verification token expired" };
+        }
+
+        return { error: false, data };
+    } catch (err) {
+        return {
+            error: true,
+            message: err.message,
+        };
+    }
+};

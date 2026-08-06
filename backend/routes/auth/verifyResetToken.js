@@ -19,7 +19,7 @@ router.get("/", async (req, res) => {
 
     return res.json({ error: false, message: "Token is valid" });
   } catch (error) {
-    console.error("[verifyResetToken] Error:", error.message);
+    console.error("[verifyResetToken] Error:", error?.message ?? error);
     return res.status(500).json({ error: true, message: "Internal server error" });
   }
 });

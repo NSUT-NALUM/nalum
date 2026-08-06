@@ -84,7 +84,6 @@ const ResetPassword = () => {
     setIsLoading(true);
     try {
       await apiClient.post("/auth/reset-password", {
-        email,
         token,
         password: formData.password,
       });
