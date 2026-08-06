@@ -23,6 +23,17 @@ import api from "@/lib/api";
 import UserAvatar from "@/components/UserAvatar";
 import { toast } from "sonner";
 import MyPosts from "./MyPosts";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Input } from "@/components/ui/input";
 
 interface Profile {
   user: {
@@ -59,6 +70,27 @@ const ShowProfile = () => {
   const navigate = useNavigate();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const [deleteConfirmationText, setDeleteConfirmationText] = useState("");
+  const [isDeactivating, setIsDeactivating] = useState(false);
+
+  const handleDeactivateAccount = async () => {
+    if (deleteConfirmationText !== "DELETE") return;
+    setIsDeactivating(true);
+    try {
+      await api.delete("/auth/account", {
+        headers: { Authorization: `Bearer ${accessToken}` }
+      });
+      toast.success("Account deactivated successfully");
+      logout();
+      navigate("/");
+    } catch (error: any) {
+      console.error("Error deactivating account:", error);
+      toast.error(error.response?.data?.message || "Failed to deactivate account");
+    } finally {
+      setIsDeactivating(false);
+    }
+  };
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -436,6 +468,36 @@ const ShowProfile = () => {
                 </div>
               </div>
             )}
+
+            {/* Danger Zone (Task 4.6) */}
+            <div className="rounded-xl border border-red-500/30 bg-red-950/10 backdrop-blur-md shadow-xl p-6 lg:col-span-2 mt-6">
+              <div className="flex items-center gap-2 mb-4">
+                <svg
+                  className="h-5 w-5 text-red-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                  />
+                </svg>
+                <h3 className="text-lg font-semibold text-red-400">Danger Zone</h3>
+              </div>
+              <p className="text-gray-300 text-sm mb-4">
+                Once you deactivate your account, all your created posts, comments, events, and givings/queries will be soft-deleted. This action cannot be easily undone.
+              </p>
+              <Button
+                variant="destructive"
+                onClick={() => setConfirmDeleteOpen(true)}
+                className="bg-red-600 hover:bg-red-700 text-white border-none"
+              >
+                Deactivate Account
+              </Button>
+            </div>
           </div>
 
           {/* My Posts Section (Mobile Only) */}
@@ -444,6 +506,53 @@ const ShowProfile = () => {
           </div>
         </div>
       </div>
+
+      {/* Account Deactivation Dialog (Task 4.6) */}
+      <AlertDialog open={confirmDeleteOpen} onOpenChange={setConfirmDeleteOpen}>
+        <AlertDialogContent className="bg-[#0f0f1a] border border-white/10 text-white">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-white text-xl">Deactivate Account?</AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-400 mt-2 space-y-3">
+              <p>This will deactivate your account and soft-delete all your posts, comments, events, givings, and queries.</p>
+              <p className="font-semibold text-red-400">Please type "DELETE" in all caps below to confirm.</p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="my-4">
+            <Input
+              value={deleteConfirmationText}
+              onChange={(e) => setDeleteConfirmationText(e.target.value)}
+              placeholder="DELETE"
+              className="bg-white/5 border-white/10 text-white placeholder:text-gray-600 focus:border-red-500 focus:ring-red-500"
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              disabled={isDeactivating}
+              onClick={() => {
+                setDeleteConfirmationText("");
+                setConfirmDeleteOpen(false);
+              }}
+              className="bg-white/5 border-white/10 text-white hover:bg-white/10 hover:text-white"
+            >
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeactivateAccount}
+              disabled={deleteConfirmationText !== "DELETE" || isDeactivating}
+              className="bg-red-600 hover:bg-red-700 text-white border-none disabled:opacity-50"
+            >
+              {isDeactivating ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Deactivating…
+                </>
+              ) : (
+                "Confirm Deactivation"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

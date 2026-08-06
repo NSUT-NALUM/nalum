@@ -322,6 +322,13 @@ async function deleteComment({ commentId, userId }) {
 
   await comment.save();
 
+  // Task 2.3: fix replyCount drift — decrement atomically on root comment
+  if (comment.parentCommentId) {
+    await Comment.findByIdAndUpdate(comment.rootCommentId, {
+      $inc: { replyCount: -1 },
+    });
+  }
+
   return Comment.findById(comment._id).populate("authorId", "name role").lean();
 }
 

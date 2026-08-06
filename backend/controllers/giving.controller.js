@@ -1,5 +1,6 @@
 const Giving = require('../models/giving.model');
 const User = require('../models/user/user.model');
+const { cleanupFiles, assertDeletePermission, createHttpError } = require('../utils/deleteHelper');
 
 // Create a new giving submission (Alumni only)
 exports.createGiving = async (req, res) => {
@@ -65,7 +66,8 @@ exports.getMyGiving = async (req, res) => {
   try {
     const { user_id } = req.user;
 
-    const givings = await Giving.find({ userId: user_id })
+    // Exclude soft-deleted givings
+    const givings = await Giving.find({ userId: user_id, isDeleted: { $ne: true } })
       .sort({ createdAt: -1 })
       .lean();
 
@@ -114,6 +116,9 @@ exports.getAllGiving = async (req, res) => {
     if (sortBy === 'status') {
       sortOptions = { status: 1, createdAt: -1 };
     }
+
+    // Exclude soft-deleted givings from admin view
+    queryObj.isDeleted = { $ne: true };
 
     const givings = await Giving.find(queryObj)
       .sort(sortOptions)
@@ -200,6 +205,49 @@ exports.respondToGiving = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: error.message || 'Error responding to giving',
+    });
+  }
+};
+
+// Delete a giving submission — owner or admin (Task 3.1)
+exports.deleteGiving = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { user_id, role } = req.user;
+
+    const giving = await Giving.findById(id);
+    if (!giving || giving.isDeleted) {
+      return res.status(404).json({
+        success: false,
+        message: 'Giving submission not found',
+      });
+    }
+
+    assertDeletePermission({
+      ownerId: giving.userId,
+      requestUserId: user_id,
+      userRole: role,
+    });
+
+    // Clean up associated image files from disk
+    if (giving.images && giving.images.length > 0) {
+      cleanupFiles(giving.images, 'givings');
+    }
+
+    // Soft delete
+    giving.isDeleted = true;
+    giving.deletedAt = new Date();
+    await giving.save();
+
+    return res.status(200).json({
+      success: true,
+      message: 'Giving submission deleted successfully',
+    });
+  } catch (error) {
+    console.error('Error deleting giving:', error);
+    return res.status(error.statusCode || 500).json({
+      success: false,
+      message: error.message || 'Error deleting giving',
     });
   }
 };

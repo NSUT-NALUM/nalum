@@ -7,6 +7,7 @@ const {
   markAsRead,
   markAllAsRead,
   deleteNotification,
+  clearAllNotifications,
   clearConversationNotifications,
   clearPostNotifications,
   subscribePush,
@@ -21,6 +22,7 @@ router.get('/', protect, getNotifications);
 router.get('/unread-count', protect, getUnreadCount);
 router.patch('/:notificationId/read', protect, markAsRead);
 router.patch('/mark-all-read', protect, markAllAsRead);
+router.delete('/', protect, clearAllNotifications);        // Task 3.4: bulk clear
 router.delete('/conversation/:conversationId', protect, clearConversationNotifications);
 router.delete('/post/:postId', protect, clearPostNotifications);
 router.delete('/:notificationId', protect, deleteNotification);

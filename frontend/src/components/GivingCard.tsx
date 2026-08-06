@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { MessageCircle } from "lucide-react";
+import { MessageCircle, Trash2 } from "lucide-react";
 import { BASE_URL } from "@/lib/constants";
+import { useAuth } from "@/context/AuthContext";
 
 interface Giving {
   _id: string;
@@ -16,10 +17,16 @@ interface Giving {
 
 interface GivingCardProps {
   giving: Giving;
+  onDelete?: (id: string) => void;
 }
 
-const GivingCard = ({ giving }: GivingCardProps) => {
+const GivingCard = ({ giving, onDelete }: GivingCardProps) => {
+  const { user } = useAuth();
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+
+  const currentUserId = user?.user_id ?? user?.id;
+  const isOwner = String(currentUserId ?? "") === String(giving.userId ?? "");
+  const canDelete = isOwner || user?.role === "admin";
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -44,6 +51,14 @@ const GivingCard = ({ giving }: GivingCardProps) => {
               {formatDate(giving.createdAt)}
             </p>
           </div>
+          {canDelete && (
+            <button
+              onClick={() => onDelete?.(giving._id)}
+              className="text-gray-400 hover:text-red-500 transition-colors p-1"
+            >
+              <Trash2 className="w-5 h-5" />
+            </button>
+          )}
         </div>
 
         <p className="text-gray-300 mb-4 whitespace-pre-wrap">

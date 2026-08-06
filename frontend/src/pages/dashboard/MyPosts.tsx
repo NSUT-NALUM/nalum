@@ -8,6 +8,8 @@ import { Loader2, FileText, AlertCircle, PenSquare } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { toast } from "sonner";
 import CreatePostModal from "@/components/posts/CreatePostModal";
+import { DeleteConfirmDialog } from "@/components/ui/DeleteConfirmDialog";
+import { useDelete } from "@/hooks/useDelete";
 
 interface Post {
   _id: string;
@@ -40,6 +42,17 @@ const MyPosts = ({ embedded = false }: MyPostsProps) => {
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [postToDelete, setPostToDelete] = useState<Post | null>(null);
+
+  const { isDeleting, confirmOpen, setConfirmOpen, confirmDelete } = useDelete({
+    endpoint: postToDelete ? `/posts/${postToDelete._id}` : "",
+    onSuccess: () => {
+      setPosts((prev) => prev.filter((p) => p._id !== postToDelete?._id));
+      setPostToDelete(null);
+    },
+    successMessage: "Post deleted successfully",
+    errorMessage: "Failed to delete post",
+  });
 
   useEffect(() => {
     if (user?.role === "alumni") {
@@ -69,16 +82,11 @@ const MyPosts = ({ embedded = false }: MyPostsProps) => {
     setIsEditModalOpen(true);
   };
 
-  const handleDelete = async (postId: string) => {
-    if (!confirm("Are you sure you want to delete this post?")) return;
-
-    try {
-      await api.delete(`/posts/${postId}`);
-      setPosts(posts.filter((post) => post._id !== postId));
-      toast.success("Post deleted successfully");
-    } catch (err: any) {
-      console.error("Error deleting post:", err);
-      toast.error(err.response?.data?.message || "Failed to delete post");
+  const handleDelete = (postId: string) => {
+    const post = posts.find((p) => p._id === postId);
+    if (post) {
+      setPostToDelete(post);
+      setConfirmOpen(true);
     }
   };
 
@@ -239,6 +247,15 @@ const MyPosts = ({ embedded = false }: MyPostsProps) => {
           setSelectedPost(null);
         }}
         onPostUpdated={fetchMyPosts}
+      />
+
+      <DeleteConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title="Delete post?"
+        description="This post and all its comments will be permanently removed."
+        isDeleting={isDeleting}
+        onConfirm={confirmDelete}
       />
     </div>
   );

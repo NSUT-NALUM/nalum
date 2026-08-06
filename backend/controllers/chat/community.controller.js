@@ -362,6 +362,35 @@ const getInbox = async (req, res) => {
   }
 };
 
+// Task 3.5: Delete (archive) a community — site admin only
+const deleteCommunity = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Only site-level admins can delete communities
+    if (req.user.role !== "admin") {
+      return res.status(403).json({ error: "Only admins can delete communities" });
+    }
+
+    const community = await Community.findById(id);
+    if (!community) {
+      return res.status(404).json({ error: "Community not found" });
+    }
+
+    if (community.isArchived) {
+      return res.status(200).json({ success: true, message: "Community already archived" });
+    }
+
+    community.isArchived = true;
+    await community.save();
+
+    res.json({ success: true, message: "Community deleted (archived) successfully" });
+  } catch (error) {
+    console.error("Delete community error:", error);
+    res.status(500).json({ error: "Failed to delete community" });
+  }
+};
+
 module.exports = {
   createCommunity,
   getCommunities,
@@ -372,4 +401,5 @@ module.exports = {
   muteCommunity,
   unmuteCommunity,
   getInbox,
+  deleteCommunity,
 };
