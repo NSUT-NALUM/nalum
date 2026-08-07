@@ -453,20 +453,15 @@ function MapSearchControl({
 }
 
 const CONTINENT_LABELS = [
-  { name: "ASIA", lat: 38.0, lng: 92.0 },
-  { name: "EUROPE", lat: 52.0, lng: 20.0 },
-  { name: "AFRICA", lat: 7.0, lng: 21.0 },
-  { name: "NORTH AMERICA", lat: 46.0, lng: -101.0 },
-  { name: "SOUTH AMERICA", lat: -14.0, lng: -58.0 },
-  { name: "AUSTRALIA", lat: -24.0, lng: 134.0 },
+  { name: "ASIA", lat: 44.5, lng: 95.0 },
 ];
 
 const createContinentIcon = (label: string) =>
   L.divIcon({
-    html: `<div style="font-family: system-ui, -apple-system, sans-serif; font-size: 14px; font-weight: 800; letter-spacing: 2.5px; color: #475569; text-transform: uppercase; white-space: nowrap; pointer-events: none; text-shadow: 0 1px 3px rgba(255,255,255,0.95), 0 0 6px rgba(255,255,255,0.95);">${label}</div>`,
+    html: `<div style="font-family: system-ui, -apple-system, sans-serif; font-size: 13px; font-weight: 800; letter-spacing: 2px; color: #475569; text-transform: uppercase; white-space: nowrap; pointer-events: none; text-shadow: 0 1px 3px rgba(255,255,255,0.95), 0 0 6px rgba(255,255,255,0.95);">${label}</div>`,
     className: "continent-label-marker",
-    iconSize: [120, 24],
-    iconAnchor: [60, 12],
+    iconSize: [60, 20],
+    iconAnchor: [30, 10],
   });
 
 const AlumniMap = () => {
