@@ -34,12 +34,12 @@ router.get("/", mapRateLimiter, async (req, res) => {
       );
     }
 
+    const { normalizeCityAndCountry, CANONICAL_CITIES } = require("../config/canonicalCities");
+
     // Find all profiles with valid location coordinates
-    const locations = await Profile.aggregate([
+    const rawLocations = await Profile.aggregate([
       {
         $match: {
-          // Only numeric coordinates — legacy string/garbage values would
-          // otherwise flow through and produce NaN markers on the frontend.
           "location.lat": { $exists: true, $ne: null, $type: ["double", "int"] },
           "location.lng": { $exists: true, $ne: null, $type: ["double", "int"] },
         },
@@ -60,48 +60,65 @@ router.get("/", mapRateLimiter, async (req, res) => {
         },
       },
       {
-        // Deterministic ordering so $first picks the same lat/lng every time
-        // (cached vs. freshly-computed responses can't disagree).
-        $sort: { "location.lat": 1, "location.lng": 1 },
-      },
-      {
         $group: {
           _id: {
             city: { $toLower: { $trim: { input: { $ifNull: ["$location.city", "unknown"] } } } },
             country: { $toLower: { $trim: { input: { $ifNull: ["$location.country", "unknown"] } } } },
           },
           count: { $sum: 1 },
-          lat: { $first: "$location.lat" },
-          lng: { $first: "$location.lng" },
+          avgLat: { $avg: "$location.lat" },
+          avgLng: { $avg: "$location.lng" },
           rawCity: { $first: "$location.city" },
           rawCountry: { $first: "$location.country" },
         },
       },
-      {
-        $project: {
-          _id: 0,
-          // Replace missing OR blank city/country with a readable label so
-          // popups never render empty lines.
-          city: {
-            $cond: [
-              { $eq: [{ $trim: { input: { $ifNull: ["$rawCity", ""] } } }, ""] },
-              "Unknown",
-              "$rawCity",
-            ],
-          },
-          country: {
-            $cond: [
-              { $eq: [{ $trim: { input: { $ifNull: ["$rawCountry", ""] } } }, ""] },
-              "Unknown",
-              "$rawCountry",
-            ],
-          },
-          count: 1,
-          lat: 1,
-          lng: 1,
-        },
-      },
     ]);
+
+    // Post-process with canonical resolution and alias merging (e.g. delhi/new delhi -> New Delhi, bangalore/bengaluru -> Bengaluru)
+    const groupedMap = new Map();
+
+    for (const item of rawLocations) {
+      const { normalizedCity, normalizedCountry, canonicalKey, displayCity, displayCountry } =
+        normalizeCityAndCountry(item._id.city, item._id.country);
+
+      if (!groupedMap.has(canonicalKey)) {
+        const canonical = CANONICAL_CITIES[canonicalKey];
+        groupedMap.set(canonicalKey, {
+          city: displayCity,
+          country: displayCountry,
+          count: 0,
+          latSum: 0,
+          lngSum: 0,
+          rawCount: 0,
+          canonicalLat: canonical ? canonical.lat : null,
+          canonicalLng: canonical ? canonical.lng : null,
+        });
+      }
+
+      const record = groupedMap.get(canonicalKey);
+      record.count += item.count;
+      record.latSum += item.avgLat * item.count;
+      record.lngSum += item.avgLng * item.count;
+      record.rawCount += item.count;
+    }
+
+    const locations = Array.from(groupedMap.values()).map((record) => {
+      // Use canonical coordinates if available; otherwise use weighted average
+      const finalLat = record.canonicalLat !== null
+        ? record.canonicalLat
+        : (record.rawCount > 0 ? record.latSum / record.rawCount : 0);
+      const finalLng = record.canonicalLng !== null
+        ? record.canonicalLng
+        : (record.rawCount > 0 ? record.lngSum / record.rawCount : 0);
+
+      return {
+        city: record.city,
+        country: record.country,
+        count: record.count,
+        lat: Number(finalLat.toFixed(6)),
+        lng: Number(finalLng.toFixed(6)),
+      };
+    });
 
     // Store in Redis cache if available (TTL: 1 hour / 3600 seconds)
     try {

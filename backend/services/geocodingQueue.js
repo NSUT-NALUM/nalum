@@ -54,9 +54,23 @@ async function addToQueue(userId, city, country) {
   }
 }
 
-// Geocode a city/country using OpenStreetMap Nominatim API
+const {
+  getCanonicalLocation,
+  haversineDistanceKm,
+  normalizeCityAndCountry,
+} = require("../config/canonicalCities");
+
+// Geocode a city/country using OpenStreetMap Nominatim API with canonical validation
 async function geocodeLocation(city, country) {
   try {
+    const canonical = getCanonicalLocation(city, country);
+    if (canonical.isCanonical) {
+      console.log(
+        `✓ Using canonical coordinates for ${city}, ${country}: lat=${canonical.lat}, lng=${canonical.lng}`
+      );
+      return [canonical.lat, canonical.lng];
+    }
+
     const query = `${city}, ${country}`;
     const response = await axios.get(NOMINATIM_URL, {
       params: {
@@ -71,7 +85,10 @@ async function geocodeLocation(city, country) {
 
     if (response.data && response.data.length > 0) {
       const result = response.data[0];
-      return [parseFloat(result.lat), parseFloat(result.lon)];
+      const geocodedLat = parseFloat(result.lat);
+      const geocodedLng = parseFloat(result.lon);
+
+      return [geocodedLat, geocodedLng];
     }
 
     console.warn(`No geocoding results for: ${query}`);

@@ -75,7 +75,20 @@ router.put("/", protect, async (req, res) => {
     if (location !== undefined) {
       const user = await User.findById(userId).select("role");
       if (user && user.role === "alumni") {
-        profile.location = location;
+        if (location && location.city && location.country) {
+          const { normalizeCityAndCountry, getCanonicalLocation } = require("../../config/canonicalCities");
+          const norm = normalizeCityAndCountry(location.city, location.country);
+          const canonical = getCanonicalLocation(location.city, location.country);
+
+          profile.location = {
+            city: norm.displayCity.toLowerCase(),
+            country: norm.displayCountry.toLowerCase(),
+            lat: canonical.isCanonical ? canonical.lat : (location.lat || undefined),
+            lng: canonical.isCanonical ? canonical.lng : (location.lng || undefined),
+          };
+        } else {
+          profile.location = location;
+        }
       }
     }
 
