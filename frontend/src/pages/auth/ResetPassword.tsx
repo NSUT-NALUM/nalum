@@ -26,19 +26,18 @@ const ResetPassword = () => {
   const navigate = useNavigate();
 
   const token = searchParams.get("token");
-  const email = searchParams.get("email");
   const [isVerifying, setIsVerifying] = useState(true);
 
   useEffect(() => {
     const verifyToken = async () => {
-      if (!token || !email) {
+      if (!token) {
         setTokenError(true);
         setIsVerifying(false);
         return;
       }
 
       try {
-        await apiClient.get("/auth/verify-reset-token", { params: { email, token } });
+        await apiClient.get("/auth/verify-reset-token", { params: { token } });
         setIsVerifying(false);
       } catch (error) {
         setTokenError(true);
@@ -47,7 +46,7 @@ const ResetPassword = () => {
     };
 
     verifyToken();
-  }, [token, email]);
+  }, [token]);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -79,7 +78,7 @@ const ResetPassword = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validateForm() || !token || !email) return;
+    if (!validateForm() || !token) return;
 
     setIsLoading(true);
     try {

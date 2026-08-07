@@ -1,6 +1,5 @@
 const express = require("express");
 const router = express.Router();
-const jwt = require("jsonwebtoken");
 const users = require("../../controllers/user.controller.js");
 const mailService = require("../../mail/mailService.js");
 const verificationToken = require("../../controllers/verificationToken.controller.js");

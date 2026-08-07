@@ -3,6 +3,7 @@ const router = express.Router();
 const bcrypt = require("bcrypt");
 const { protect } = require("../../middleware/auth.js");
 const User = require("../../models/user/user.model.js");
+const { validatePassword } = require("../../utils/passwordPolicy");
 
 router.post("/", protect, async (req, res) => {
   try {
@@ -16,13 +17,11 @@ router.post("/", protect, async (req, res) => {
       });
     }
 
-    if (newPassword.length < 8) {
-      return res.status(400).json({
-        error: true,
-        message: "New password must be at least 8 characters long",
-      });
+    const passwordError = validatePassword(newPassword);
+    if (passwordError) {
+      return res.status(400).json({ error: true, message: passwordError });
     }
-
+    
     const user = await User.findById(user_id);
     if (!user) {
       return res.status(404).json({ error: true, message: "User not found" });

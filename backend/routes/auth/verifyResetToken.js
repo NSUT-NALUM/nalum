@@ -4,14 +4,13 @@ const verificationToken = require("../../controllers/verificationToken.controlle
 
 router.get("/", async (req, res) => {
   try {
-    const { email, token } = req.query;
+    const { token } = req.query;
 
-    if (!email || !token) {
-      return res.status(400).json({ error: true, message: "Email and token are required" });
+    if (!token) {
+      return res.status(400).json({ error: true, message: "Token is required" });
     }
 
-    const sanitizedEmail = email.toLowerCase().trim();
-    const result = await verificationToken.find(sanitizedEmail, token, "password_reset");
+    const result = await verificationToken.findByToken(token, "password_reset");
 
     if (result.error) {
       return res.status(400).json({ error: true, message: "This reset link is invalid or has expired." });

@@ -17,7 +17,7 @@ router.post("/", async (req, res) => {
       });
     }
 
-    const tokenResponse = await verificationToken.findByToken(token);
+    const tokenResponse = await verificationToken.findByToken(token, "password_reset");
 
     if (tokenResponse.error) {
       return res.status(400).json({
@@ -48,9 +48,10 @@ router.post("/", async (req, res) => {
 
     const removeResponse = await verificationToken.remove(
       sanitizedEmail,
-      token
+      token,
+      "password_reset"
     );
-
+    
     if (removeResponse.error) {
       console.error(
         "[resetPassword] Failed to delete token:",
