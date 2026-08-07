@@ -19,7 +19,6 @@ import {
   Globe,
   LogIn,
   LogOut,
-  MessageSquare
   Shield,
   MessageSquare,
   Wallet
