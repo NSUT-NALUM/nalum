@@ -40,6 +40,34 @@ const PostsFeed = ({
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
+  const trackSessionViews = (items: Post[]) => {
+    if (!items || items.length === 0) return;
+    try {
+      const stored = sessionStorage.getItem("nalum_session_viewed_posts");
+      const viewedSet = new Set<string>(stored ? JSON.parse(stored) : []);
+      const newPostIds: string[] = [];
+
+      for (const item of items) {
+        if (item._id && !viewedSet.has(item._id)) {
+          newPostIds.push(item._id);
+          viewedSet.add(item._id);
+        }
+      }
+
+      if (newPostIds.length > 0) {
+        // Record batch views on backend
+        api.post("/posts/views-batch", { postIds: newPostIds }).catch(() => {});
+        // Update session storage
+        sessionStorage.setItem(
+          "nalum_session_viewed_posts",
+          JSON.stringify(Array.from(viewedSet))
+        );
+      }
+    } catch (e) {
+      console.error("Error tracking session views:", e);
+    }
+  };
+
   const fetchPosts = useCallback(async () => {
     setIsLoading(true);
     setError(null);
@@ -63,10 +91,13 @@ const PostsFeed = ({
           : data.data.posts;
         setPosts(sortByAdmin(postsData));
         setTotalPages(1); // Hide pagination for search results
+        trackSessionViews(postsData);
       } else {
         // Normal feed with pagination
-        setPosts(sortByAdmin(data.data.posts));
+        const fetchedPosts = data.data.posts || [];
+        setPosts(sortByAdmin(fetchedPosts));
         setTotalPages(data.data.pagination?.pages || 1);
+        trackSessionViews(fetchedPosts);
       }
     } catch (err: any) {
       console.error("Error fetching posts:", err);

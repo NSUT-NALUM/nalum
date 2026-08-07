@@ -12,6 +12,8 @@ const {
   deletePost,
   searchPosts,
   getMyPosts,
+  recordView,
+  recordViewsBatch,
 } = require("../controllers/posts.controller");
 
 // Routes
@@ -20,6 +22,8 @@ router.get("/", protect, getPosts);
 router.get("/my/all", protect, getMyPosts);
 router.get("/search", protect, searchPosts);
 router.use("/:postId/comments", commentsRoutes);
+router.post("/views-batch", protect, recordViewsBatch);
+router.post("/:id/view", protect, recordView);
 router.get("/:id", protect, getPostById);
 router.put("/:id", protect, uploadPostImage.array("images", 2), compressionPresets.postImage, updatePost);
 router.delete("/:id", protect, deletePost);
