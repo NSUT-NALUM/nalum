@@ -57,6 +57,19 @@ const ViewPost = () => {
 
       if (data.success) {
         setPost(data.data);
+        
+        // Track 1 view per session for single post page
+        try {
+          const stored = sessionStorage.getItem("nalum_session_viewed_posts");
+          const viewedSet = new Set<string>(stored ? JSON.parse(stored) : []);
+          if (!viewedSet.has(postId)) {
+            viewedSet.add(postId);
+            sessionStorage.setItem("nalum_session_viewed_posts", JSON.stringify(Array.from(viewedSet)));
+            api.post(`/posts/${postId}/view`).catch(() => {});
+          }
+        } catch (e) {
+          // Ignore
+        }
       } else {
         setError(data.message || "Failed to load post");
       }

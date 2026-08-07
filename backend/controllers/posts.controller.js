@@ -390,3 +390,50 @@ exports.getMyPosts = async (req, res) => {
     });
   }
 };
+
+exports.recordView = async (req, res) => {
+  try {
+    const postId = req.params.id;
+
+    // Increment view count by 1
+    const post = await Post.findByIdAndUpdate(
+      postId,
+      { $inc: { view_count: 1 } },
+      { new: true }
+    ).select("view_count");
+
+    return res.status(200).json({
+      success: true,
+      view_count: post?.view_count || 0,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Error recording view",
+    });
+  }
+};
+
+exports.recordViewsBatch = async (req, res) => {
+  try {
+    const { postIds } = req.body;
+
+    if (Array.isArray(postIds) && postIds.length > 0) {
+      await Post.updateMany(
+        { _id: { $in: postIds } },
+        { $inc: { view_count: 1 } }
+      );
+    }
+
+    return res.status(200).json({
+      success: true,
+      count: postIds?.length || 0,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Error recording batch views",
+    });
+  }
+};
+

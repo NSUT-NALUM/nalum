@@ -12,7 +12,12 @@ import {
   Clock,
   CheckCircle,
   XCircle,
-  AlertCircle
+  AlertCircle,
+  Eye,
+  Globe,
+  LogIn,
+  LogOut,
+  MessageSquare
 } from 'lucide-react';
 import apiClient from '@/lib/api';
 
@@ -43,6 +48,15 @@ interface DashboardStats {
   bans: {
     active: number;
     total: number;
+  };
+  website_visits?: {
+    total: number;
+    pre_login: number;
+    post_login: number;
+  };
+  posts?: {
+    total: number;
+    total_views: number;
   };
 }
 
@@ -100,6 +114,43 @@ const AdminDashboard = () => {
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {/* Total Website Visits */}
+          <Card className="hover:shadow-lg transition-shadow border-l-4 border-l-indigo-600">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-gray-600">
+                Website Visits
+              </CardTitle>
+              <Globe className="h-4 w-4 text-indigo-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-gray-900">
+                {stats?.website_visits?.total || 0}
+              </div>
+              <p className="text-xs text-gray-500 mt-2 flex justify-between">
+                <span>Pre-login: <strong className="text-indigo-600">{stats?.website_visits?.pre_login || 0}</strong></span>
+                <span>Post-login: <strong className="text-emerald-600">{stats?.website_visits?.post_login || 0}</strong></span>
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Total Post Views */}
+          <Card className="hover:shadow-lg transition-shadow border-l-4 border-l-cyan-600">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-gray-600">
+                Total Post Views
+              </CardTitle>
+              <Eye className="h-4 w-4 text-cyan-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-gray-900">
+                {stats?.posts?.total_views || 0}
+              </div>
+              <p className="text-xs text-gray-500 mt-2">
+                Across {stats?.posts?.total || 0} community posts
+              </p>
+            </CardContent>
+          </Card>
+
           {/* Total Users */}
           <Card className="hover:shadow-lg transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -136,47 +187,91 @@ const AdminDashboard = () => {
               </p>
             </CardContent>
           </Card>
-
-          {/* Pending Verifications */}
-          <Card className="hover:shadow-lg transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">
-                Pending Verifications
-              </CardTitle>
-              <Clock className="h-4 w-4 text-orange-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-gray-900">
-                {stats?.verifications.pending || 0}
-              </div>
-              <p className="text-xs text-gray-500 mt-2">
-                {stats?.verifications.verified || 0} verified
-              </p>
-            </CardContent>
-          </Card>
-
-          {/* Pending Events */}
-          <Card className="hover:shadow-lg transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">
-                Pending Events
-              </CardTitle>
-              <Calendar className="h-4 w-4 text-purple-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-gray-900">
-                {stats?.events.pending || 0}
-              </div>
-              <p className="text-xs text-gray-500 mt-2">
-                {stats?.events.total || 0} total events
-              </p>
-            </CardContent>
-          </Card>
         </div>
 
-        {/* Quick Actions Grid */}
+        {/* Detailed Analytics Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* User Stats */}
+          {/* Website Visitor Traffic Analysis */}
+          <Card className="border shadow-sm">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-xl flex items-center gap-2">
+                    <Globe className="h-5 w-5 text-indigo-600" />
+                    Website Traffic (Pre vs Post Login)
+                  </CardTitle>
+                  <CardDescription>Visitor distribution before and after signing in</CardDescription>
+                </div>
+                <span className="text-xs bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-full font-semibold">
+                  Total: {stats?.website_visits?.total || 0} visits
+                </span>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-5">
+                {/* Pre-login visitors */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <div className="flex items-center gap-2">
+                      <LogOut className="w-4 h-4 text-indigo-600" />
+                      <span className="font-medium text-gray-700">Visitors Before Login (Pre-login)</span>
+                    </div>
+                    <span className="font-bold text-gray-900">
+                      {stats?.website_visits?.pre_login || 0}{" "}
+                      <span className="text-xs text-gray-500 font-normal">
+                        ({stats?.website_visits?.total ? Math.round(((stats?.website_visits?.pre_login || 0) / stats.website_visits.total) * 100) : 0}%)
+                      </span>
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-100 h-2.5 rounded-full overflow-hidden">
+                    <div
+                      className="bg-indigo-600 h-full rounded-full transition-all duration-500"
+                      style={{
+                        width: `${stats?.website_visits?.total ? Math.min(100, Math.round(((stats?.website_visits?.pre_login || 0) / stats.website_visits.total) * 100)) : 0}%`,
+                      }}
+                    ></div>
+                  </div>
+                </div>
+
+                {/* Post-login visitors */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <div className="flex items-center gap-2">
+                      <LogIn className="w-4 h-4 text-emerald-600" />
+                      <span className="font-medium text-gray-700">Visitors After Login (Post-login)</span>
+                    </div>
+                    <span className="font-bold text-gray-900">
+                      {stats?.website_visits?.post_login || 0}{" "}
+                      <span className="text-xs text-gray-500 font-normal">
+                        ({stats?.website_visits?.total ? Math.round(((stats?.website_visits?.post_login || 0) / stats.website_visits.total) * 100) : 0}%)
+                      </span>
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-100 h-2.5 rounded-full overflow-hidden">
+                    <div
+                      className="bg-emerald-600 h-full rounded-full transition-all duration-500"
+                      style={{
+                        width: `${stats?.website_visits?.total ? Math.min(100, Math.round(((stats?.website_visits?.post_login || 0) / stats.website_visits.total) * 100)) : 0}%`,
+                      }}
+                    ></div>
+                  </div>
+                </div>
+
+                <div className="border-t pt-4 grid grid-cols-2 gap-4 text-center">
+                  <div className="p-3 bg-indigo-50/60 rounded-lg">
+                    <p className="text-xs text-indigo-700 font-medium">Public Visitors</p>
+                    <p className="text-2xl font-bold text-indigo-900">{stats?.website_visits?.pre_login || 0}</p>
+                  </div>
+                  <div className="p-3 bg-emerald-50/60 rounded-lg">
+                    <p className="text-xs text-emerald-700 font-medium">Logged-in Users</p>
+                    <p className="text-2xl font-bold text-emerald-900">{stats?.website_visits?.post_login || 0}</p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* User Distribution Stats */}
           <Card>
             <CardHeader>
               <CardTitle>User Statistics</CardTitle>
@@ -271,7 +366,35 @@ const AdminDashboard = () => {
         </div>
 
         {/* Additional Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          {/* Post Views Analytics */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-lg">Post Views</CardTitle>
+                  <CardDescription>Feed impressions & views</CardDescription>
+                </div>
+                <Eye className="h-8 w-8 text-cyan-600" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats?.posts?.total_views || 0}</div>
+              <div className="mt-3 text-xs text-gray-600">
+                <div className="flex justify-between">
+                  <span>Total Posts:</span>
+                  <span className="font-semibold">{stats?.posts?.total || 0}</span>
+                </div>
+                <div className="flex justify-between mt-1">
+                  <span>Avg Views/Post:</span>
+                  <span className="font-semibold">
+                    {stats?.posts?.total ? Math.round((stats?.posts?.total_views || 0) / stats.posts.total) : 0}
+                  </span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Newsletters */}
           <Card>
             <CardHeader>
