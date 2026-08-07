@@ -199,6 +199,28 @@ exports.deleteNotification = async (req, res) => {
 };
 
 /**
+ * Clear all notifications for the authenticated user (Task 3.4)
+ */
+exports.clearAllNotifications = async (req, res) => {
+  try {
+    const userId = req.user.user_id;
+    const result = await notificationService.clearAllNotifications(userId);
+
+    res.status(200).json({
+      success: true,
+      message: `${result.deletedCount} notifications cleared`,
+      data: result,
+    });
+  } catch (error) {
+    console.error('Error clearing notifications:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to clear notifications',
+    });
+  }
+};
+
+/**
  * Subscribe to push notifications
  */
 exports.subscribePush = async (req, res) => {

@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import MentionTextarea from "@/components/MentionTextarea";
 import { toast } from "sonner";
+import { DeleteConfirmDialog } from "@/components/ui/DeleteConfirmDialog";
+import { useDelete } from "@/hooks/useDelete";
 
 interface Query {
   _id: string;
@@ -27,6 +29,17 @@ const Queries = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [queryToDelete, setQueryToDelete] = useState<Query | null>(null);
+
+  const { isDeleting, confirmOpen, setConfirmOpen, confirmDelete } = useDelete({
+    endpoint: queryToDelete ? `/queries/${queryToDelete._id}` : "",
+    onSuccess: () => {
+      setQueries((prev) => prev.filter((q) => q._id !== queryToDelete?._id));
+      setQueryToDelete(null);
+    },
+    successMessage: "Query deleted successfully",
+    errorMessage: "Failed to delete query",
+  });
 
   // Form state
   const [title, setTitle] = useState("");
@@ -287,11 +300,27 @@ const Queries = () => {
         ) : (
           <div className="flex flex-col gap-4">
             {queries.map((query) => (
-              <QueryCard key={query._id} query={query} />
+              <QueryCard
+                key={query._id}
+                query={query}
+                onDelete={(id) => {
+                  setQueryToDelete(query);
+                  setConfirmOpen(true);
+                }}
+              />
             ))}
           </div>
         )}
       </div>
+
+      <DeleteConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title="Delete query?"
+        description="Are you sure you want to delete this query submission?"
+        isDeleting={isDeleting}
+        onConfirm={confirmDelete}
+      />
     </div>
   );
 };
