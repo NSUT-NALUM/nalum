@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
+import { useNotifications } from "@/context/NotificationContext";
 import api from "@/lib/api";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -34,16 +35,45 @@ interface Post {
 const ViewPost = () => {
   const { postId } = useParams<{ postId: string }>();
   const { accessToken, user } = useAuth();
+  const { clearPostNotifications } = useNotifications();
   const navigate = useNavigate();
   const [post, setPost] = useState<Post | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const clearedNotificationPostIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     fetchPost();
   }, [postId]);
+
+  useEffect(() => {
+    if (!postId || !post || post._id !== postId) return;
+
+    const clearVisitedPostNotifications = async () => {
+      if (
+        document.visibilityState !== "visible" ||
+        clearedNotificationPostIdRef.current === postId
+      ) {
+        return;
+      }
+
+      clearedNotificationPostIdRef.current = postId;
+      try {
+        await clearPostNotifications(postId);
+      } catch (error) {
+        clearedNotificationPostIdRef.current = null;
+        console.error("Failed to clear visited post notifications:", error);
+      }
+    };
+
+    void clearVisitedPostNotifications();
+    document.addEventListener("visibilitychange", clearVisitedPostNotifications);
+    return () => {
+      document.removeEventListener("visibilitychange", clearVisitedPostNotifications);
+    };
+  }, [clearPostNotifications, post, postId]);
 
   const fetchPost = async () => {
     if (!postId) return;

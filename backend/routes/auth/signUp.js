@@ -3,6 +3,12 @@ const bcrypt = require("bcrypt");
 const router = express.Router();
 
 const users = require("../../controllers/user.controller");
+const { validatePassword } = require("../../utils/passwordPolicy");
+
+const validateEmail = (email) => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+};
 
 router.post("/",async (req,res) => {
   console.log("SignUp request received:", { body: req.body });
@@ -22,6 +28,25 @@ router.post("/",async (req,res) => {
   }
   
   const {name,email,password,role} = req.body;
+
+  // Validate email format
+  if (!validateEmail(email)) {
+    return res.status(400).json({
+      err: true,
+      code: 400,
+      message: "Please provide a valid email address"
+    });
+  }
+
+  // Validate password strength
+  const passwordError = validatePassword(password);
+  if (passwordError) {
+    return res.status(400).json({
+      err: true,
+      code: 400,
+      message: passwordError
+    });
+  }
   
   // Block admin signup - admins can only be created via scripts
   if(role === "admin"){

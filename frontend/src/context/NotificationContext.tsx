@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useCallback, useContext, useState, useEffect, ReactNode } from 'react';
 import { useAuth } from './AuthContext';
 import { useSocket } from '../hooks/useSocket';
 import api from '../lib/api';
@@ -28,17 +28,23 @@ interface NotificationContextType {
   markAsRead: (notificationId: string) => Promise<void>;
   markAllAsRead: () => Promise<void>;
   deleteNotification: (notificationId: string, deleteAllFromSameSender?: boolean) => Promise<void>;
+  clearPostNotifications: (postId: string) => Promise<void>;
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
 
 export const NotificationProvider = ({ children }: { children: ReactNode }) => {
-  const { accessToken } = useAuth();
+  const { accessToken, user } = useAuth();
   const { socket, isConnected } = useSocket();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    setNotifications([]);
+    setUnreadCount(0);
+    setLoading(false);
+  }, [user?.id]);
   // Fetch notifications
   const fetchNotifications = async () => {
     if (!accessToken) return;
@@ -168,6 +174,24 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const clearPostNotifications = useCallback(async (postId: string) => {
+    if (!accessToken) return;
+
+    const response = await api.delete(`/notifications/post/${postId}`);
+    const result = response.data?.data;
+    const removedIds = new Set<string>(result?.notificationIds || []);
+
+    if (removedIds.size > 0) {
+      setNotifications(current =>
+        current.filter(notification => !removedIds.has(notification.id))
+      );
+    }
+
+    if (typeof result?.unreadCount === 'number') {
+      setUnreadCount(result.unreadCount);
+    }
+  }, [accessToken]);
+
   // Listen for real-time notifications via Socket.io
   useEffect(() => {
     if (!socket || !isConnected) return;
@@ -264,12 +288,12 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
     };
   }, [socket, isConnected]);
 
-  // Initial fetch
+  // Initial fetch and socket-reconnect reconciliation
   useEffect(() => {
-    if (accessToken) {
+    if (accessToken && isConnected) {
       fetchNotifications();
     }
-  }, [accessToken]);
+  }, [accessToken, isConnected]);
 
   return (
     <NotificationContext.Provider
@@ -281,6 +305,7 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
         markAsRead,
         markAllAsRead,
         deleteNotification,
+        clearPostNotifications,
       }}
     >
       {children}
@@ -296,6 +321,7 @@ const defaultContext: NotificationContextType = {
   markAsRead: async () => {},
   markAllAsRead: async () => {},
   deleteNotification: async () => {},
+  clearPostNotifications: async () => {},
 };
 
 export const useNotifications = () => {

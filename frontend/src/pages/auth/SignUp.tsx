@@ -19,6 +19,7 @@ import nsutCampusHero from "@/assets/hero.webp";
 import { useAuth } from "@/context/AuthContext";
 import { resolvePostLoginPath } from "@/lib/roleConfig";
 import { trackSignUp, trackEvent } from "@/lib/analytics";
+import { validatePassword } from "@/lib/passwordPolicy";
 
 const Signup = () => {
   const navigate = useNavigate();
@@ -75,18 +76,24 @@ const Signup = () => {
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
     if (!formData.name) newErrors.name = "Full name is required";
+    
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!formData.email) {
       newErrors.email = "Email is required";
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+    } else if (!emailRegex.test(formData.email)) {
       newErrors.email = "Please enter a valid email address";
     } else if (formData.role === "student" && !formData.email.endsWith("@nsut.ac.in")) {
       newErrors.email = "Students must use their @nsut.ac.in email address";
     }
+
     if (!formData.password) {
       newErrors.password = "Password is required";
-    } else if (formData.password.length < 8) {
-      newErrors.password = "Password must be at least 8 characters long";
+    } else {
+      const passwordError = validatePassword(formData.password);
+      if (passwordError) newErrors.password = passwordError;
     }
+
     if (!confirmPassword) {
       newErrors.confirmPassword = "Please confirm your password";
     } else if (formData.password !== confirmPassword) {
