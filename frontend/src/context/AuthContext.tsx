@@ -46,7 +46,13 @@ export const AuthProvider = ({
 }) => {
   const [accessToken, setAccessTokenState] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  // Must start `true`: restoreSession() only runs in an effect, i.e. after the
+  // first commit. Starting `false` meant that first render exposed children to
+  // `accessToken === null`, so ProtectedRoute bounced a hard page load to
+  // /login, which then bounced to the role's post-login path — silently
+  // discarding the requested URL. Deep links and refresh both landed on
+  // /dashboard.
+  const [isLoading, setIsLoading] = useState(true);
 
   const isAuthenticated = !!accessToken;
   const isAdmin = user?.role === "admin";
