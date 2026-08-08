@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
-import { Clock, Edit, Trash2, AlertCircle, ChevronLeft, ChevronRight, X, Flag } from "lucide-react";
+import { Clock, Edit, Trash2, AlertCircle, ChevronLeft, ChevronRight, X, Flag, Heart, MessageSquare, Share2 } from "lucide-react";
 import UserAvatar from "@/components/UserAvatar";
 import api from "@/lib/api";
 import { BASE_URL } from "@/lib/constants";
@@ -29,6 +29,8 @@ interface Post {
   updatedAt: string;
   status?: string;
   rejection_reason?: string;
+  likes?: string[] | number;
+  liked_by?: string[];
 }
 
 interface PostCardProps {
@@ -56,6 +58,85 @@ const PostCard = ({
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const contentRef = useRef<HTMLDivElement>(null);
+  
+  // Handle case where likes might be a number due to schema changes
+  const initialLikes = Array.isArray(post.likes) 
+    ? post.likes 
+    : (Array.isArray(post.liked_by) ? post.liked_by : []);
+    
+  const [localLikes, setLocalLikes] = useState<string[]>(initialLikes);
+  const [isLiked, setIsLiked] = useState<boolean>(
+    profile?.user?._id ? initialLikes.includes(profile.user._id) : false
+  );
+  const [isLiking, setIsLiking] = useState(false);
+
+  useEffect(() => {
+    const likesArray = Array.isArray(post.likes) 
+      ? post.likes 
+      : (Array.isArray(post.liked_by) ? post.liked_by : undefined);
+      
+    if (likesArray) {
+      setLocalLikes(likesArray);
+      if (profile?.user?._id) {
+        setIsLiked(likesArray.includes(profile.user._id));
+      }
+    }
+  }, [post.likes, post.liked_by, profile?.user?._id]);
+
+  const handleLike = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (isLiking || !profile?.user?._id) return;
+    
+    // Optimistic UI update
+    const previousIsLiked = isLiked;
+    const previousLocalLikes = [...localLikes];
+
+    setIsLiking(true);
+    
+    if (isLiked) {
+      setIsLiked(false);
+      setLocalLikes((prev) => prev.filter((id) => id !== profile?.user?._id));
+    } else {
+      setIsLiked(true);
+      setLocalLikes((prev) => [...prev, profile.user!._id]);
+    }
+
+    try {
+      const response = await api.post(`/posts/${post._id}/like`);
+      if (response.data.success) {
+        setIsLiked(response.data.liked);
+        if (response.data.likes) {
+          setLocalLikes(response.data.likes);
+        }
+      }
+    } catch (error) {
+      console.error("Error toggling like:", error);
+      // Revert on failure
+      setIsLiked(previousIsLiked);
+      setLocalLikes(previousLocalLikes);
+    } finally {
+      setIsLiking(false);
+    }
+  };
+
+  const handleShare = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const postUrl = `${window.location.origin}/dashboard/posts/${post._id}`;
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: post.title,
+          text: post.content.substring(0, 100) + "...",
+          url: postUrl,
+        });
+      } catch (err) {
+        console.log("Share cancelled");
+      }
+    } else {
+      navigator.clipboard.writeText(postUrl);
+      // Optional toast for clipboard copy
+    }
+  };
 
   const handleUserClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -342,7 +423,43 @@ const PostCard = ({
         </div>
       )}
 
-      {/* Enlarged Image Modal using Dialog */}
+      {/* Action Buttons */}
+      <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-4 pt-4 border-t border-white/10">
+        <button
+          onClick={handleLike}
+          className={`flex items-center gap-2 h-9 sm:h-8 px-4 sm:px-3 text-sm rounded-md touch-manipulation active:scale-95 transition-all duration-200 ${
+            isLiked
+              ? "text-red-500 hover:text-red-400 hover:bg-red-500/10"
+              : "text-gray-400 hover:text-white hover:bg-white/10"
+          }`}
+        >
+          <Heart className={`h-4 w-4 ${isLiked ? "fill-current" : ""}`} />
+          <span>
+            {localLikes.length} {localLikes.length === 1 ? "Like" : "Likes"}
+          </span>
+        </button>
+
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            navigate(`/dashboard/posts/${post._id}`);
+          }}
+          className="flex items-center gap-2 h-9 sm:h-8 px-4 sm:px-3 text-sm rounded-md touch-manipulation active:scale-95 text-gray-400 hover:text-white hover:bg-white/10 transition-all duration-200"
+        >
+          <MessageSquare className="h-4 w-4" />
+          <span>Comment</span>
+        </button>
+
+        <button
+          onClick={handleShare}
+          className="flex items-center gap-2 h-9 sm:h-8 px-4 sm:px-3 text-sm rounded-md touch-manipulation active:scale-95 text-gray-400 hover:text-white hover:bg-white/10 border border-white/10 bg-white/5 transition-all duration-200 ml-auto sm:ml-0"
+        >
+          <Share2 className="h-4 w-4" />
+          <span>Share</span>
+        </button>
+      </div>
+
+      {/* Image Lightbox */}
       {selectedImage && post.images && post.images.length > 0 && (
         <Dialog
           open={!!selectedImage}

@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import UserAvatar from "@/components/UserAvatar";
-import { ArrowLeft, Calendar, Share2, Loader2, AlertCircle, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { ArrowLeft, Calendar, Share2, Loader2, AlertCircle, ChevronLeft, ChevronRight, X, Heart, MessageSquare } from "lucide-react";
 import { BASE_URL } from "@/lib/constants";
 import { toast } from "sonner";
 import { parseFormattedText } from "@/lib/textFormatting";
@@ -30,6 +30,8 @@ interface Post {
   rejection_reason?: string;
   createdAt: string;
   updatedAt: string;
+  likes?: string[] | number;
+  liked_by?: string[];
 }
 
 const ViewPost = () => {
@@ -43,6 +45,63 @@ const ViewPost = () => {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const clearedNotificationPostIdRef = useRef<string | null>(null);
+  
+  // Handle case where likes might be a number due to schema changes
+  const initialLikes = Array.isArray(post?.likes) 
+    ? post.likes 
+    : (Array.isArray(post?.liked_by) ? post.liked_by : []);
+    
+  const [localLikes, setLocalLikes] = useState<string[]>(initialLikes);
+  const [isLiked, setIsLiked] = useState(false);
+  const [isLiking, setIsLiking] = useState(false);
+
+  useEffect(() => {
+    const likesArray = Array.isArray(post?.likes) 
+      ? post.likes 
+      : (Array.isArray(post?.liked_by) ? post.liked_by : undefined);
+      
+    if (likesArray) {
+      setLocalLikes(likesArray);
+      if (user?.id) {
+        setIsLiked(likesArray.includes(user.id));
+      }
+    }
+  }, [post?.likes, post?.liked_by, user?.id]);
+
+  const handleLike = async () => {
+    if (isLiking || !user?.id || !post) return;
+    
+    // Optimistic UI update
+    const previousIsLiked = isLiked;
+    const previousLocalLikes = [...localLikes];
+
+    setIsLiking(true);
+    
+    if (isLiked) {
+      setIsLiked(false);
+      setLocalLikes((prev) => prev.filter((id) => id !== user.id));
+    } else {
+      setIsLiked(true);
+      setLocalLikes((prev) => [...prev, user.id]);
+    }
+
+    try {
+      const response = await api.post(`/posts/${post._id}/like`);
+      if (response.data.success) {
+        setIsLiked(response.data.liked);
+        if (response.data.likes) {
+          setLocalLikes(response.data.likes);
+        }
+      }
+    } catch (error) {
+      console.error("Error toggling like:", error);
+      // Revert on failure
+      setIsLiked(previousIsLiked);
+      setLocalLikes(previousLocalLikes);
+    } finally {
+      setIsLiking(false);
+    }
+  };
 
   useEffect(() => {
     fetchPost();
@@ -349,6 +408,34 @@ const ViewPost = () => {
             {/* Action Buttons */}
             <div className="flex flex-wrap items-center gap-2 sm:gap-3 pt-4 sm:pt-6 border-t border-white/10">
               <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleLike}
+                className={`gap-2 h-9 sm:h-8 px-4 sm:px-3 text-sm touch-manipulation active:scale-95 ${
+                  isLiked
+                    ? "text-red-500 hover:text-red-400 hover:bg-red-500/10"
+                    : "text-gray-400 hover:text-white hover:bg-white/10"
+                }`}
+              >
+                <Heart className={`h-4 w-4 ${isLiked ? "fill-current" : ""}`} />
+                <span>
+                  {localLikes.length} {localLikes.length === 1 ? "Like" : "Likes"}
+                </span>
+              </Button>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  document.getElementById('comments-section')?.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className="gap-2 h-9 sm:h-8 px-4 sm:px-3 text-sm touch-manipulation active:scale-95 text-gray-400 hover:text-white hover:bg-white/10"
+              >
+                <MessageSquare className="h-4 w-4" />
+                <span>Comment</span>
+              </Button>
+
+              <Button
                 variant="outline"
                 size="sm"
                 onClick={handleShare}
@@ -359,7 +446,9 @@ const ViewPost = () => {
               </Button>
             </div>
 
-            <CommentSection postId={post._id} />
+            <div id="comments-section">
+              <CommentSection postId={post._id} />
+            </div>
           </CardContent>
         </Card>
       </div>

@@ -2,6 +2,7 @@ const Post = require("../models/posts/post.model");
 const User = require("../models/user/user.model");
 const Settings = require("../models/admin/settings.model");
 const { notifyMentions } = require("../services/mentionHelper");
+const notificationService = require("../services/notificationService");
 
 // Helper function to check if posts should be auto-approved
 async function shouldAutoApprove() {
@@ -387,6 +388,61 @@ exports.getMyPosts = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: error.message || "Error fetching posts",
+    });
+  }
+};
+
+exports.toggleLikePost = async (req, res) => {
+  try {
+    const postId = req.params.id;
+    const userId = req.user.user_id;
+
+    const post = await Post.findById(postId);
+
+    if (!post) {
+      return res.status(404).json({
+        success: false,
+        message: "Post not found",
+      });
+    }
+
+    const alreadyLiked = post.likes.some(id => id.toString() === userId.toString());
+
+    if (alreadyLiked) {
+      // Unlike
+      post.likes = post.likes.filter(id => id.toString() !== userId.toString());
+    } else {
+      // Like
+      post.likes.push(userId);
+
+      // Notify the post author if someone else liked their post
+      if (post.userId.toString() !== userId.toString()) {
+        const liker = await User.findById(userId).select("name");
+        notificationService.createNotification({
+          type: "post_like",
+          recipientId: post.userId,
+          senderId: userId,
+          title: "New Like on your Post",
+          message: `${liker ? liker.name : "Someone"} liked your post.`,
+          actionUrl: `/dashboard/posts/${post._id}`,
+          relatedEntity: { entityType: "post", entityId: post._id },
+        }).catch(err => console.error("Error creating post like notification:", err));
+      }
+    }
+
+    await post.save();
+
+    res.status(200).json({
+      success: true,
+      liked: !alreadyLiked,
+      likes: post.likes,
+      message: !alreadyLiked ? "Post liked successfully" : "Post unliked successfully",
+    });
+  } catch (error) {
+    console.error("Error toggling like:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to toggle like",
     });
   }
 };
