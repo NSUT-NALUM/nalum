@@ -47,6 +47,10 @@ const postSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    likes: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    }],
   },
   { timestamps: true }
 );
@@ -55,5 +59,6 @@ const postSchema = new mongoose.Schema(
 postSchema.index({ status: 1 });
 postSchema.index({ userId: 1 });
 postSchema.index({ status: 1, createdAt: -1 });
+postSchema.index({ likes: -1 });
 
 module.exports = mongoose.model("Post", postSchema);

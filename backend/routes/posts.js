@@ -12,6 +12,7 @@ const {
   deletePost,
   searchPosts,
   getMyPosts,
+  toggleLikePost,
 } = require("../controllers/posts.controller");
 
 // Routes
@@ -21,6 +22,7 @@ router.get("/my/all", protect, getMyPosts);
 router.get("/search", protect, searchPosts);
 router.use("/:postId/comments", commentsRoutes);
 router.get("/:id", protect, getPostById);
+router.post("/:id/like", protect, toggleLikePost);
 router.put("/:id", protect, uploadPostImage.array("images", 2), compressionPresets.postImage, updatePost);
 router.delete("/:id", protect, deletePost);
 
