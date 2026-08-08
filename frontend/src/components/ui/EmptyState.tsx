@@ -14,7 +14,7 @@ export const EmptyState = ({
   action,
 }: EmptyStateProps) => {
   return (
-    <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-md shadow-xl p-20 text-center">
+    <div className="rounded-xl border border-border bg-card shadow-sm p-20 text-center">
       {icon && (
         <div className="mb-6">
           {typeof icon === "string" ? (
@@ -24,8 +24,8 @@ export const EmptyState = ({
           )}
         </div>
       )}
-      <h3 className="text-2xl font-bold text-white mb-3">{title}</h3>
-      {description && <p className="text-gray-400 mb-6">{description}</p>}
+      <h3 className="text-2xl font-bold text-foreground mb-3">{title}</h3>
+      {description && <p className="text-muted-foreground mb-6">{description}</p>}
       {action && <div>{action}</div>}
     </div>
   );

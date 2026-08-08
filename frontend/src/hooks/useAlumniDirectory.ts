@@ -60,6 +60,7 @@ export const useAlumniDirectory = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [skillInput, setSkillInput] = useState("");
+  const [isInitialMount, setIsInitialMount] = useState(true);
   const [lastSearchedFilters, setLastSearchedFilters] = useState<Filters>({
     name: "",
     batch: "",
@@ -157,43 +158,20 @@ export const useAlumniDirectory = () => {
     }
   };
 
-  // Auto-search with debounce when filters change
+  // Auto-search when filters change
   useEffect(() => {
-    // Check if any filter has a value
-    const hasAnyFilter =
-      filters.name ||
-      filters.batch ||
-      filters.branch ||
-      filters.campus ||
-      filters.company ||
-      filters.city ||
-      filters.country ||
-      filters.connectionFilter !== "all" ||
-      filters.roleFilter !== "all" ||
-      filters.skills.length > 0;
-
-    // If no filters, clear results and return to initial state
-    if (!hasAnyFilter) {
-      setAlumni([]);
-      setHasSearched(false);
-      setLastSearchedFilters({
-        name: "",
-        batch: "",
-        branch: "",
-        campus: "",
-        company: "",
-        city: "",
-        country: "",
-        connectionFilter: "all",
-        roleFilter: "all",
-        skills: [],
-      });
+    // Immediate fetch on initial load (no delay)
+    if (isInitialMount) {
+      setIsInitialMount(false);
+      setCurrentPage(1);
+      setLastSearchedFilters({ ...filters });
+      fetchAlumni(1);
       return;
     }
 
-    // Debounce the search - wait 500ms after user stops typing
+    // Debounce the search for subsequent filter typing - wait 500ms
     const timeoutId = setTimeout(() => {
-      setAlumni([]); // Clear previous results
+      // Don't clear previous results immediately to avoid flickering
       setCurrentPage(1);
       setLastSearchedFilters({ ...filters });
       fetchAlumni(1);
@@ -201,7 +179,7 @@ export const useAlumniDirectory = () => {
 
     // Cleanup function to cancel the timeout if filters change again
     return () => clearTimeout(timeoutId);
-  }, [filters, profile]);
+  }, [filters]); // Removed profile from dependencies so it doesn't cause a re-fetch when it loads
 
   // Refetch when itemsPerPage changes (screen resize)
   useEffect(() => {
@@ -245,7 +223,7 @@ export const useAlumniDirectory = () => {
   };
 
   const handleClearResults = () => {
-    setFilters({
+    const emptyFilters = {
       name: "",
       batch: "",
       branch: "",
@@ -256,22 +234,13 @@ export const useAlumniDirectory = () => {
       connectionFilter: "all",
       roleFilter: "all",
       skills: [],
-    });
-    setLastSearchedFilters({
-      name: "",
-      batch: "",
-      branch: "",
-      campus: "",
-      company: "",
-      city: "",
-      country: "",
-      connectionFilter: "all",
-      roleFilter: "all",
-      skills: [],
-    });
-    setAlumni([]);
-    setHasSearched(false);
+    };
+    setFilters(emptyFilters);
+    setLastSearchedFilters(emptyFilters);
+
+    // Fetch all alumni immediately when cleared
     setCurrentPage(1);
+    fetchAlumni(1);
   };
 
   // Check if current filters differ from last searched filters
@@ -293,7 +262,22 @@ export const useAlumniDirectory = () => {
     );
   };
 
-  const showClearButton = hasSearched && !hasFiltersChanged();
+  const hasActiveFilters = () => {
+    return !!(
+      filters.name ||
+      filters.batch ||
+      filters.branch ||
+      filters.campus ||
+      filters.company ||
+      filters.city ||
+      filters.country ||
+      filters.connectionFilter !== "all" ||
+      filters.roleFilter !== "all" ||
+      filters.skills.length > 0
+    );
+  };
+
+  const showClearButton = hasSearched && hasActiveFilters();
 
   const handlePageChange = (newPage: number) => {
     setCurrentPage(newPage);

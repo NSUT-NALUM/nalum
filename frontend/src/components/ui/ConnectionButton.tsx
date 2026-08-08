@@ -29,7 +29,7 @@ export const ConnectionButton = ({
         size={size}
         variant="ghost"
         disabled
-        className={`${baseClasses} text-green-400 bg-green-500/10`}
+        className={`${baseClasses} text-success bg-success-subtle`}
       >
         Connected
       </Button>
@@ -42,7 +42,7 @@ export const ConnectionButton = ({
         size={size}
         variant="ghost"
         disabled
-        className={`${baseClasses} text-amber-400 bg-amber-500/10`}
+        className={`${baseClasses} text-warning bg-warning-subtle`}
       >
         Pending
       </Button>
@@ -55,7 +55,7 @@ export const ConnectionButton = ({
         size={size}
         variant="ghost"
         disabled
-        className={`${baseClasses} text-red-400 bg-red-500/10`}
+        className={`${baseClasses} text-destructive bg-destructive/10`}
       >
         Unavailable
       </Button>
@@ -71,7 +71,7 @@ export const ConnectionButton = ({
           e.stopPropagation();
           setShowDialog(true);
         }}
-        className={`${baseClasses} bg-indigo-600 hover:bg-indigo-700 text-white`}
+        className={`${baseClasses} bg-primary hover:bg-primary-hover text-primary-foreground`}
       >
         <UserPlus className="h-3 w-3 mr-1" />
         Connect
