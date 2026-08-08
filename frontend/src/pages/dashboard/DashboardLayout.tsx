@@ -169,9 +169,9 @@ const DashboardContent = () => {
             // a single search result vs. an empty state), causing it to jump.
             "relative w-full mx-auto transition-all duration-300 min-h-full flex flex-col",
             isChatPage
-              ? "pt-0 pb-0 px-0 max-w-full h-full"
+              ? "pt-0 pb-0 px-0 max-w-full flex-1 min-h-0"
               : isNotificationsPage
-                ? "pt-0 pb-0 px-0 max-w-full h-full"
+                ? "pt-0 pb-0 px-0 max-w-full flex-1 min-h-0"
                 : isConnectionsPage
                   ? "pb-0 px-0 max-w-full"
                   : "px-4 pt-4 pb-20 md:p-8 max-w-7xl"

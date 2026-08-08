@@ -401,38 +401,38 @@ export const ChatWindow = ({ conversation, onBack }: ChatWindowProps) => {
   return (
     <div className="flex-1 h-full flex flex-col min-h-0 bg-transparent relative">
       {/* Header */}
-      <div className="p-3 border-b border-white/10 flex items-center gap-3 bg-black/20 backdrop-blur-sm z-10 shrink-0">
-        <Button variant="ghost" size="icon" onClick={onBack} className="md:hidden text-gray-300 hover:text-white hover:bg-white/10">
+      <div className="p-3 border-b border-border flex items-center gap-3 bg-card z-10 shrink-0">
+        <Button variant="ghost" size="icon" onClick={onBack} className="md:hidden text-muted-foreground hover:text-foreground hover:bg-muted">
           <ArrowLeft className="h-5 w-5" />
         </Button>
 
         <div
-          className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer hover:bg-white/5 p-1.5 -ml-1.5 rounded-lg transition-colors"
+          className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer hover:bg-muted p-1.5 -ml-1.5 rounded-lg transition-colors"
           onClick={() => !isCommunity && navigate(`/dashboard/alumni/${conversation.otherParticipant._id}`)}
         >
           <UserAvatar
             name={isCommunity ? conversation.name : (conversation.otherParticipant?.name || "Unknown User")}
             src={isCommunity ? conversation.avatar :(conversation.otherParticipant?.profile_picture || conversation.otherParticipant?.profilePicture)}
-            className="h-9 w-9 border border-white/10"
+            className="h-9 w-9 border border-border"
             size="sm"
           />
 
           <div className="flex-1 min-w-0">
-            <p className="font-semibold text-sm truncate text-gray-200">{isCommunity ? conversation.name : (conversation.otherParticipant?.name || "Unknown User")}</p>
+            <p className="font-semibold text-sm truncate text-foreground">{isCommunity ? conversation.name : (conversation.otherParticipant?.name || "Unknown User")}</p>
           </div>
         </div>
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-white hover:bg-white/10">
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted">
               <MoreVertical className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48 bg-slate-900 border-white/10 text-gray-200">
+          <DropdownMenuContent align="end" className="w-48">
             {isCommunity ? (
               <>
                 <DropdownMenuItem
-                  className="focus:bg-white/10 cursor-pointer"
+                  className="cursor-pointer"
                   onClick={async () => {
                     try {
                       await api.post(`/chat/communities/${conversation._id}/clear`);
@@ -444,7 +444,7 @@ export const ChatWindow = ({ conversation, onBack }: ChatWindowProps) => {
                   Clear Chat
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  className="text-red-400 focus:text-red-400 focus:bg-red-500/10 cursor-pointer"
+                  className="text-destructive focus:text-destructive focus:bg-destructive/10 cursor-pointer"
                   onClick={async () => {
                     try {
                       await api.post(`/chat/communities/${conversation._id}/leave`);
@@ -460,21 +460,21 @@ export const ChatWindow = ({ conversation, onBack }: ChatWindowProps) => {
             ) : (
               <>
                 <DropdownMenuItem
-                  className="focus:bg-white/10 cursor-pointer"
+                  className="cursor-pointer"
                   onClick={() => setShowDeleteDialog(true)}
                 >
                   Delete Chat
                 </DropdownMenuItem>
                 {isBlockedByMe ? (
                   <DropdownMenuItem
-                    className="text-blue-400 focus:text-blue-400 focus:bg-blue-500/10 cursor-pointer"
+                    className="text-primary focus:text-primary focus:bg-primary/10 cursor-pointer"
                     onClick={() => setShowUnblockDialog(true)}
                   >
                     Unblock User
                   </DropdownMenuItem>
                 ) : (
                   <DropdownMenuItem
-                    className="text-red-400 focus:text-red-400 focus:bg-red-500/10 cursor-pointer"
+                    className="text-destructive focus:text-destructive focus:bg-destructive/10 cursor-pointer"
                     onClick={() => setShowBlockDialog(true)}
                   >
                     Block User
@@ -490,12 +490,12 @@ export const ChatWindow = ({ conversation, onBack }: ChatWindowProps) => {
       <ScrollArea className="flex-1 shrink min-h-0">
         <div className="p-4 pb-2">
         {isLoading ? (
-          <div className="text-center text-gray-400 pt-10 text-sm">Loading messages...</div>
+          <div className="text-center text-muted-foreground pt-10 text-sm">Loading messages...</div>
         ) : messages.length === 0 ? (
-          <div className="text-center text-gray-400 pt-10 px-4">
+          <div className="text-center text-muted-foreground pt-10 px-4">
             {!activeConversationId ? (
               <div className="space-y-2">
-                <p className="font-medium text-sm text-gray-300">You're connected with {conversation.otherParticipant?.name}!</p>
+                <p className="font-medium text-sm text-foreground">You're connected with {conversation.otherParticipant?.name}!</p>
                 <p className="text-xs">Send a message to start the conversation</p>
               </div>
             ) : (
@@ -530,15 +530,15 @@ export const ChatWindow = ({ conversation, onBack }: ChatWindowProps) => {
                 <div
                   key={message._id}
                   data-message-id={message._id}
-                  className={message._id === highlightedMessageId ? "rounded-xl ring-2 ring-violet-400/80 bg-violet-500/10 transition-all" : "transition-all"}
+                  className={message._id === highlightedMessageId ? "rounded-xl ring-2 ring-primary/60 bg-primary-subtle transition-all" : "transition-all"}
                 >
                   {showUnseenDivider && (
                     <div className="flex items-center gap-4 my-6">
-                      <div className="h-px bg-emerald-500/30 flex-1" />
-                      <span className="text-xs font-medium text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
+                      <div className="h-px bg-primary/20 flex-1" />
+                      <span className="text-xs font-medium text-primary bg-primary-subtle px-3 py-1 rounded-full border border-primary/20">
                         {initialUnreadCount} unread {initialUnreadCount === 1 ? "message" : "messages"}
                       </span>
-                      <div className="h-px bg-emerald-500/30 flex-1" />
+                      <div className="h-px bg-primary/20 flex-1" />
                     </div>
                   )}
                   <MessageBubble
@@ -572,40 +572,40 @@ export const ChatWindow = ({ conversation, onBack }: ChatWindowProps) => {
           />
         </div>
       ) : isBlocked ? (
-        <div className="p-4 bg-black/20 backdrop-blur-sm border-t border-white/10 text-center shrink-0">
+        <div className="p-4 bg-card border-t border-border text-center shrink-0">
           {isBlockedByMe ? (
-            <div className="text-gray-400 text-sm">
-              You have blocked this user. <span className="text-blue-400 cursor-pointer hover:underline" onClick={() => setShowUnblockDialog(true)}>Unblock</span> to send messages.
+            <div className="text-muted-foreground text-sm">
+              You have blocked this user. <span className="text-primary cursor-pointer hover:underline" onClick={() => setShowUnblockDialog(true)}>Unblock</span> to send messages.
             </div>
           ) : (
-            <div className="text-gray-400 text-sm">
+            <div className="text-muted-foreground text-sm">
               You cannot send messages to this user.
             </div>
           )}
         </div>
       ) : conversation.connectionStatus !== 'accepted' && conversation.connectionStatus !== 'pending' ? (
-        <div className="p-4 bg-black/20 backdrop-blur-sm border-t border-white/10 text-center shrink-0">
-          <div className="text-gray-400 text-sm">
+        <div className="p-4 bg-card border-t border-border text-center shrink-0">
+          <div className="text-muted-foreground text-sm">
             You are not connected with this user.
           </div>
         </div>
       ) : conversation.connectionStatus === 'pending' && conversation.connectionRequester && (typeof conversation.connectionRequester === 'string' ? conversation.connectionRequester : conversation.connectionRequester._id) !== user?.id ? (
-        <div className="p-4 bg-black/40 backdrop-blur-md border-t border-white/10 shrink-0">
+        <div className="p-4 bg-card border-t border-border shrink-0">
           <div className="flex flex-col items-center gap-3">
-            <p className="text-sm text-gray-300">
+            <p className="text-sm text-muted-foreground">
               {conversation.otherParticipant?.name} sent you a connection request.
             </p>
             <div className="flex gap-3 w-full max-w-sm">
               <Button
                 variant="outline"
-                className="flex-1 border-red-500/50 text-red-500 hover:bg-red-500/10 hover:text-red-400 hover:border-red-500"
+                className="flex-1 border-destructive/50 text-destructive hover:bg-destructive/10 hover:text-destructive hover:border-destructive"
                 onClick={() => handleConnectionResponse("reject")}
                 disabled={isRespondingToRequest}
               >
                 Ignore
               </Button>
               <Button
-                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                className="flex-1 bg-primary hover:bg-primary-hover text-primary-foreground"
                 onClick={() => handleConnectionResponse("accept")}
                 disabled={isRespondingToRequest}
               >
@@ -615,8 +615,8 @@ export const ChatWindow = ({ conversation, onBack }: ChatWindowProps) => {
           </div>
         </div>
       ) : conversation.connectionStatus === 'pending' && conversation.connectionRequester && (typeof conversation.connectionRequester === 'string' ? conversation.connectionRequester : conversation.connectionRequester._id) === user?.id ? (
-        <div className="p-4 bg-black/20 backdrop-blur-sm border-t border-white/10 text-center shrink-0">
-          <div className="text-gray-400 text-sm">
+        <div className="p-4 bg-card border-t border-border text-center shrink-0">
+          <div className="text-muted-foreground text-sm">
             Connection request sent. You can send messages once accepted.
           </div>
         </div>
@@ -633,61 +633,61 @@ export const ChatWindow = ({ conversation, onBack }: ChatWindowProps) => {
       )}
 
       <AlertDialog open={!!messageToDelete} onOpenChange={(open) => !open && setMessageToDelete(null)}>
-        <AlertDialogContent className="bg-slate-900 border-white/10 text-white">
+        <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Unsend Message?</AlertDialogTitle>
-            <AlertDialogDescription className="text-gray-400">
+            <AlertDialogDescription>
               This will remove the message for everyone in the chat. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="bg-transparent border-white/10 text-white hover:bg-white/10 hover:text-white">Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700 text-white border-none">Unsend</AlertDialogAction>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive hover:bg-destructive/90 text-destructive-foreground">Unsend</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
       <AlertDialog open={showBlockDialog} onOpenChange={setShowBlockDialog}>
-        <AlertDialogContent className="bg-slate-900 border-white/10 text-white">
+        <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Block User?</AlertDialogTitle>
-            <AlertDialogDescription className="text-gray-400">
+            <AlertDialogDescription>
               Are you sure you want to block {conversation.otherParticipant?.name}? You will no longer receive messages from them.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="bg-transparent border-white/10 text-white hover:bg-white/10 hover:text-white">Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleBlockUser} className="bg-red-600 hover:bg-red-700 text-white border-none">Block</AlertDialogAction>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleBlockUser} className="bg-destructive hover:bg-destructive/90 text-destructive-foreground">Block</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent className="bg-slate-900 border-white/10 text-white">
+        <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Chat?</AlertDialogTitle>
-            <AlertDialogDescription className="text-gray-400">
+            <AlertDialogDescription>
               This will remove the chat from your list. It will reappear if a new message is sent.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="bg-transparent border-white/10 text-white hover:bg-white/10 hover:text-white">Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteChat} className="bg-red-600 hover:bg-red-700 text-white border-none">Delete</AlertDialogAction>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteChat} className="bg-destructive hover:bg-destructive/90 text-destructive-foreground">Delete</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
       <AlertDialog open={showUnblockDialog} onOpenChange={setShowUnblockDialog}>
-        <AlertDialogContent className="bg-slate-900 border-white/10 text-white">
+        <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Unblock User?</AlertDialogTitle>
-            <AlertDialogDescription className="text-gray-400">
+            <AlertDialogDescription>
               Are you sure you want to unblock {conversation.otherParticipant?.name}? You will be able to send messages again.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="bg-transparent border-white/10 text-white hover:bg-white/10 hover:text-white">Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleUnblockUser} className="bg-blue-600 hover:bg-blue-700 text-white border-none">Unblock</AlertDialogAction>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleUnblockUser} className="bg-primary hover:bg-primary-hover text-primary-foreground">Unblock</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
