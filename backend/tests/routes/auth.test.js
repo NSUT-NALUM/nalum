@@ -336,7 +336,7 @@ describe("auth routes", () => {
       expect(response.body).toMatchObject({
         err: true,
         code: 401,
-        message: "Incorrect credentials. Please try again.",
+        message: "The user doesn't exist. Please sign up.",
       });
     });
 
@@ -376,7 +376,7 @@ describe("auth routes", () => {
       expect(response.body).toMatchObject({
         err: true,
         code: 401,
-        message: "Incorrect credentials. Please try again.",
+        message: "The user doesn't exist. Please sign up.",
       });
       expect(sessions.getOrCreate).not.toHaveBeenCalled();
     });
