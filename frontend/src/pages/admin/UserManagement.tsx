@@ -9,6 +9,7 @@ const UserManagement = () => {
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("");
   const [bannedFilter, setBannedFilter] = useState("");
+  const [verifiedFilter, setVerifiedFilter] = useState("");
   const [showBanModal, setShowBanModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [banDuration, setBanDuration] = useState("7d");
@@ -16,7 +17,7 @@ const UserManagement = () => {
 
   useEffect(() => {
     fetchUsers();
-  }, [search, roleFilter, bannedFilter]);
+  }, [search, roleFilter, bannedFilter, verifiedFilter]);
 
   const fetchUsers = async () => {
     try {
@@ -24,6 +25,7 @@ const UserManagement = () => {
         search,
         role: roleFilter || undefined,
         banned: bannedFilter === "" ? undefined : bannedFilter === "banned" ? true : false,
+        verified: verifiedFilter === "" ? undefined : verifiedFilter === "verified" ? true : false,
         limit: 50,
       });
       if (response.success) {
@@ -106,6 +108,15 @@ const UserManagement = () => {
               <option value="student">Student</option>
               <option value="alumni">Alumni</option>
               <option value="admin">Admin</option>
+            </select>
+            <select
+              value={verifiedFilter}
+              onChange={(e) => setVerifiedFilter(e.target.value)}
+              className="px-4 py-2 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+            >
+              <option value="">All Verification</option>
+              <option value="verified">Verified Only</option>
+              <option value="unverified">Unverified Only</option>
             </select>
             <select
               value={bannedFilter}
