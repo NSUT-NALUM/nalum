@@ -7,6 +7,7 @@ import {
   useImperativeHandle,
   TextareaHTMLAttributes,
 } from "react";
+// createPortal removed — dropdown will render inside wrapper to preserve functionality
 import { cn } from "@/lib/utils";
 import { BASE_URL } from "@/lib/constants";
 import api from "@/lib/api";
@@ -70,8 +71,77 @@ const MentionTextarea = forwardRef<HTMLTextAreaElement, MentionTextareaProps>(
     const [activeIndex, setActiveIndex] = useState(0);
     const [query, setQuery] = useState("");
     const [mentionStart, setMentionStart] = useState<number | null>(null);
+    const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
     const dropdownRef = useRef<HTMLDivElement>(null);
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const updateDropdownPosition = useCallback((cursor: number) => {
+      const textarea = internalRef.current;
+      const wrapper = textarea?.parentElement;
+      if (!textarea || !wrapper) return;
+
+      const computed = window.getComputedStyle(textarea);
+      const mirror = document.createElement("div");
+      const textBeforeCursor = textarea.value.slice(0, cursor);
+
+      mirror.style.position = "absolute";
+      mirror.style.visibility = "hidden";
+      mirror.style.pointerEvents = "none";
+      mirror.style.whiteSpace = "pre-wrap";
+      mirror.style.wordBreak = "break-word";
+      mirror.style.overflowWrap = "break-word";
+      mirror.style.boxSizing = computed.boxSizing;
+      const textareaRect = textarea.getBoundingClientRect();
+      mirror.style.width = `${textareaRect.width}px`;
+      // match textarea height/scroll so caret marker aligns when textarea is scrolled
+      mirror.style.height = `${textareaRect.height}px`;
+      mirror.style.overflow = "auto";
+      mirror.style.padding = computed.padding;
+      mirror.style.border = computed.border;
+      mirror.style.font = computed.font;
+      mirror.style.lineHeight = computed.lineHeight;
+      mirror.style.letterSpacing = computed.letterSpacing;
+      mirror.style.textIndent = computed.textIndent;
+      mirror.style.textTransform = computed.textTransform;
+      mirror.style.tabSize = computed.tabSize;
+      // position the mirror over the textarea so the marker's viewport
+      // coordinates match the real caret position
+      const textareaRectForMirror = textarea.getBoundingClientRect();
+      mirror.style.top = `${textareaRectForMirror.top}px`;
+      mirror.style.left = `${textareaRectForMirror.left}px`;
+
+      mirror.textContent = textBeforeCursor;
+      const marker = document.createElement("span");
+      marker.textContent = "\u200b";
+      mirror.appendChild(marker);
+      document.body.appendChild(mirror);
+      // sync scroll position so the mirror shows same wrapped/visible area
+      mirror.scrollTop = textarea.scrollTop;
+      mirror.scrollLeft = textarea.scrollLeft;
+
+      const caretRect = marker.getBoundingClientRect();
+      const dropdownWidth = dropdownRef.current?.offsetWidth ?? 288;
+
+      document.body.removeChild(mirror);
+
+      // compute position relative to the wrapper so the dropdown (absolute)
+      // placed inside it is positioned correctly and not clipped
+      const extraOffset = 8; // px below the caret
+      const wrapperRect = wrapper.getBoundingClientRect();
+
+      const relativeTop = caretRect.bottom - wrapperRect.top + extraOffset;
+      // center dropdown horizontally under the caret
+      const caretCenter = (caretRect.left + caretRect.right) / 2;
+      const relativeLeftUnclamped = caretCenter - wrapperRect.left - dropdownWidth / 2;
+
+      const maxLeft = Math.max(wrapperRect.width - dropdownWidth, 0);
+      const nextLeft = Math.max(Math.min(relativeLeftUnclamped, maxLeft), 0);
+
+      setDropdownPosition({
+        top: Math.max(relativeTop, 0),
+        left: nextLeft,
+      });
+    }, []);
 
     // ── fetch suggestions ──
     const fetchSuggestions = useCallback(async (q: string) => {
@@ -105,6 +175,7 @@ const MentionTextarea = forwardRef<HTMLTextAreaElement, MentionTextareaProps>(
         const start = cursor - match[0].length; // position of '@'
         setMentionStart(start);
         setQuery(q);
+        updateDropdownPosition(cursor);
 
         if (debounceRef.current) clearTimeout(debounceRef.current);
         debounceRef.current = setTimeout(() => fetchSuggestions(q), 200);
@@ -213,7 +284,8 @@ const MentionTextarea = forwardRef<HTMLTextAreaElement, MentionTextareaProps>(
         {showDropdown && suggestions.length > 0 && (
           <div
             ref={dropdownRef}
-            className="absolute z-50 left-0 mt-1 w-[calc(100vw-2rem)] sm:w-72 max-h-56 overflow-y-auto bg-slate-900 border border-white/10 rounded-xl shadow-2xl backdrop-blur-md"
+            style={{ top: dropdownPosition.top, left: dropdownPosition.left }}
+            className="absolute z-50 w-full sm:w-72 max-h-56 overflow-y-auto bg-slate-900 border border-white/10 rounded-md shadow-2xl backdrop-blur-md"
           >
             {suggestions.map((user, i) => (
               <button
