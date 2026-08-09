@@ -452,6 +452,18 @@ function MapSearchControl({
   );
 }
 
+const CONTINENT_LABELS = [
+  { name: "ASIA", lat: 44.5, lng: 95.0 },
+];
+
+const createContinentIcon = (label: string) =>
+  L.divIcon({
+    html: `<div style="font-family: system-ui, -apple-system, sans-serif; font-size: 13px; font-weight: 800; letter-spacing: 2px; color: #475569; text-transform: uppercase; white-space: nowrap; pointer-events: none; text-shadow: 0 1px 3px rgba(255,255,255,0.95), 0 0 6px rgba(255,255,255,0.95);">${label}</div>`,
+    className: "continent-label-marker",
+    iconSize: [60, 20],
+    iconAnchor: [30, 10],
+  });
+
 const AlumniMap = () => {
   const [locations, setLocations] = useState<AlumniLocation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -670,8 +682,17 @@ const AlumniMap = () => {
             />
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-                url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
-              />
+              url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+            />
+            {/* English Continent Overlay Labels at low zoom levels */}
+            {zoom <= 5 &&
+              CONTINENT_LABELS.map((cont) => (
+                <Marker
+                  key={`continent-${cont.name}`}
+                  position={[cont.lat, cont.lng]}
+                  icon={createContinentIcon(cont.name)}
+                />
+              ))}
               {clusters.map((cluster) => {
                 const [lng, lat] = cluster.geometry.coordinates;
                 const {
