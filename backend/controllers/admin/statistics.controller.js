@@ -20,7 +20,7 @@ exports.getDashboardStats = async (req, res) => {
     console.log('[Dashboard Stats] User stats:', { totalUsers, totalStudents, totalAlumni, verifiedAlumni, bannedUsers });
 
     // Verification statistics
-    const pendingVerifications = await VerificationQueue.countDocuments();
+    const pendingVerifications = await VerificationQueue.countDocuments({status: "pending"});
     console.log('[Dashboard Stats] Pending verifications:', pendingVerifications);
 
     // Event statistics
