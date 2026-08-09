@@ -79,21 +79,21 @@ const MobileNotifications = () => {
   };
 
   return (
-    <div className="flex flex-col h-[100dvh] bg-slate-950 text-slate-100">
+    <div className="flex flex-col h-[100dvh] bg-background text-foreground">
       {/* Header - Fixed at top */}
-      <div className="fixed top-0 left-0 right-0 z-50 bg-slate-950/95 backdrop-blur-xl border-b border-white/10 px-4 h-16 flex items-center justify-between">
+      <div className="fixed top-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-xl border-b border-border px-4 h-16 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Button
             variant="ghost"
             size="icon"
             onClick={() => navigate(-1)}
-            className="text-gray-300 hover:text-white hover:bg-white/10"
+            className="text-muted-foreground hover:text-foreground hover:bg-muted"
           >
             <ArrowLeft className="h-6 w-6" />
           </Button>
           <div className="flex items-center gap-2">
-            <Bell className="h-6 w-6 text-gray-300" />
-            <h1 className="text-xl font-semibold text-white">Notifications</h1>
+            <Bell className="h-6 w-6 text-muted-foreground" />
+            <h1 className="text-xl font-semibold text-foreground">Notifications</h1>
           </div>
         </div>
         
@@ -102,7 +102,7 @@ const MobileNotifications = () => {
             variant="ghost" 
             size="sm"
             onClick={markAllAsRead}
-            className="text-xs text-gray-300 hover:text-white hover:bg-white/10"
+            className="text-xs text-muted-foreground hover:text-foreground hover:bg-muted"
           >
             <CheckCheck className="h-4 w-4 mr-1" />
             Mark all read
@@ -114,14 +114,14 @@ const MobileNotifications = () => {
       <div className="flex-1 overflow-hidden mt-16">
         {/* Push Notification Status Banner (for debugging) */}
         {!isSupported() && (
-          <div className="mx-4 mt-4 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+          <div className="mx-4 mt-4 p-4 bg-warning-subtle border border-warning/30 rounded-lg">
             <div className="flex items-start gap-3">
-              <Bell className="h-5 w-5 text-yellow-400 mt-0.5 flex-shrink-0" />
+              <Bell className="h-5 w-5 text-warning mt-0.5 flex-shrink-0" />
               <div className="flex-1 min-w-0">
-                <h3 className="text-sm font-medium text-white mb-1">
+                <h3 className="text-sm font-medium text-foreground mb-1">
                   Push Notifications Not Supported
                 </h3>
-                <p className="text-xs text-gray-300">
+                <p className="text-xs text-muted-foreground">
                   Your browser doesn't support push notifications. Try using Chrome, Firefox, or Edge on desktop/Android.
                 </p>
               </div>
@@ -130,17 +130,17 @@ const MobileNotifications = () => {
         )}
 
         {permission === 'denied' && (
-          <div className="mx-4 mt-4 p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
+          <div className="mx-4 mt-4 p-4 bg-destructive/10 border border-destructive/30 rounded-lg">
             <div className="flex items-start gap-3">
-              <Bell className="h-5 w-5 text-red-400 mt-0.5 flex-shrink-0" />
+              <Bell className="h-5 w-5 text-destructive mt-0.5 flex-shrink-0" />
               <div className="flex-1 min-w-0">
-                <h3 className="text-sm font-medium text-white mb-1">
+                <h3 className="text-sm font-medium text-foreground mb-1">
                   Push Notifications Blocked
                 </h3>
-                <p className="text-xs text-gray-300 mb-2">
+                <p className="text-xs text-muted-foreground mb-2">
                   You've blocked push notifications for this site. To enable them:
                 </p>
-                <ol className="text-xs text-gray-300 list-decimal list-inside space-y-1">
+                <ol className="text-xs text-muted-foreground list-decimal list-inside space-y-1">
                   <li>Click the lock icon in your browser's address bar</li>
                   <li>Find "Notifications" in the permissions</li>
                   <li>Change it to "Allow"</li>
@@ -152,14 +152,14 @@ const MobileNotifications = () => {
         )}
 
         {permission === 'granted' && (
-          <div className="mx-4 mt-4 p-4 bg-green-500/10 border border-green-500/30 rounded-lg">
+          <div className="mx-4 mt-4 p-4 bg-success-subtle border border-success/30 rounded-lg">
             <div className="flex items-start gap-3">
-              <CheckCheck className="h-5 w-5 text-green-400 mt-0.5 flex-shrink-0" />
+              <CheckCheck className="h-5 w-5 text-success mt-0.5 flex-shrink-0" />
               <div className="flex-1 min-w-0">
-                <h3 className="text-sm font-medium text-white mb-1">
+                <h3 className="text-sm font-medium text-foreground mb-1">
                   Push Notifications Enabled
                 </h3>
-                <p className="text-xs text-gray-300">
+                <p className="text-xs text-muted-foreground">
                   You'll receive push notifications even when the app is closed.
                 </p>
               </div>
@@ -169,21 +169,21 @@ const MobileNotifications = () => {
 
         {/* Push Notification Prompt */}
         {showPushPrompt && (
-          <div className="mx-4 mt-4 p-4 bg-indigo-500/10 border border-indigo-500/30 rounded-lg">
+          <div className="mx-4 mt-4 p-4 bg-primary-subtle border border-primary/30 rounded-lg">
             <div className="flex items-start gap-3">
-              <Bell className="h-5 w-5 text-indigo-400 mt-0.5 flex-shrink-0" />
+              <Bell className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
               <div className="flex-1 min-w-0">
-                <h3 className="text-sm font-medium text-white mb-1">
+                <h3 className="text-sm font-medium text-foreground mb-1">
                   Enable Push Notifications
                 </h3>
-                <p className="text-xs text-gray-300 mb-3">
+                <p className="text-xs text-muted-foreground mb-3">
                   Stay updated with real-time notifications even when you're not using the app.
                 </p>
                 <div className="flex gap-2">
                   <Button
                     size="sm"
                     onClick={handleEnablePush}
-                    className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs h-8"
+                    className="bg-primary hover:bg-primary-hover text-primary-foreground text-xs h-8"
                   >
                     Enable
                   </Button>
@@ -191,7 +191,7 @@ const MobileNotifications = () => {
                     size="sm"
                     variant="ghost"
                     onClick={() => setShowPushPrompt(false)}
-                    className="text-gray-400 hover:text-white hover:bg-white/10 text-xs h-8"
+                    className="text-muted-foreground hover:text-foreground hover:bg-muted text-xs h-8"
                   >
                     Later
                   </Button>
@@ -205,21 +205,21 @@ const MobileNotifications = () => {
         <ScrollArea className="h-full">
           {loading ? (
             <div className="flex items-center justify-center h-64">
-              <Loader2 className="h-8 w-8 animate-spin text-indigo-500" />
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
           ) : notifications.filter(n => !n.read).length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-64 text-gray-400 px-4">
+            <div className="flex flex-col items-center justify-center h-64 text-muted-foreground px-4">
               <Inbox className="h-16 w-16 mb-4 opacity-30" />
-              <p className="text-lg font-medium text-gray-300">No notifications</p>
-              <p className="text-sm text-gray-500 text-center mt-2">
+              <p className="text-lg font-medium text-foreground">No notifications</p>
+              <p className="text-sm text-muted-foreground text-center mt-2">
                 You're all caught up! You'll see notifications here when you receive connection requests, messages, or updates.
               </p>
             </div>
           ) : (
-            <div className="divide-y divide-white/5">
+            <div className="divide-y divide-border">
               {notifications.filter(n => !n.read).map((notification) => (
                 <div key={notification.id} className="px-4">
-                  <NotificationItem notification={notification} onClose={() => {}} />
+                  <NotificationItem variant="light" notification={notification} onClose={() => {}} />
                 </div>
               ))}
             </div>

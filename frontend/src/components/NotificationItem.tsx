@@ -24,11 +24,13 @@ interface NotificationItemProps {
     metadata?: Record<string, any>;
   };
   onClose: () => void;
+  variant?: "dark" | "light";
 }
 
-export const NotificationItem = ({ notification, onClose }: NotificationItemProps) => {
+export const NotificationItem = ({ notification, onClose, variant = "dark" }: NotificationItemProps) => {
   const navigate = useNavigate();
   const { markAsRead, deleteNotification } = useNotifications();
+  const light = variant === "light";
 
   const handleClick = async () => {
     if (!notification.read) {
@@ -58,8 +60,9 @@ export const NotificationItem = ({ notification, onClose }: NotificationItemProp
   return (
     <div
       className={cn(
-        "p-4 hover:bg-white/5 transition-colors cursor-pointer relative group",
-        !notification.read && "bg-blue-500/10"
+        "p-4 transition-colors cursor-pointer relative group",
+        light ? "hover:bg-muted" : "hover:bg-white/5",
+        !notification.read && (light ? "bg-primary-subtle/60" : "bg-blue-500/10")
       )}
       onClick={handleClick}
     >
@@ -75,13 +78,13 @@ export const NotificationItem = ({ notification, onClose }: NotificationItemProp
 
         {/* Content */}
         <div className="flex-1 min-w-0">
-          <p className="font-medium text-sm line-clamp-1 text-white">
+          <p className={cn("font-medium text-sm line-clamp-1", light ? "text-foreground" : "text-white")}>
             {notification.title}
           </p>
-          <p className="text-sm text-gray-400 line-clamp-2">
+          <p className={cn("text-sm line-clamp-2", light ? "text-muted-foreground" : "text-gray-400")}>
             {notification.message}
           </p>
-          <p className="text-xs text-gray-500 mt-1">
+          <p className={cn("text-xs mt-1", light ? "text-muted-foreground" : "text-gray-500")}>
             {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
           </p>
         </div>
@@ -89,15 +92,15 @@ export const NotificationItem = ({ notification, onClose }: NotificationItemProp
         {/* Unread indicator & Delete */}
         <div className="flex flex-col items-end gap-2">
           {!notification.read && (
-            <div className="h-2 w-2 rounded-full bg-blue-500" />
+            <div className={cn("h-2 w-2 rounded-full", light ? "bg-primary" : "bg-blue-500")} />
           )}
           <Button
             variant="ghost"
             size="icon"
-            className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white/10"
+            className={cn("h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity", light ? "hover:bg-muted" : "hover:bg-white/10")}
             onClick={handleDelete}
           >
-            <X className="h-4 w-4 text-gray-400" />
+            <X className={cn("h-4 w-4", light ? "text-muted-foreground" : "text-gray-400")} />
           </Button>
         </div>
       </div>
