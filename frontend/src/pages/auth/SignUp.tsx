@@ -60,6 +60,23 @@ const Signup = () => {
     }
   };
 
+  const handleEmailBlur = async () => {
+  const email = formData.email;
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!email || !emailRegex.test(email)) return;
+
+  try {
+    const response = await api.post("/auth/check-email", { email });
+    if (response.data.exists) {
+      toast.error("Email already exists", {
+        description: "This email is already registered. Please sign in instead.",
+      });
+    }
+  } catch (error) {
+    console.error("Email check failed:", error);
+  }
+};
+
   const handleConfirmPasswordChange = (value: string) => {
     setConfirmPassword(value);
     // Real-time password match validation
@@ -137,6 +154,16 @@ const Signup = () => {
         } else if (errorCode === "USER_ALREADY_EXISTS" || error.response?.status === 409) {
           toast.error("User already exists", {
             description: "This email is already registered and verified. Please sign in instead.",
+            style: {
+      background: "#800000",
+      color: "white",
+      border: "2px solid #FFD700",
+      fontSize: "16px",
+    },
+    classNames: {
+      title: "text-xl font-bold text-white",
+      description: "text-base text-white",
+    },
           });
         } else {
           toast.error(error.response?.data?.message || "An error occurred");

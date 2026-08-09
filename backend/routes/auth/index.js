@@ -5,7 +5,9 @@ const router = express.Router();
 // const { rateLimiters } = require("../../middleware/rateLimiter");
 
 const signIn = require("./signIn");
+const checkEmail = require("./checkEmail");
 const signUp = require("./signUp");
+router.use("/check-email", checkEmail);
 const refresh = require("./refresh"); 
 const revokeToken = require("./revokeToken");
 const logout = require("./logout");

@@ -45,6 +45,24 @@ const Login = () => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
+  const handleEmailBlur = async () => {
+  const email = formData.email;
+  if (!email || !/\S+@\S+\.\S+/.test(email)) return;
+
+  try {
+    const response = await apiClient.post("/auth/check-email", { email });
+    if (!response.data.exists) {
+      toast.error("Email doesn't exist", {
+        description: "No account found with this email. Please sign up.",
+        style: { background: "#800000", color: "white", border: "2px solid #FFD700", fontSize: "16px" },
+        classNames: { title: "text-xl font-bold text-white", description: "text-base text-white" },
+      });
+    }
+  } catch (error) {
+    console.error("Email check failed:", error);
+  }
+};
+
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
     if (!formData.email) {
