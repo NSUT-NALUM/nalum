@@ -14,7 +14,7 @@ router.post("/", async (req, res) => {
     });
   }
 
-  const { email, password } = req.body;
+  const { email, password, rememberMe } = req.body;
   let data = await users.findOne(email);
 
   if (data.error) {
@@ -88,14 +88,19 @@ router.post("/", async (req, res) => {
 
   const { refresh_token, ...rest } = sessionData.data;
   
-  // Set refresh token in httpOnly cookie
-  res.cookie("refresh_token", refresh_token, {
+  const cookieOptions = {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: "lax",
     path: "/",
-    maxAge: 14 * 24 * 60 * 60 * 1000, // 14 days
-  });
+  };
+
+  if (rememberMe) {
+    cookieOptions.maxAge = 30 * 24 * 60 * 60 * 1000; // 30 days
+  }
+
+  // Set refresh token in httpOnly cookie
+  res.cookie("refresh_token", refresh_token, cookieOptions);
   
   const access_token = sessionData.data.access_token;
 

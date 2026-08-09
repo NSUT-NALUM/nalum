@@ -27,6 +27,7 @@ const Login = () => {
     password: "",
     role: "student",
   });
+  const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -72,7 +73,10 @@ const Login = () => {
 
     setIsLoading(true);
     try {
-      const response = await apiClient.post("/auth/sign-in", formData);
+      const response = await apiClient.post("/auth/sign-in", {
+        ...formData,
+        rememberMe,
+      });
       const { access_token, user } = response.data.data;
 
       // Set full user data in auth context
@@ -364,6 +368,8 @@ const Login = () => {
                   id="remember-me"
                   name="remember-me"
                   type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
                   className="h-4 w-4 rounded border-gray-300 text-nsut-maroon focus:ring-nsut-maroon"
                 />
                 <Label htmlFor="remember-me" className="ml-2 block text-base text-gray-900">
