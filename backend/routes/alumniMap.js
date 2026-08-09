@@ -78,8 +78,10 @@ router.get("/", mapRateLimiter, async (req, res) => {
     const groupedMap = new Map();
 
     for (const item of rawLocations) {
+      const rawCity = (item._id && item._id.city) || item.city || item.rawCity || "";
+      const rawCountry = (item._id && item._id.country) || item.country || item.rawCountry || "";
       const { normalizedCity, normalizedCountry, canonicalKey, displayCity, displayCountry } =
-        normalizeCityAndCountry(item._id.city, item._id.country);
+        normalizeCityAndCountry(rawCity, rawCountry);
 
       if (!groupedMap.has(canonicalKey)) {
         const canonical = CANONICAL_CITIES[canonicalKey];
@@ -95,11 +97,14 @@ router.get("/", mapRateLimiter, async (req, res) => {
         });
       }
 
+      const itemLat = item.avgLat !== undefined ? item.avgLat : (item.lat !== undefined ? item.lat : 0);
+      const itemLng = item.avgLng !== undefined ? item.avgLng : (item.lng !== undefined ? item.lng : 0);
+
       const record = groupedMap.get(canonicalKey);
-      record.count += item.count;
-      record.latSum += item.avgLat * item.count;
-      record.lngSum += item.avgLng * item.count;
-      record.rawCount += item.count;
+      record.count += item.count || 1;
+      record.latSum += itemLat * (item.count || 1);
+      record.lngSum += itemLng * (item.count || 1);
+      record.rawCount += item.count || 1;
     }
 
     const locations = Array.from(groupedMap.values()).map((record) => {

@@ -2,14 +2,13 @@ const axios = require("axios");
 const { getRedisClient } = require("../config/redis.config");
 const Profile = require("../models/user/profile.model");
 const {
-  ALUMNI_MAP_LOCATIONS_KEY,
+  GEOCODING_QUEUE_KEY: QUEUE_KEY,
+  GEOCODING_PROCESSING_KEY: PROCESSING_KEY,
+  GEOCODING_ERROR_COUNT_KEY: ERROR_COUNT_KEY,
   invalidateAlumniMapCache,
 } = require("../config/cacheKeys");
 
-const QUEUE_KEY = "geocoding:queue";
-const PROCESSING_KEY = "geocoding:processing";
 const IN_PROGRESS_KEY = "geocoding:in_progress";
-const ERROR_COUNT_KEY = "geocoding:error_count";
 const NOMINATIM_URL = "https://nominatim.openstreetmap.org/search";
 
 // Rate limiting: 1 request per second
@@ -352,5 +351,5 @@ module.exports = {
   stopProcessing,
   getQueueStatus,
   // Exported for tests / observability
-  _internal: { QUEUE_KEY, IN_PROGRESS_KEY, ERROR_COUNT_KEY, MAX_RETRIES },
+  _internal: { QUEUE_KEY, IN_PROGRESS_KEY, ERROR_COUNT_KEY, MAX_RETRIES, processNextItem },
 };

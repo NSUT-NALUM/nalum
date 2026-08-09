@@ -37,7 +37,7 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
   const [countryInput, setCountryInput] = useState(country || "");
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleUseMyLocation = async () => {
+  const handleUseMyLocation = () => {
     setIsLoading(true);
     if (!navigator.geolocation) {
       toast.error("Geolocation is not supported by your browser");
@@ -46,37 +46,17 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
     }
 
     navigator.geolocation.getCurrentPosition(
-      async (position) => {
+      (position) => {
         const { latitude, longitude } = position.coords;
-        try {
-          // Reverse geocode through our backend proxy (Nominatim doesn't
-          // allow direct browser usage and requires a server-side User-Agent).
-          const response = await api.post("/geocode/reverse", {
-            lat: latitude,
-            lng: longitude,
-          });
-          const data = response.data;
-          const detectedCity = data.city || "";
-          const detectedCountry = data.country || "";
-
-          if (!detectedCity && !detectedCountry) {
-            toast.error(
-              "Could not detect your location. Please type it manually.",
-            );
-          } else {
-            setCityInput(detectedCity.toLowerCase());
-            setCountryInput(detectedCountry.toLowerCase());
-            onLocationChange(
-              detectedCity.toLowerCase(),
-              detectedCountry.toLowerCase(),
-              latitude,
-              longitude,
-            );
-          }
-        } catch (error) {
-          console.error("Error fetching location:", error);
-          toast.error("Failed to detect location. Please type manually.");
-        }
+        // Pass GPS coordinates directly to profile form state. City/Country
+        // will be resolved asynchronously by the server-side queue if missing.
+        onLocationChange(
+          cityInput.toLowerCase(),
+          countryInput.toLowerCase(),
+          latitude,
+          longitude,
+        );
+        toast.success("Current GPS coordinates captured!");
         setIsLoading(false);
       },
       (error) => {
@@ -87,7 +67,7 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
     );
   };
 
-  const handleManualUpdate = async (overrideCity?: string, overrideCountry?: string) => {
+  const handleManualUpdate = (overrideCity?: string, overrideCountry?: string) => {
     const effectiveCity = overrideCity !== undefined ? overrideCity : cityInput;
     const effectiveCountry = overrideCountry !== undefined ? overrideCountry : countryInput;
 
@@ -105,35 +85,9 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
         return;
       }
 
-      try {
-        // Forward geocode through our backend proxy. If geocoding fails or
-        // finds nothing, we still save city/country — the server-side
-        // geocoding queue fills in coordinates later.
-        const response = await api.post("/geocode/search", {
-          city: effectiveCity,
-          country: effectiveCountry,
-        });
-        const data = response.data;
-        if (
-          data &&
-          data.lat != null &&
-          data.lng != null &&
-          Number.isFinite(Number(data.lat)) &&
-          Number.isFinite(Number(data.lng))
-        ) {
-          onLocationChange(
-            effectiveCity.toLowerCase(),
-            effectiveCountry.toLowerCase(),
-            Number(data.lat),
-            Number(data.lng),
-          );
-        } else {
-          onLocationChange(effectiveCity.toLowerCase(), effectiveCountry.toLowerCase());
-        }
-      } catch (error) {
-        console.error("Failed to geocode:", error);
-        onLocationChange(effectiveCity.toLowerCase(), effectiveCountry.toLowerCase());
-      }
+      // Pass city and country to profile form state. The server-side
+      // geocoding queue will resolve lat/lng asynchronously at 1 req/sec.
+      onLocationChange(effectiveCity.toLowerCase(), effectiveCountry.toLowerCase());
     }
   };
 

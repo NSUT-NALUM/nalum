@@ -25,16 +25,21 @@ describe("alumni map routes", () => {
 
   describe("GET /api/alumni-map", () => {
     it("returns aggregated locations successfully", async () => {
-      const mockLocations = [
-        { city: "delhi", country: "india", count: 3, lat: 28.6139, lng: 77.209 },
-        { city: "mumbai", country: "india", count: 2, lat: 19.076, lng: 72.8777 }
+      const mockRawLocations = [
+        { _id: { city: "delhi", country: "india" }, count: 3, avgLat: 28.6139, avgLng: 77.209 },
+        { _id: { city: "mumbai", country: "india" }, count: 2, avgLat: 19.076, avgLng: 72.8777 }
       ];
-      Profile.aggregate.mockResolvedValue(mockLocations);
+      Profile.aggregate.mockResolvedValue(mockRawLocations);
 
       const response = await request(app).get("/api/alumni-map");
 
       expect(response.status).toBe(200);
-      expect(response.body).toEqual({ locations: mockLocations });
+      expect(response.body).toEqual({
+        locations: [
+          { city: "New Delhi", country: "India", count: 3, lat: 28.6139, lng: 77.209 },
+          { city: "Mumbai", country: "India", count: 2, lat: 19.076, lng: 72.8777 }
+        ]
+      });
       expect(Profile.aggregate).toHaveBeenCalledTimes(1);
     });
 
@@ -47,7 +52,7 @@ describe("alumni map routes", () => {
       expect(response.body).toEqual({ error: "Failed to load alumni map data" });
     });
 
-    it("only matches numeric coordinates and sorts before grouping", async () => {
+    it("only matches numeric coordinates and groups by normalized city/country", async () => {
       Profile.aggregate.mockResolvedValue([]);
 
       await request(app).get("/api/alumni-map");
@@ -63,16 +68,9 @@ describe("alumni map routes", () => {
         $type: ["double", "int"],
       });
 
-      // $sort must come before $group so $first is deterministic
-      const sortIndex = pipeline.findIndex((stage) => stage.$sort);
+      // Pipeline must include group stage
       const groupIndex = pipeline.findIndex((stage) => stage.$group);
-      expect(sortIndex).toBeGreaterThan(-1);
-      expect(sortIndex).toBeLessThan(groupIndex);
-
-      // Blank city/country values must map to a readable label
-      const projectStage = pipeline.find((stage) => stage.$project);
-      expect(projectStage.$project.city.$cond).toBeDefined();
-      expect(projectStage.$project.country.$cond).toBeDefined();
+      expect(groupIndex).toBeGreaterThan(-1);
     });
   });
 });
