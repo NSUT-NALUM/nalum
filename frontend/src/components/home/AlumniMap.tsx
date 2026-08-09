@@ -256,10 +256,11 @@ function MapSearchControl({
     setSearchQuery(selectedText);
     setShowDropdown(false);
 
-    const targetZoom = item.zoom || (item.type === "country" ? 4 : 8);
+    const targetZoom = item.zoom || (item.type === "country" ? 4 : 7);
     mapInstance?.flyTo([item.lat, item.lng], targetZoom, {
       animate: true,
       duration: 0.65,
+      easeLinearity: 0.25,
     });
 
     setSearchResult(item.type === "country" ? `Found ${item.country}` : `Found ${item.city}, ${item.country}`);
@@ -684,7 +685,7 @@ const AlumniMap = () => {
               url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
             />
             {/* English Continent Overlay Labels at low zoom levels */}
-            {zoom <= 4 &&
+            {zoom <= 5 &&
               CONTINENT_LABELS.map((cont) => (
                 <Marker
                   key={`continent-${cont.name}`}
@@ -708,6 +709,9 @@ const AlumniMap = () => {
                   const size = 32 + (digits - 1) * 12;
                   const fontSize = Math.max(11, Math.floor(size * 0.32));
 
+                  // pointer-events:none on the inner div ensures mouse events
+                  // fall through to Leaflet's marker layer — not the HTML div —
+                  // so the eventHandlers.click always fires on desktop.
                   const icon = L.divIcon({
                     html: `<div class="alumni-map-pin" style="width:${size}px;height:${size}px;border-radius:50%;background:#E53935;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:${fontSize}px;border:2px solid #b71c1c;box-shadow:0 2px 8px rgba(0,0,0,0.3);pointer-events:none;">${displayCount}</div>`,
                     className: "",
@@ -723,25 +727,24 @@ const AlumniMap = () => {
                       eventHandlers={{
                         click: (e) => {
                           if (!mapInstance || !supercluster) return;
-                          const currentZoom = mapInstance.getZoom();
+                          e.target.openPopup();
                           const expansionZoom = Math.min(
                             supercluster.getClusterExpansionZoom(cluster.id as number),
                             18
                           );
-
-                          if (expansionZoom > currentZoom) {
-                            mapInstance.closePopup();
-                            mapInstance.flyTo([lat, lng], expansionZoom, {
-                              animate: true,
-                              duration: 0.65,
-                            });
-                          } else {
-                            e.target.openPopup();
-                          }
+                          mapInstance.flyTo([lat, lng], expansionZoom, {
+                            animate: true,
+                            duration: 0.65,
+                            easeLinearity: 0.25,
+                          });
                         },
                       }}
                     >
-                      <Popup autoPan={false}>
+                      {/* Popup is always present in the DOM; we control open/
+                          close imperatively so the popup pane never sits under
+                          the cursor at the moment the user clicks — eliminating
+                          the "click eaten by popup" desktop bug. */}
+                      <Popup>
                         {getClusterPopupContent(cluster.id as number)}
                       </Popup>
                     </Marker>
@@ -766,20 +769,21 @@ const AlumniMap = () => {
                     eventHandlers={{
                       click: (e) => {
                         if (!mapInstance) return;
-                        const currentZoom = mapInstance.getZoom();
                         e.target.openPopup();
+                        const currentZoom = mapInstance.getZoom();
 
-                        if (currentZoom < 12) {
-                          const targetZoom = Math.min(Math.max(currentZoom + 4, 8), 16);
+                        if (currentZoom < 13) {
+                          const targetZoom = Math.min(currentZoom + 2, 17);
                           mapInstance.flyTo([lat, lng], targetZoom, {
                             animate: true,
                             duration: 0.65,
+                            easeLinearity: 0.25,
                           });
                         }
                       },
                     }}
                   >
-                    <Popup autoPan={false}>
+                    <Popup>
                       <div className="text-sm" style={{ color: "#333" }}>
                         <strong className="capitalize">{city}</strong>
                         <br />
