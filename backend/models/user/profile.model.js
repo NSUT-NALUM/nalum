@@ -47,6 +47,13 @@ const profileSchema = new mongoose.Schema(
       },
     },
 
+    // Short first-person summary shown as "About" on the profile page.
+    bio: {
+      type: String,
+      trim: true,
+      maxlength: 500,
+    },
+
     // Optional current employment
     current_company: {
       type: String,
