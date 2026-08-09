@@ -4,43 +4,50 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { FilterPillSelect } from "@/components/ui/FilterPillSelect";
 import {
   GraduationCap,
   Search,
   Filter,
+  ChevronDown,
   X,
   Loader2,
-  ArrowLeft,
 } from "lucide-react";
 import { useAlumniDirectory } from "@/hooks/useAlumniDirectory";
+import { useResponsivePagination } from "@/hooks/useResponsivePagination";
 import { AlumniCard } from "@/components/alumni/AlumniCard";
+import { AlumniCardSkeleton } from "@/components/alumni/AlumniCardSkeleton";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { SmartPagination } from "@/components/ui/pagination";
 import { BRANCHES, CAMPUSES } from "@/constants/branches";
 import UserAvatar from "@/components/UserAvatar";
+import { cn } from "@/lib/utils";
+
+// Most recent grad years first — covers next year's incoming students down
+// through six decades of alumni.
+const CURRENT_YEAR = new Date().getFullYear();
+const CLASS_YEARS = Array.from({ length: 61 }, (_, i) => String(CURRENT_YEAR + 1 - i));
 
 const AlumniDirectory = () => {
   const navigate = useNavigate();
   const [isSearchFocused, setIsSearchFocused] = useState(false);
+
+  // Whether the "Advanced" panel is expanded inline below the filter pills.
+  const [advancedOpen, setAdvancedOpen] = useState(false);
+
+  // Matches the hook's own page size so the loading skeleton holds the same
+  // footprint as a full page of results instead of shrinking mid-search.
+  const itemsPerPage = useResponsivePagination();
+
   const {
     alumni,
     isLoading,
     hasSearched,
-    showFilters,
     currentPage,
     totalPages,
     filters,
     skillInput,
     showClearButton,
-    setShowFilters,
     setSkillInput,
     handleFilterChange,
     handleAddSkill,
@@ -52,466 +59,345 @@ const AlumniDirectory = () => {
     getFilteredAlumni,
   } = useAlumniDirectory();
 
+  // Only the fields tucked inside the advanced panel count toward its badge —
+  // Class Year / Branch / Campus / Connections / User Type are always-visible
+  // pills with their own clear button.
+  const advancedFilterCount = [
+    filters.company,
+    filters.city,
+    filters.country,
+    filters.skills.length > 0,
+  ].filter(Boolean).length;
+
+  const handleClearAdvancedFilters = () => {
+    handleFilterChange("company", "");
+    handleFilterChange("city", "");
+    handleFilterChange("country", "");
+    handleFilterChange("skills", []);
+  };
+
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 text-gray-100">
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 text-foreground">
       {/* Main Content */}
       <div className="container mx-auto">
         <div className="max-w-7xl mx-auto">
 
           {/* Header */}
           <div className="mb-8">
-            <h2 className="text-3xl font-bold text-white mb-2">
+            <h2 className="text-headline-xl text-primary mb-2">
               Alumni Directory
             </h2>
-            <p className="text-gray-400">
+            <p className="text-body-lg text-muted-foreground">
               Connect with fellow NSUT alumni from across batches and branches
             </p>
           </div>
 
           {/* Search and Filter Section */}
-          <div className="mb-6 rounded-xl border border-white/10 bg-white/5 backdrop-blur-md shadow-xl overflow-hidden">
-            <div className="p-6">
-              <div className="space-y-4">
-                {/* Search Bar */}
-                <div className="flex gap-2">
-                  <div className="flex-1 relative">
-                    <Search className="absolute left-3 top-3 h-5 w-5 text-gray-500" />
-                    <Input
-                      placeholder="Search by name..."
-                      value={filters.name}
-                      onChange={(e) =>
-                        handleFilterChange("name", e.target.value)
-                      }
-                      onKeyPress={(e) => {
-                        if (e.key === "Enter") handleSearch();
-                      }}
-                      onFocus={() => setIsSearchFocused(true)}
-                      onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
-                      className="pl-10 bg-black/20 border-white/10 text-white placeholder:text-gray-500 focus:border-blue-500/50 focus:ring-blue-500/20"
-                    />
+          <div className="mb-8">
+            <div className="space-y-3">
+              {/* Top Row: Search Bar */}
+              <div className="flex gap-2">
+                <div className="flex-1 relative rounded-card border border-border bg-card shadow-card group focus-within:border-primary focus-within:ring-2 focus-within:ring-ring/20 transition-all">
+                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors pointer-events-none" />
+                  <Input
+                    placeholder="Search by name..."
+                    value={filters.name}
+                    onChange={(e) =>
+                      handleFilterChange("name", e.target.value)
+                    }
+                    onKeyPress={(e) => {
+                      if (e.key === "Enter") handleSearch();
+                    }}
+                    onFocus={() => setIsSearchFocused(true)}
+                    onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
+                    className="h-11 border-none bg-transparent pl-10 pr-3 text-body-md text-foreground placeholder:text-muted-foreground shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
+                  />
 
-                    {/* Mobile Search Dropdown */}
-                    {isSearchFocused && filters.name && (
-                      <div className="md:hidden absolute top-full mt-2 left-0 right-0 bg-slate-900/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden max-h-80 overflow-y-auto">
-                        {isLoading ? (
-                          <div className="p-4 flex items-center justify-center text-gray-400">
-                            <Loader2 className="h-5 w-5 animate-spin mr-2" />
-                            Searching...
-                          </div>
-                        ) : alumni.length > 0 ? (
-                          <div className="py-2">
-                            {alumni.slice(0, 5).map((profile) => (
-                              <div
-                                key={profile._id}
-                                onClick={() => navigate(`/dashboard/alumni/${profile.user._id}`)}
-                                className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 cursor-pointer transition-colors"
-                              >
-                                <UserAvatar
-                                  src={profile.profile_picture}
-                                  name={profile.user.name}
-                                  size="sm"
-                                />
-                                <div className="min-w-0">
-                                  <p className="text-sm font-medium text-white truncate">
-                                    {profile.user.name}
-                                  </p>
-                                  <p className="text-xs text-gray-400 truncate">
-                                    {profile.batch} • {profile.branch}
-                                  </p>
-                                </div>
-                              </div>
-                            ))}
+                  {/* Mobile Search Dropdown */}
+                  {isSearchFocused && filters.name && (
+                    <div className="md:hidden absolute top-full mt-2 left-0 right-0 bg-popover border border-border rounded-xl shadow-lg z-50 overflow-hidden max-h-80 overflow-y-auto">
+                      {isLoading ? (
+                        <div className="p-4 flex items-center justify-center text-muted-foreground">
+                          <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                          Searching...
+                        </div>
+                      ) : alumni.length > 0 ? (
+                        <div className="py-2">
+                          {alumni.slice(0, 5).map((profile) => (
                             <div
-                              onClick={() => {
-                                setIsSearchFocused(false);
-                                // The main grid will show all results
-                              }}
-                              className="px-4 py-2 text-center text-xs text-blue-400 font-medium cursor-pointer border-t border-white/5 hover:bg-white/5"
+                              key={profile._id}
+                              onClick={() => navigate(`/dashboard/alumni/${profile.user._id}`)}
+                              className="flex items-center gap-3 px-4 py-3 hover:bg-accent cursor-pointer transition-colors"
                             >
-                              View all {alumni.length} results
+                              <UserAvatar
+                                src={profile.profile_picture}
+                                name={profile.user.name}
+                                size="sm"
+                              />
+                              <div className="min-w-0">
+                                <p className="text-sm font-medium text-foreground truncate">
+                                  {profile.user.name}
+                                </p>
+                                <p className="text-xs text-muted-foreground truncate">
+                                  {profile.batch} • {profile.branch}
+                                </p>
+                              </div>
                             </div>
+                          ))}
+                          <div
+                            onClick={() => {
+                              setIsSearchFocused(false);
+                            }}
+                            className="px-4 py-2 text-center text-xs text-primary font-medium cursor-pointer border-t border-border hover:bg-accent"
+                          >
+                            View all {alumni.length} results
                           </div>
-                        ) : hasSearched ? (
-                          <div className="p-4 text-center text-gray-400 text-sm">
-                            No alumni found matching "{filters.name}"
-                          </div>
-                        ) : null}
-                      </div>
-                    )}
-                  </div>
-                  <Button
-                    onClick={() => setShowFilters(!showFilters)}
-                    variant="outline"
-                    size="icon"
-                    className="border-white/10 bg-white/5 text-gray-300 hover:bg-white/10 hover:text-white shrink-0 w-10 h-10 relative"
-                  >
-                    <Filter className="h-4 w-4" />
-                    {(filters.batch ||
-                      filters.branch ||
-                      filters.campus ||
-                      filters.company ||
-                      filters.city ||
-                      filters.country ||
-                      filters.connectionFilter !== "all" ||
-                      filters.roleFilter !== "all" ||
-                      filters.skills.length > 0) && (
-                        <div className="absolute -top-1 -right-1 h-3 w-3 bg-blue-500 rounded-full border-2 border-slate-900" />
-                      )}
-                  </Button>
-                  {showClearButton ? (
-                    <Button
-                      onClick={handleClearResults}
-                      variant="outline"
-                      size="icon"
-                      className="border-red-500/30 text-red-400 hover:bg-red-500/10 hover:text-red-300 bg-transparent shrink-0 w-10 h-10"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  ) : (
-                    <Button
-                      onClick={handleSearch}
-                      size="icon"
-                      className="bg-blue-600 hover:bg-blue-500 text-white shrink-0 w-10 h-10"
-                    >
-                      <Search className="h-4 w-4" />
-                    </Button>
+                        </div>
+                      ) : hasSearched ? (
+                        <div className="p-4 text-center text-muted-foreground text-sm">
+                          No alumni found matching "{filters.name}"
+                        </div>
+                      ) : null}
+                    </div>
                   )}
                 </div>
 
-                {/* Filter Panel */}
-                {showFilters && (
-                  <div className="border-t border-white/10 pt-4 space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      {/* Batch Filter */}
-                      <div className="space-y-2">
-                        <Label htmlFor="batch" className="text-gray-300">
-                          Batch
-                        </Label>
-                        <Input
-                          id="batch"
-                          placeholder="e.g., 2020"
-                          value={filters.batch}
-                          onChange={(e) =>
-                            handleFilterChange("batch", e.target.value)
-                          }
-                          className="bg-black/20 border-white/10 text-white placeholder:text-gray-500 focus:border-blue-500/50 focus:ring-blue-500/20"
-                        />
-                      </div>
-
-                      {/* Branch Filter */}
-                      <div className="space-y-2">
-                        <Label htmlFor="branch" className="text-gray-300">
-                          Branch
-                        </Label>
-                        <Select
-                          value={filters.branch}
-                          onValueChange={(value) =>
-                            handleFilterChange("branch", value)
-                          }
-                        >
-                          <SelectTrigger className="bg-black/20 border-white/10 text-white focus:ring-blue-500/20">
-                            <SelectValue placeholder="All Branches" />
-                          </SelectTrigger>
-                          <SelectContent className="bg-slate-900 border-white/10 text-white">
-                            {BRANCHES.map((branch) => (
-                              <SelectItem key={branch} value={branch}>
-                                {branch}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        {filters.branch && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleFilterChange("branch", "")}
-                            className="text-xs h-6 px-2 text-gray-400 hover:text-white"
-                          >
-                            Clear
-                          </Button>
-                        )}
-                      </div>
-
-                      {/* Campus Filter */}
-                      <div className="space-y-2">
-                        <Label htmlFor="campus" className="text-gray-300">
-                          Campus
-                        </Label>
-                        <Select
-                          value={filters.campus}
-                          onValueChange={(value) =>
-                            handleFilterChange("campus", value)
-                          }
-                        >
-                          <SelectTrigger className="bg-black/20 border-white/10 text-white focus:ring-blue-500/20">
-                            <SelectValue placeholder="All Campuses" />
-                          </SelectTrigger>
-                          <SelectContent className="bg-slate-900 border-white/10 text-white">
-                            {CAMPUSES.map((campus) => (
-                              <SelectItem key={campus} value={campus}>
-                                {campus}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        {filters.campus && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleFilterChange("campus", "")}
-                            className="text-xs h-6 px-2 text-gray-400 hover:text-white"
-                          >
-                            Clear
-                          </Button>
-                        )}
-                      </div>
-
-                      {/* Company Filter */}
-                      <div className="space-y-2">
-                        <Label htmlFor="company" className="text-gray-300">
-                          Company
-                        </Label>
-                        <Input
-                          id="company"
-                          placeholder="Search by company..."
-                          value={filters.company}
-                          onChange={(e) =>
-                            handleFilterChange("company", e.target.value)
-                          }
-                          className="bg-black/20 border-white/10 text-white placeholder:text-gray-500 focus:border-blue-500/50 focus:ring-blue-500/20"
-                        />
-                      </div>
-
-                      {/* City Filter */}
-                      <div className="space-y-2">
-                        <Label htmlFor="city" className="text-gray-300">
-                          City
-                        </Label>
-                        <Input
-                          id="city"
-                          placeholder="Search by city..."
-                          value={filters.city}
-                          onChange={(e) =>
-                            handleFilterChange("city", e.target.value)
-                          }
-                          className="bg-black/20 border-white/10 text-white placeholder:text-gray-500 focus:border-blue-500/50 focus:ring-blue-500/20"
-                        />
-                      </div>
-
-                      {/* Country Filter */}
-                      <div className="space-y-2">
-                        <Label htmlFor="country" className="text-gray-300">
-                          Country
-                        </Label>
-                        <Input
-                          id="country"
-                          placeholder="Search by country..."
-                          value={filters.country}
-                          onChange={(e) =>
-                            handleFilterChange("country", e.target.value)
-                          }
-                          className="bg-black/20 border-white/10 text-white placeholder:text-gray-500 focus:border-blue-500/50 focus:ring-blue-500/20"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Skills Filter */}
-                    <div className="space-y-2">
-                      <Label htmlFor="skills" className="text-gray-300">
-                        Skills
-                      </Label>
-                      <div className="flex gap-2">
-                        <Input
-                          id="skills"
-                          placeholder="Add skill to filter"
-                          value={skillInput}
-                          onChange={(e) => setSkillInput(e.target.value)}
-                          onKeyPress={(e) => {
-                            if (e.key === "Enter") {
-                              e.preventDefault();
-                              handleAddSkill();
-                            }
-                          }}
-                          className="bg-black/20 border-white/10 text-white placeholder:text-gray-500 focus:border-blue-500/50 focus:ring-blue-500/20"
-                        />
-                        <Button
-                          type="button"
-                          onClick={handleAddSkill}
-                          variant="outline"
-                          className="border-white/10 bg-white/5 text-gray-300 hover:bg-white/10 hover:text-white"
-                        >
-                          Add
-                        </Button>
-                      </div>
-                      {filters.skills.length > 0 && (
-                        <div className="flex flex-wrap gap-2 mt-2">
-                          {filters.skills.map((skill, index) => (
-                            <Badge
-                              key={index}
-                              variant="secondary"
-                              className="gap-1 cursor-pointer bg-white/10 text-gray-200 hover:bg-white/20 border border-white/10"
-                              onClick={() => handleRemoveSkill(skill)}
-                            >
-                              {skill}
-                              <X className="h-3 w-3" />
-                            </Badge>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Connection Status Filter */}
-                    <div className="border-t border-white/10 pt-4">
-                      <Label className="text-gray-300 block mb-3">
-                        Connection Status
-                      </Label>
-                      <RadioGroup
-                        value={filters.connectionFilter}
-                        onValueChange={(value) =>
-                          handleFilterChange("connectionFilter", value)
-                        }
-                      >
-                        <div className="flex items-center gap-6">
-                          <div className="flex items-center space-x-2">
-                            <RadioGroupItem
-                              value="all"
-                              id="connection-all"
-                              className="border-white/30 text-blue-500"
-                            />
-                            <Label
-                              htmlFor="connection-all"
-                              className="font-normal cursor-pointer text-gray-300 hover:text-white"
-                            >
-                              All
-                            </Label>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <RadioGroupItem
-                              value="connected"
-                              id="connection-connected"
-                              className="border-white/30 text-blue-500"
-                            />
-                            <Label
-                              htmlFor="connection-connected"
-                              className="font-normal cursor-pointer text-gray-300 hover:text-white"
-                            >
-                              Connected
-                            </Label>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <RadioGroupItem
-                              value="not_connected"
-                              id="connection-not-connected"
-                              className="border-white/30 text-blue-500"
-                            />
-                            <Label
-                              htmlFor="connection-not-connected"
-                              className="font-normal cursor-pointer text-gray-300 hover:text-white"
-                            >
-                              Not Connected
-                            </Label>
-                          </div>
-                        </div>
-                      </RadioGroup>
-                    </div>
-
-                    {/* User Role Filter */}
-                    <div className="border-t border-white/10 pt-4">
-                      <Label className="text-gray-300 block mb-3">
-                        User Type
-                      </Label>
-                      <RadioGroup
-                        value={filters.roleFilter}
-                        onValueChange={(value) =>
-                          handleFilterChange("roleFilter", value)
-                        }
-                      >
-                        <div className="flex items-center gap-6">
-                          <div className="flex items-center space-x-2">
-                            <RadioGroupItem
-                              value="all"
-                              id="role-all"
-                              className="border-white/30 text-blue-500"
-                            />
-                            <Label
-                              htmlFor="role-all"
-                              className="font-normal cursor-pointer text-gray-300 hover:text-white"
-                            >
-                              All
-                            </Label>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <RadioGroupItem
-                              value="alumni"
-                              id="role-alumni"
-                              className="border-white/30 text-blue-500"
-                            />
-                            <Label
-                              htmlFor="role-alumni"
-                              className="font-normal cursor-pointer text-gray-300 hover:text-white"
-                            >
-                              Alumni
-                            </Label>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <RadioGroupItem
-                              value="student"
-                              id="role-student"
-                              className="border-white/30 text-blue-500"
-                            />
-                            <Label
-                              htmlFor="role-student"
-                              className="font-normal cursor-pointer text-gray-300 hover:text-white"
-                            >
-                              Students
-                            </Label>
-                          </div>
-                        </div>
-                      </RadioGroup>
-                    </div>
-
-                    {/* Action Buttons */}
-                    <div className="flex gap-2 justify-end">
-                      <Button
-                        variant="outline"
-                        onClick={handleClearResults}
-                        className="border-white/10 bg-transparent text-gray-400 hover:bg-white/5 hover:text-white"
-                      >
-                        Clear Filters
-                      </Button>
-                    </div>
-                  </div>
+                {showClearButton ? (
+                  <Button
+                    onClick={handleClearResults}
+                    variant="outline"
+                    size="icon"
+                    className="border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive bg-transparent shrink-0 w-11 h-11 rounded-card"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={handleSearch}
+                    size="icon"
+                    className="bg-primary hover:bg-primary-hover text-primary-foreground shrink-0 w-11 h-11 rounded-card"
+                  >
+                    <Search className="h-4 w-4" />
+                  </Button>
                 )}
               </div>
+
+              {/* Second Row: Filter Pills & Advanced Toggle */}
+              <div className="flex flex-wrap items-center gap-2">
+                <FilterPillSelect
+                  value={filters.batch}
+                  onValueChange={(value) => handleFilterChange("batch", value)}
+                  onClear={() => handleFilterChange("batch", "")}
+                  placeholder="Class Year"
+                  options={CLASS_YEARS}
+                  className="w-[45%] sm:w-auto"
+                  triggerClassName="w-full sm:w-32"
+                />
+
+                <FilterPillSelect
+                  value={filters.branch}
+                  onValueChange={(value) => handleFilterChange("branch", value)}
+                  onClear={() => handleFilterChange("branch", "")}
+                  placeholder="All Branches"
+                  options={BRANCHES}
+                  className="w-[45%] sm:w-auto"
+                  triggerClassName="w-full sm:w-52"
+                />
+
+                <FilterPillSelect
+                  value={filters.campus}
+                  onValueChange={(value) => handleFilterChange("campus", value)}
+                  onClear={() => handleFilterChange("campus", "")}
+                  placeholder="All Campuses"
+                  options={CAMPUSES}
+                  className="w-[45%] sm:w-auto"
+                  triggerClassName="w-full sm:w-40"
+                />
+
+                <FilterPillSelect
+                  value={filters.connectionFilter === "all" ? "" : filters.connectionFilter}
+                  onValueChange={(value) => handleFilterChange("connectionFilter", value)}
+                  onClear={() => handleFilterChange("connectionFilter", "all")}
+                  placeholder="Connections"
+                  options={["connected", "not_connected"]}
+                  labels={{ connected: "Connected", not_connected: "Not Connected" }}
+                  className="w-[45%] sm:w-auto"
+                  triggerClassName="w-full sm:w-40"
+                />
+
+                <FilterPillSelect
+                  value={filters.roleFilter === "all" ? "" : filters.roleFilter}
+                  onValueChange={(value) => handleFilterChange("roleFilter", value)}
+                  onClear={() => handleFilterChange("roleFilter", "all")}
+                  placeholder="User Type"
+                  options={["alumni", "student"]}
+                  labels={{ alumni: "Alumni", student: "Students" }}
+                  className="w-[45%] sm:w-auto"
+                  triggerClassName="w-full sm:w-36"
+                />
+
+                <div className="flex-1" />
+
+                {/* Advanced toggle — extends this section inline instead of opening a modal */}
+                <Button
+                  variant="ghost"
+                  onClick={() => setAdvancedOpen((open) => !open)}
+                  aria-expanded={advancedOpen}
+                  className="text-primary hover:bg-primary/10 hover:text-primary h-10 relative rounded-full text-label-md"
+                >
+                  <Filter className="h-4 w-4 mr-1.5" />
+                  Advanced
+                  {advancedFilterCount > 0 && (
+                    <Badge variant="secondary" className="ml-2 bg-primary text-primary-foreground hover:bg-primary px-1.5 py-0 min-w-[20px] flex items-center justify-center rounded-full">
+                      {advancedFilterCount}
+                    </Badge>
+                  )}
+                  <ChevronDown
+                    className={cn(
+                      "h-4 w-4 ml-1 transition-transform duration-200",
+                      advancedOpen && "rotate-180"
+                    )}
+                  />
+                </Button>
+              </div>
+
+              {/* Advanced Panel — extends the filter section in place */}
+              {advancedOpen && (
+                <div className="rounded-card border border-border bg-card p-4 md:p-6 space-y-6 animate-in fade-in slide-in-from-top-2 duration-200">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    {/* Company Filter */}
+                    <div className="space-y-2">
+                      <Label htmlFor="company" className="text-foreground">
+                        Company
+                      </Label>
+                      <Input
+                        id="company"
+                        placeholder="Search by company..."
+                        value={filters.company}
+                        onChange={(e) =>
+                          handleFilterChange("company", e.target.value)
+                        }
+                        className="bg-background border-input text-foreground placeholder:text-muted-foreground focus:border-ring focus:ring-ring"
+                      />
+                    </div>
+
+                    {/* City Filter */}
+                    <div className="space-y-2">
+                      <Label htmlFor="city" className="text-foreground">
+                        City
+                      </Label>
+                      <Input
+                        id="city"
+                        placeholder="Search by city..."
+                        value={filters.city}
+                        onChange={(e) =>
+                          handleFilterChange("city", e.target.value)
+                        }
+                        className="bg-background border-input text-foreground placeholder:text-muted-foreground focus:border-ring focus:ring-ring"
+                      />
+                    </div>
+
+                    {/* Country Filter */}
+                    <div className="space-y-2">
+                      <Label htmlFor="country" className="text-foreground">
+                        Country
+                      </Label>
+                      <Input
+                        id="country"
+                        placeholder="Search by country..."
+                        value={filters.country}
+                        onChange={(e) =>
+                          handleFilterChange("country", e.target.value)
+                        }
+                        className="bg-background border-input text-foreground placeholder:text-muted-foreground focus:border-ring focus:ring-ring"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Skills Filter */}
+                  <div className="space-y-2">
+                    <Label htmlFor="skills" className="text-foreground">
+                      Skills
+                    </Label>
+                    <div className="flex gap-2">
+                      <Input
+                        id="skills"
+                        placeholder="Add skill to filter"
+                        value={skillInput}
+                        onChange={(e) => setSkillInput(e.target.value)}
+                        onKeyPress={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            handleAddSkill();
+                          }
+                        }}
+                        className="bg-background border-input text-foreground placeholder:text-muted-foreground focus:border-ring focus:ring-ring"
+                      />
+                      <Button
+                        type="button"
+                        onClick={handleAddSkill}
+                        variant="outline"
+                        className="border-border bg-background text-foreground hover:bg-accent hover:text-accent-foreground"
+                      >
+                        Add
+                      </Button>
+                    </div>
+                    {filters.skills.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {filters.skills.map((skill, index) => (
+                          <Badge
+                            key={index}
+                            variant="secondary"
+                            className="gap-1 cursor-pointer bg-accent text-foreground hover:bg-accent/80 border border-border"
+                            onClick={() => handleRemoveSkill(skill)}
+                          >
+                            {skill}
+                            <X className="h-3 w-3" />
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex justify-end pt-2 border-t border-border">
+                    <Button
+                      variant="ghost"
+                      onClick={handleClearAdvancedFilters}
+                      className="text-muted-foreground hover:text-foreground"
+                    >
+                      Clear Advanced Filters
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
           {/* Results */}
           {isLoading ? (
-            <EmptyState
-              icon={
-                <Loader2 className="h-12 w-12 animate-spin text-blue-500 mx-auto" />
-              }
-              title="Searching alumni..."
-            />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8 auto-rows-fr">
+              {Array.from({ length: Math.max(alumni.length, itemsPerPage) }).map((_, i) => (
+                <AlumniCardSkeleton key={i} />
+              ))}
+            </div>
           ) : !hasSearched ? (
             <EmptyState
               icon={
-                <GraduationCap className="h-20 w-20 text-blue-500/30 mx-auto" />
+                <GraduationCap className="h-20 w-20 text-primary/30 mx-auto" />
               }
               title="Ready to Connect? 🎓"
               description="Use the search bar and filters above to find alumni"
             />
           ) : alumni.length === 0 ? (
             <EmptyState
-              icon={<Search className="h-12 w-12 text-gray-400 mx-auto" />}
+              icon={<Search className="h-12 w-12 text-muted-foreground mx-auto" />}
               title="No Results Found"
               description="We couldn't find any alumni matching your search."
               action={
                 <Button
                   onClick={handleClearResults}
                   variant="outline"
-                  className="mt-4 bg-white text-black border-white/20 hover:bg-gray-100 hover:text-black"
+                  className="mt-4 bg-background text-foreground border-border hover:bg-accent hover:text-foreground"
                 >
                   Clear Search
                 </Button>
@@ -533,7 +419,7 @@ const AlumniDirectory = () => {
                           <Button
                             onClick={handleClearResults}
                             variant="outline"
-                            className="border-blue-500/50 text-blue-400 hover:bg-blue-500/10 hover:text-blue-300 bg-transparent"
+                            className="border-primary/50 text-primary hover:bg-primary/10 hover:text-primary bg-transparent"
                           >
                             Clear All Filters
                           </Button>
@@ -541,11 +427,7 @@ const AlumniDirectory = () => {
                       />
                     ) : (
                       <>
-                        {/* 
-                          Alumni Grid 
-                          'auto-rows-fr' ensures all rows in the grid match the height of the tallest card on the page. 
-                          This prevents uneven card heights across different rows when card content varies.
-                        */}
+                        {/* Alumni Grid */}
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8 auto-rows-fr">
                           {filteredAlumni.map((alumnus) => (
                             <AlumniCard
@@ -562,11 +444,13 @@ const AlumniDirectory = () => {
                         </div>
 
                         {/* Pagination */}
-                        <SmartPagination
-                          currentPage={currentPage}
-                          totalPages={totalPages}
-                          onPageChange={handlePageChange}
-                        />
+                        <div className="pb-24 md:pb-0">
+                          <SmartPagination
+                            currentPage={currentPage}
+                            totalPages={totalPages}
+                            onPageChange={handlePageChange}
+                          />
+                        </div>
                       </>
                     )}
                   </>
