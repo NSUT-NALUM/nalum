@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/dialog";
 import { Calendar, Clock, MapPin, Link as LinkIcon, Phone, Mail, Globe, Image, Loader2, Edit2, Trash2, Eye, RefreshCw, Users, X, Plus, List } from "lucide-react";
 import { toast } from "sonner";
+import { DeleteConfirmDialog } from "@/components/ui/DeleteConfirmDialog";
 import api from "@/lib/api";
 import { BASE_URL } from "@/lib/constants";
 import { useAuth } from "@/context/AuthContext";

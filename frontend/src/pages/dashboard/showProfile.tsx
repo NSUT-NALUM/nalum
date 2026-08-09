@@ -492,7 +492,10 @@ const ShowProfile = () => {
               </p>
               <Button
                 variant="destructive"
-                onClick={() => setConfirmDeleteOpen(true)}
+                onClick={() => {
+                  setDeleteConfirmationText("");
+                  setConfirmDeleteOpen(true);
+                }}
                 className="bg-red-600 hover:bg-red-700 text-white border-none"
               >
                 Deactivate Account
@@ -508,7 +511,15 @@ const ShowProfile = () => {
       </div>
 
       {/* Account Deactivation Dialog (Task 4.6) */}
-      <AlertDialog open={confirmDeleteOpen} onOpenChange={setConfirmDeleteOpen}>
+      <AlertDialog
+        open={confirmDeleteOpen}
+        onOpenChange={(open) => {
+          setConfirmDeleteOpen(open);
+          if (!open) {
+            setDeleteConfirmationText("");
+          }
+        }}
+      >
         <AlertDialogContent className="bg-[#0f0f1a] border border-white/10 text-white">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-white text-xl">Deactivate Account?</AlertDialogTitle>
