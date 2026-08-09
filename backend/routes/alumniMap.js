@@ -68,8 +68,6 @@ router.get("/", mapRateLimiter, async (req, res) => {
           count: { $sum: 1 },
           avgLat: { $avg: "$location.lat" },
           avgLng: { $avg: "$location.lng" },
-          rawCity: { $first: "$location.city" },
-          rawCountry: { $first: "$location.country" },
         },
       },
     ]);
@@ -78,8 +76,8 @@ router.get("/", mapRateLimiter, async (req, res) => {
     const groupedMap = new Map();
 
     for (const item of rawLocations) {
-      const rawCity = (item._id && item._id.city) || item.city || item.rawCity || "";
-      const rawCountry = (item._id && item._id.country) || item.country || item.rawCountry || "";
+      const rawCity = (item._id && item._id.city) || "";
+      const rawCountry = (item._id && item._id.country) || "";
       const { normalizedCity, normalizedCountry, canonicalKey, displayCity, displayCountry } =
         normalizeCityAndCountry(rawCity, rawCountry);
 
@@ -97,8 +95,8 @@ router.get("/", mapRateLimiter, async (req, res) => {
         });
       }
 
-      const itemLat = item.avgLat !== undefined ? item.avgLat : (item.lat !== undefined ? item.lat : 0);
-      const itemLng = item.avgLng !== undefined ? item.avgLng : (item.lng !== undefined ? item.lng : 0);
+      const itemLat = item.avgLat !== undefined ? item.avgLat : 0;
+      const itemLng = item.avgLng !== undefined ? item.avgLng : 0;
 
       const record = groupedMap.get(canonicalKey);
       record.count += item.count || 1;

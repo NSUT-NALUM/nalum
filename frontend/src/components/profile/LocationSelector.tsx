@@ -13,7 +13,6 @@ import { MapPin } from "lucide-react";
 import { COUNTRIES } from "@/constants/countries";
 import { toast } from "sonner";
 import { validateTextInput } from "@/lib/validation";
-import api from "@/lib/api";
 
 interface LocationSelectorProps {
   city: string;

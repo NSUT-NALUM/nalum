@@ -20,7 +20,7 @@ interface AlumniLocation {
   lng: number;
 }
 
-// Tracks map bounds and zoom, stores them in ref-backed state
+// Tracks map bounds and zoom for supercluster clustering
 function MapController({
   setBounds,
   setZoom,
@@ -452,6 +452,7 @@ function MapSearchControl({
   );
 }
 
+// Continent overlay label rendered at low zoom levels
 const CONTINENT_LABELS = [
   { name: "ASIA", lat: 44.5, lng: 95.0 },
 ];
@@ -580,7 +581,7 @@ const AlumniMap = () => {
         </div>
         <div className="container mx-auto px-4 relative z-10">
           <div className="text-center mb-12">
-            <h2 className="text-2xl md:text-5xl font-serif font-bold text-gray-900 mb-4 tracking-tight">
+            <h2 className="text-2xl md:text-5xl font-serif font-bold text-white mb-4 tracking-tight">
               Alumni Network Map
             </h2>
           </div>
@@ -603,7 +604,7 @@ const AlumniMap = () => {
         </div>
         <div className="container mx-auto px-4 relative z-10">
           <div className="text-center mb-12">
-            <h2 className="text-2xl md:text-5xl font-serif font-bold text-gray-900 mb-4 tracking-tight">
+            <h2 className="text-2xl md:text-5xl font-serif font-bold text-white mb-4 tracking-tight">
               Alumni Network Map
             </h2>
           </div>
@@ -626,7 +627,7 @@ const AlumniMap = () => {
         </div>
         <div className="container mx-auto px-4 relative z-10">
           <div className="text-center mb-12">
-            <h2 className="text-2xl md:text-5xl font-serif font-bold text-gray-900 mb-4 tracking-tight">
+            <h2 className="text-2xl md:text-5xl font-serif font-bold text-white mb-4 tracking-tight">
               Alumni Network Map
             </h2>
           </div>

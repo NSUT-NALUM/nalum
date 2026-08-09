@@ -1,4 +1,5 @@
 const User = require("../models/user/user.model");
+const { invalidateAlumniMapCache } = require("../config/cacheKeys");
 
 // Middleware to check if a user is banned
 exports.checkBanned = async (req, res, next) => {
@@ -27,6 +28,10 @@ exports.checkBanned = async (req, res, next) => {
         user.ban_expires_at = null;
         user.ban_reason = null;
         await user.save();
+
+        // The user may be eligible for the public map again — drop the cached
+        // response so their pin reappears without waiting for the 1h TTL.
+        await invalidateAlumniMapCache();
 
         // Continue with the request
         return next();

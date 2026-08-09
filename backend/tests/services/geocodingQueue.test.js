@@ -72,12 +72,52 @@ describe("Geocoding Queue Service", () => {
         inProgressLength: 0,
         errorCount: 0,
         isProcessing: false,
+        pausedUntil: null,
         currentlyProcessing: null,
       });
     });
   });
 
   describe("processNextItem pacing & execution", () => {
+    it(
+      "never sends overlapping requests when a response is slower than the tick",
+      async () => {
+        const item1 = JSON.stringify({ userId: "u1", city: "Oslo", country: "Norway" });
+        const item2 = JSON.stringify({ userId: "u2", city: "Bergen", country: "Norway" });
+
+        let pops = 0;
+        mockRedis.lMove.mockImplementation(async () => {
+          pops += 1;
+          if (pops === 1) return item1;
+          if (pops === 2) return item2;
+          return null;
+        });
+
+        let active = 0;
+        let maxActive = 0;
+        axios.get.mockImplementation(async () => {
+          active += 1;
+          maxActive = Math.max(maxActive, active);
+          // Simulate a slow Nominatim response (2.2s) — longer than the 1s tick
+          await new Promise((r) => setTimeout(r, 2200));
+          active -= 1;
+          return { data: [{ lat: "59.9139", lon: "10.7522" }] };
+        });
+
+        geocodingQueue.startProcessing();
+        // Long enough for both items to be processed sequentially
+        await new Promise((r) => setTimeout(r, 7000));
+        geocodingQueue.stopProcessing();
+
+        // A setInterval-based loop would hit 2 here; the self-scheduling
+        // setTimeout chain guarantees the next request only starts after the
+        // previous one finishes.
+        expect(maxActive).toBeLessThanOrEqual(1);
+        expect(axios.get).toHaveBeenCalledTimes(2);
+      },
+      15000,
+    );
+
     it("processes item, calls Nominatim for non-canonical location, updates Profile, and clears processing flag", async () => {
       const queueItem = JSON.stringify({
         userId: "user123",

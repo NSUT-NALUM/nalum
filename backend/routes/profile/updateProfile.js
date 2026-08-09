@@ -83,8 +83,11 @@ router.put("/", protect, async (req, res) => {
           profile.location = {
             city: norm.displayCity.toLowerCase(),
             country: norm.displayCountry.toLowerCase(),
-            lat: canonical.isCanonical ? canonical.lat : (location.lat || undefined),
-            lng: canonical.isCanonical ? canonical.lng : (location.lng || undefined),
+            // Use != null (not falsy) so a real coordinate of 0 (equator /
+            // prime meridian) is preserved instead of being dropped; null and
+            // undefined both fall through to "no coordinates yet".
+            lat: canonical.isCanonical ? canonical.lat : (location.lat != null ? location.lat : undefined),
+            lng: canonical.isCanonical ? canonical.lng : (location.lng != null ? location.lng : undefined),
           };
         } else {
           profile.location = location;
@@ -101,12 +104,13 @@ router.put("/", protect, async (req, res) => {
       await invalidateAlumniMapCache();
     }
 
-    // Queue for geocoding if location updated but no coordinates
+    // Queue for geocoding if location updated but no coordinates (lat/lng of 0
+    // are valid coordinates, so only null/undefined mean "not yet geocoded").
     if (
       location &&
       location.city &&
       location.country &&
-      (!location.lat || !location.lng)
+      (location.lat == null || location.lng == null)
     ) {
       try {
         await addToQueue(userId, location.city, location.country);
