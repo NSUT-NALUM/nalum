@@ -32,7 +32,7 @@ const ProfileMenu = ({ isOpen, onClose }: ProfileMenuProps) => {
     {
       icon: Calendar,
       label: "My Events",
-      href: "/dashboard/host-event",
+      href: "/dashboard/events?tab=my",
       show: isAlumni,
       description: "Manage your events",
     },

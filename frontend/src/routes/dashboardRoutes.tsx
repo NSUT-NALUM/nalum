@@ -15,6 +15,8 @@ import {
   loadVerifyAlumni,
   loadChatPage,
   loadEvents,
+  loadEventDetails,
+  loadEditEvent,
   loadHostEvent,
   loadMyPosts,
   loadCreatePost,
@@ -34,6 +36,8 @@ const ConnectionsPage = lazy(loadConnectionsPage);
 const VerifyAlumni = lazy(loadVerifyAlumni);
 const ChatPage = lazy(loadChatPage);
 const Events = lazy(loadEvents);
+const EventDetails = lazy(loadEventDetails);
+const EditEvent = lazy(loadEditEvent);
 const HostEvent = lazy(loadHostEvent);
 const MyPosts = lazy(loadMyPosts);
 const CreatePost = lazy(loadCreatePost);
@@ -89,6 +93,8 @@ export function DashboardRoutes() {
         />
         
         <Route path="/dashboard/events" element={<Events />} />
+        <Route path="/dashboard/events/:eventId" element={<EventDetails />} />
+        <Route path="/dashboard/events/:eventId/edit" element={<EditEvent />} />
         <Route path="/dashboard/posts" element={<CreatePost />} />
         <Route path="/dashboard/posts/:postId" element={<ViewPost />} />
         <Route path="/dashboard/my-posts" element={<MyPosts />} />

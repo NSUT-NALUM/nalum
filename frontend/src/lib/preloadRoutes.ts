@@ -103,6 +103,8 @@ export const routeImportMap: Record<string, () => void> = {
   "/dashboard/chat": preloadDashboardPage(loaders.loadChatPage),
   "/dashboard/chat/:conversationId": preloadDashboardPage(loaders.loadChatPage),
   "/dashboard/events": preloadDashboardPage(loaders.loadEvents),
+  "/dashboard/events/:eventId": preloadDashboardPage(loaders.loadEventDetails),
+  "/dashboard/events/:eventId/edit": preloadDashboardPage(loaders.loadEditEvent),
   "/dashboard/posts": preloadDashboardPage(loaders.loadCreatePost),
   "/dashboard/posts/:postId": preloadDashboardPage(loaders.loadViewPost),
   "/dashboard/my-posts": preloadDashboardPage(loaders.loadMyPosts),

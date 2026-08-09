@@ -43,6 +43,8 @@ export const loadVerifyAlumni = () => import("@/pages/dashboard/verifyAlumni");
 export const loadChatPage = () =>
   import("@/pages/dashboard/chat/ChatPage").then((module) => ({ default: module.ChatPage }));
 export const loadEvents = () => import("@/pages/dashboard/Events");
+export const loadEventDetails = () => import("@/pages/dashboard/EventDetails");
+export const loadEditEvent = () => import("@/pages/dashboard/EditEvent");
 export const loadHostEvent = () => import("@/pages/dashboard/HostEvent");
 export const loadMyPosts = () => import("@/pages/dashboard/MyPosts");
 export const loadCreatePost = () => import("@/pages/dashboard/CreatePost");
