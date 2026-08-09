@@ -338,13 +338,23 @@ export default function Events() {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="p-6 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md">
-        <h1 className="text-4xl font-bold text-white mb-2">
-          Alumni Events
-        </h1>
-        <p className="text-gray-400">
-          Discover and participate in events hosted by our alumni community
-        </p>
+      <div className="p-6 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h1 className="text-4xl font-bold text-white mb-2">
+            Alumni Events
+          </h1>
+          <p className="text-gray-400">
+            Discover and participate in events hosted by our alumni community
+          </p>
+        </div>
+        {user?.role === "alumni" && (
+          <Link to="/dashboard/host-event">
+            <Button className="bg-blue-600 hover:bg-blue-500 text-white flex items-center gap-2">
+              <Plus className="h-4 w-4" />
+              Host Event
+            </Button>
+          </Link>
+        )}
       </div>
 
       {/* Carousel - Most Liked Events */}

@@ -115,9 +115,11 @@ function CommentCard({
   const commentAuthorId = comment.author?._id ?? comment.authorId;
   const isOwner = String(currentUserId ?? "") === String(commentAuthorId ?? "");
   const canManage = isOwner || user?.role === "admin";
-  const displayContent = comment.isDeleted
-    ? "This comment was deleted."
-    : comment.content || "";
+  const displayContent = comment.content || "";
+
+  const activeReplies = (comment.replies || []).filter(
+    (r) => !r.isDeleted && (r as any).status !== "deleted"
+  );
 
   const handleReply = async () => {
     if (!replyValue.trim()) return;
@@ -178,25 +180,17 @@ function CommentCard({
   return (
     <div className={cn("flex flex-col gap-2", depth > 0 && "mt-4")}>
       <div className="flex gap-3">
-        <Link
-          to={`/dashboard/alumni/${comment.author?._id || comment.authorId}`}
-          className="shrink-0 relative z-10"
-        >
-          <div className="rounded-full ring-2 ring-slate-900 shadow-sm">
-            <UserAvatar src={undefined} name={comment.author?.name || "User"} size="sm" />
-          </div>
-        </Link>
+        <div className="flex-shrink-0 mt-0.5">
+          <UserAvatar name={comment.author?.name || "User"} size="sm" />
+        </div>
 
-        <div className="flex-1 min-w-0 group">
-          <div className="bg-white/[0.04] border border-white/[0.05] hover:bg-white/[0.06] transition-colors rounded-[22px] rounded-tl-sm px-4 py-3 relative">
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex items-center gap-2 flex-wrap mb-1">
-                <Link
-                  to={`/dashboard/alumni/${comment.author?._id || comment.authorId}`}
-                  className="text-[14px] font-semibold text-gray-100 hover:text-white transition-colors"
-                >
-                  {comment.author?.name || "Unknown user"}
-                </Link>
+        <div className="flex-1 min-w-0">
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-3.5 relative group">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <span className="text-[13.5px] font-bold text-white tracking-wide">
+                  {comment.author?.name || "Anonymous"}
+                </span>
                 <span className="text-[12px] text-gray-500 font-medium">
                   {formatDistanceToNow(new Date(comment.createdAt), {
                     addSuffix: true,
@@ -205,7 +199,7 @@ function CommentCard({
                 </span>
               </div>
 
-              {canManage && !comment.isDeleted && (
+              {canManage && (
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity absolute right-3 top-3 bg-slate-900/80 backdrop-blur-sm rounded-full p-0.5">
                   <button
                     onClick={() => {
@@ -253,8 +247,6 @@ function CommentCard({
                     </Button>
                   </div>
                 </div>
-              ) : comment.isDeleted ? (
-                <span className="text-[14px] italic text-gray-500">{displayContent}</span>
               ) : (
                 <div className="text-[14.5px] text-gray-200 whitespace-pre-wrap break-words leading-relaxed">
                   {parseFormattedText(displayContent)}
@@ -263,27 +255,27 @@ function CommentCard({
             </div>
           </div>
 
-          {!comment.isDeleted && (
-            <div className="mt-2 ml-2 flex flex-wrap items-center gap-4 text-[12px] font-semibold text-gray-400">
-              {depth === 0 && (
-                <button
-                  onClick={handleOpenReply}
-                  className="hover:text-gray-100 transition-colors"
-                >
-                  Reply
-                </button>
-              )}
-              {depth === 0 && comment.replies.length > 0 && (
-                <button
-                  onClick={() => setShowReplies((value) => !value)}
-                  className="flex items-center gap-1 hover:text-gray-100 transition-colors"
-                >
-                  {showReplies ? "Hide replies" : `View ${comment.replies.length} replies`}
-                  <ChevronDown className={cn("h-3 w-3 transition-transform", showReplies && "rotate-180")} />
-                </button>
-              )}
-            </div>
-          )}
+          <div className="mt-2 ml-2 flex flex-wrap items-center gap-4 text-[12px] font-semibold text-gray-400">
+            {depth === 0 && (
+              <button
+                onClick={handleOpenReply}
+                className="hover:text-gray-100 transition-colors"
+              >
+                Reply
+              </button>
+            )}
+            {depth === 0 && activeReplies.length > 0 && (
+              <button
+                onClick={() => setShowReplies((value) => !value)}
+                className="flex items-center gap-1 hover:text-gray-100 transition-colors"
+              >
+                {showReplies
+                  ? `Hide replies (${activeReplies.length})`
+                  : `View ${activeReplies.length} ${activeReplies.length === 1 ? "reply" : "replies"}`}
+                <ChevronDown className={cn("h-3 w-3 transition-transform", showReplies && "rotate-180")} />
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -310,9 +302,9 @@ function CommentCard({
         </div>
       )}
 
-      {depth === 0 && showReplies && comment.replies.length > 0 && (
+      {depth === 0 && showReplies && activeReplies.length > 0 && (
         <div className="ml-5 sm:ml-6 pl-5 sm:pl-6 mt-2 border-l-2 border-white/5 space-y-4">
-          {comment.replies.map((reply) => (
+          {activeReplies.map((reply) => (
             <CommentCard
               key={reply._id}
               comment={reply}
@@ -332,6 +324,8 @@ export default function CommentSection({ postId }: CommentSectionProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [commentValue, setCommentValue] = useState("");
+
+  const activeComments = comments.filter((c) => !c.isDeleted && (c as any).status !== "deleted");
 
   const loadComments = async () => {
     try {
@@ -379,7 +373,7 @@ export default function CommentSection({ postId }: CommentSectionProps) {
             <h2 className="text-[18px] font-bold text-white tracking-wide">Discussion</h2>
           </div>
           <span className="bg-white/5 text-gray-300 px-3 py-1 rounded-full text-[13px] font-semibold">
-            {comments.length} {comments.length === 1 ? 'Comment' : 'Comments'}
+            {activeComments.length} {activeComments.length === 1 ? 'Comment' : 'Comments'}
           </span>
         </div>
 
@@ -400,7 +394,7 @@ export default function CommentSection({ postId }: CommentSectionProps) {
               <Loader2 className="h-8 w-8 animate-spin text-[#a33]" />
               <span className="text-sm font-medium">Loading conversation...</span>
             </div>
-          ) : comments.length === 0 ? (
+          ) : activeComments.length === 0 ? (
             <div className="py-16 text-center flex flex-col items-center gap-3">
               <div className="bg-white/5 p-4 rounded-full">
                 <MessageSquare className="h-8 w-8 text-gray-600" />
@@ -409,7 +403,7 @@ export default function CommentSection({ postId }: CommentSectionProps) {
               <p className="text-[13px] text-gray-500">Be the first to share your thoughts!</p>
             </div>
           ) : (
-            comments.map((comment) => (
+            activeComments.map((comment) => (
               <CommentCard
                 key={comment._id}
                 comment={comment}

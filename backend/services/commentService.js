@@ -188,9 +188,28 @@ async function getPostCommentThread({ postId, page = 1, limit = 20 }) {
 
   const skip = (page - 1) * limit;
 
+  // Cleanup any legacy orphaned subcomments in DB where parent or root is deleted
+  const deletedCommentIds = await Comment.find({ postId, status: "deleted" }).distinct("_id");
+  if (deletedCommentIds.length > 0) {
+    await Comment.updateMany(
+      {
+        postId,
+        $or: [
+          { parentCommentId: { $in: deletedCommentIds } },
+          { rootCommentId: { $in: deletedCommentIds } }
+        ],
+        status: { $ne: "deleted" }
+      },
+      {
+        $set: { status: "deleted", deletedAt: new Date() }
+      }
+    );
+  }
+
   const topLevelComments = await Comment.find({
     postId,
     parentCommentId: null,
+    status: { $ne: "deleted" },
   })
     .sort({ createdAt: -1 })
     .skip(skip)
@@ -201,6 +220,7 @@ async function getPostCommentThread({ postId, page = 1, limit = 20 }) {
   const totalRootComments = await Comment.countDocuments({
     postId,
     parentCommentId: null,
+    status: { $ne: "deleted" },
   });
 
   const topLevelIds = topLevelComments.map((comment) => comment._id);
@@ -209,6 +229,7 @@ async function getPostCommentThread({ postId, page = 1, limit = 20 }) {
     ? await Comment.find({
         postId,
         rootCommentId: { $in: topLevelIds },
+        status: { $ne: "deleted" },
       })
         .sort({ createdAt: 1 })
         .populate("authorId", "name role")
@@ -226,33 +247,38 @@ async function getPostCommentThread({ postId, page = 1, limit = 20 }) {
 }
 
 function buildCommentTree(topLevelComments, threadComments) {
+  const activeTopLevel = topLevelComments.filter((c) => c.status !== "deleted");
   const nodes = new Map();
-  const topLevelIds = new Set(topLevelComments.map((comment) => comment._id.toString()));
+  const topLevelIds = new Set(activeTopLevel.map((comment) => comment._id.toString()));
 
-  topLevelComments.forEach((comment) => {
+  activeTopLevel.forEach((comment) => {
     nodes.set(comment._id.toString(), normalizeComment(comment));
   });
 
-  const orderedComments = [...threadComments];
+  const activeThread = threadComments.filter((c) => c.status !== "deleted");
 
-  orderedComments.forEach((comment) => {
+  activeThread.forEach((comment) => {
     nodes.set(comment._id.toString(), normalizeComment(comment));
   });
 
-  orderedComments.forEach((comment) => {
+  activeThread.forEach((comment) => {
     const node = nodes.get(comment._id.toString());
     const parentId = comment.parentCommentId ? comment.parentCommentId.toString() : null;
 
     if (parentId && nodes.has(parentId) && topLevelIds.has(parentId)) {
-      nodes.get(parentId).replies.push(node);
+      if (node && !node.isDeleted && node.status !== "deleted") {
+        nodes.get(parentId).replies.push(node);
+      }
       return;
     }
   });
 
-  return topLevelComments.map((comment) => {
-    const node = nodes.get(comment._id.toString());
-    return node || normalizeComment(comment);
-  });
+  return activeTopLevel
+    .map((comment) => {
+      const node = nodes.get(comment._id.toString());
+      return node || normalizeComment(comment);
+    })
+    .filter((node) => node && !node.isDeleted && node.status !== "deleted");
 }
 
 function normalizeComment(comment) {
@@ -322,11 +348,29 @@ async function deleteComment({ commentId, userId }) {
 
   await comment.save();
 
-  // Task 2.3: fix replyCount drift — decrement atomically on root comment
+  // Cascade soft-delete all child subcomments/replies under this comment
+  await Comment.updateMany(
+    {
+      $or: [
+        { parentCommentId: comment._id },
+        { rootCommentId: comment._id }
+      ],
+      status: { $ne: "deleted" }
+    },
+    {
+      $set: { status: "deleted", deletedAt: new Date() }
+    }
+  );
+
+  // Fix replyCount drift — decrement atomically on root comment if this was a subreply
   if (comment.parentCommentId) {
     await Comment.findByIdAndUpdate(comment.rootCommentId, {
       $inc: { replyCount: -1 },
     });
+  } else {
+    // If root comment was deleted, reset its replyCount to 0
+    comment.replyCount = 0;
+    await comment.save();
   }
 
   return Comment.findById(comment._id).populate("authorId", "name role").lean();

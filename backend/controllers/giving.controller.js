@@ -213,7 +213,13 @@ exports.respondToGiving = async (req, res) => {
 exports.deleteGiving = async (req, res) => {
   try {
     const { id } = req.params;
-    const { user_id, role } = req.user;
+    const requestUserId = req.user?.user_id || req.user?.id || req.admin?.id;
+    let userRole = req.user?.role || req.admin?.role;
+
+    if (!userRole && requestUserId) {
+      const user = await User.findById(requestUserId).select("role").lean();
+      if (user) userRole = user.role;
+    }
 
     const giving = await Giving.findById(id);
     if (!giving || giving.isDeleted) {
@@ -225,8 +231,8 @@ exports.deleteGiving = async (req, res) => {
 
     assertDeletePermission({
       ownerId: giving.userId,
-      requestUserId: user_id,
-      userRole: role,
+      requestUserId: requestUserId,
+      userRole: userRole,
     });
 
     // Clean up associated image files from disk

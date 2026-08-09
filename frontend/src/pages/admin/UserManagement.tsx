@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import AdminLayout from "../../components/admin/AdminLayout";
 import { getAllUsers, banUser, unbanUser, User } from "../../lib/adminApi";
-import { Ban, Search, UserCheck } from "lucide-react";
+import { Ban, Search, UserCheck, Trash2 } from "lucide-react";
+import api from "../../lib/api";
+import { DeleteConfirmDialog } from "../../components/ui/DeleteConfirmDialog";
 
 const UserManagement = () => {
   const [users, setUsers] = useState<User[]>([]);
@@ -14,6 +16,25 @@ const UserManagement = () => {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [banDuration, setBanDuration] = useState("7d");
   const [banReason, setBanReason] = useState("");
+  const [userToDelete, setUserToDelete] = useState<User | null>(null);
+  const [deleteUserDialogOpen, setDeleteUserDialogOpen] = useState(false);
+  const [isDeletingUser, setIsDeletingUser] = useState(false);
+
+  const handleDeleteUser = async () => {
+    if (!userToDelete) return;
+    setIsDeletingUser(true);
+    try {
+      await api.delete(`/admin/users/${userToDelete._id}`);
+      alert("User account deactivated/deleted successfully");
+      setDeleteUserDialogOpen(false);
+      setUserToDelete(null);
+      fetchUsers();
+    } catch (err: any) {
+      alert(err.response?.data?.message || "Failed to deactivate user");
+    } finally {
+      setIsDeletingUser(false);
+    }
+  };
 
   useEffect(() => {
     fetchUsers();
@@ -175,25 +196,38 @@ const UserManagement = () => {
                       </span>
                     )}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm flex items-center gap-3">
                     {user.role !== "admin" && (
-                      user.banned ? (
+                      <>
+                        {user.banned ? (
+                          <button
+                            onClick={() => handleUnban(user)}
+                            className="text-green-600 hover:text-green-900 flex items-center space-x-1"
+                          >
+                            <UserCheck size={16} />
+                            <span>Unban</span>
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleBanClick(user)}
+                            className="text-red-600 hover:text-red-900 flex items-center space-x-1"
+                          >
+                            <Ban size={16} />
+                            <span>Ban</span>
+                          </button>
+                        )}
                         <button
-                          onClick={() => handleUnban(user)}
-                          className="text-green-600 hover:text-green-900 flex items-center space-x-1"
+                          onClick={() => {
+                            setUserToDelete(user);
+                            setDeleteUserDialogOpen(true);
+                          }}
+                          className="text-gray-500 hover:text-red-600 flex items-center space-x-1"
+                          title="Deactivate/Delete User Account"
                         >
-                          <UserCheck size={16} />
-                          <span>Unban</span>
+                          <Trash2 size={16} />
+                          <span>Delete</span>
                         </button>
-                      ) : (
-                        <button
-                          onClick={() => handleBanClick(user)}
-                          className="text-red-600 hover:text-red-900 flex items-center space-x-1"
-                        >
-                          <Ban size={16} />
-                          <span>Ban</span>
-                        </button>
-                      )
+                      </>
                     )}
                   </td>
                 </tr>
@@ -255,6 +289,15 @@ const UserManagement = () => {
             </div>
           </div>
         )}
+
+        <DeleteConfirmDialog
+          open={deleteUserDialogOpen}
+          onOpenChange={setDeleteUserDialogOpen}
+          title="Deactivate/Delete User Account?"
+          description={`Are you sure you want to deactivate ${userToDelete?.name}'s account and soft-delete their content?`}
+          isDeleting={isDeletingUser}
+          onConfirm={handleDeleteUser}
+        />
       </div>
     </AdminLayout>
   );

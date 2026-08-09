@@ -24,8 +24,16 @@ const QueryCard = ({ query, onDelete }: QueryCardProps) => {
   const { user } = useAuth();
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
-  const currentUserId = user?.user_id ?? user?.id;
-  const isOwner = String(currentUserId ?? "") === String(query.userId ?? "");
+  const getUserIdString = (idOrObj: any): string => {
+    if (!idOrObj) return "";
+    if (typeof idOrObj === "string") return idOrObj;
+    if (idOrObj._id) return String(idOrObj._id);
+    return String(idOrObj);
+  };
+
+  const currentUserIdStr = getUserIdString(user?.user_id ?? user?.id);
+  const resourceUserIdStr = getUserIdString(query.userId);
+  const isOwner = Boolean(currentUserIdStr && resourceUserIdStr && currentUserIdStr === resourceUserIdStr);
   const canDelete = isOwner || user?.role === "admin";
 
   const formatDate = (dateString: string) => {
