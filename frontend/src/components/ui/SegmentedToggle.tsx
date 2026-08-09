@@ -14,6 +14,12 @@ interface SegmentedToggleProps<T extends string> {
   /** Accessible name for the group, e.g. "Event view". */
   label?: string;
   className?: string;
+  /**
+   * Background of the track the indicator slides along. Defaults to the
+   * surface tone used on page headers; pass e.g. "bg-card" where the toggle
+   * already sits on a tinted strip.
+   */
+  trackClassName?: string;
 }
 
 // Pill switch with a filled indicator that slides between segments.
@@ -25,6 +31,7 @@ export function SegmentedToggle<T extends string>({
   options,
   label,
   className,
+  trackClassName = "bg-surface-container-high",
 }: SegmentedToggleProps<T>) {
   const activeIndex = Math.max(
     0,
@@ -36,7 +43,8 @@ export function SegmentedToggle<T extends string>({
       role="tablist"
       aria-label={label}
       className={cn(
-        "relative inline-flex h-11 shrink-0 items-center rounded-full bg-surface-container-high p-1",
+        "relative inline-flex h-11 shrink-0 items-center rounded-full p-1",
+        trackClassName,
         className
       )}
     >

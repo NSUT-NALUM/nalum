@@ -39,7 +39,7 @@ const Sidebar = ({ onNavigate }: SidebarProps) => {
     { to: "/dashboard/alumni", label: "Directory", icon: Users },
     { to: "/dashboard/chat", label: "Messages", icon: MessageSquare, badge: unreadCount },
     { to: "/dashboard/events", label: "Events", icon: Calendar },
-    ...(isAlumni ? [{ to: "/dashboard/my-posts", label: "Posts", icon: FileText }] : []),
+    { to: "/dashboard/posts", label: "Posts", icon: FileText },
     { to: "/dashboard/queries", label: "Queries", icon: HelpCircle },
   ];
 

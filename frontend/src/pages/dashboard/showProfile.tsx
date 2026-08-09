@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Loader2, Pencil, PenLine } from "lucide-react";
 import { useProfile } from "@/context/ProfileContext";
 import ProfileView from "@/components/profile/ProfileView";
-import MyPosts from "./MyPosts";
+import MyPostsPanel from "@/components/posts/MyPostsPanel";
 
 const ShowProfile = () => {
   const navigate = useNavigate();
@@ -80,7 +80,7 @@ const ShowProfile = () => {
     >
       {/* My Posts lives on the profile only on mobile — desktop has its own page. */}
       <div className="md:hidden pt-6 border-t border-border">
-        <MyPosts embedded={true} />
+        <MyPostsPanel embedded />
       </div>
     </ProfileView>
   );

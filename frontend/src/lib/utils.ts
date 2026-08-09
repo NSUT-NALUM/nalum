@@ -29,3 +29,10 @@ const twMerge = extendTailwindMerge({
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
+
+/** Pulls the API's message off an axios error, falling back to a caller-supplied one. */
+export function apiErrorMessage(error: unknown, fallback: string) {
+  const message = (error as { response?: { data?: { message?: string } } })
+    ?.response?.data?.message
+  return message || fallback
+}
