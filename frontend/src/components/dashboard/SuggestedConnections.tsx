@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { AnimatePresence, motion } from "framer-motion";
 import { UserPlus, Users } from "lucide-react";
 import { toast } from "sonner";
 import UserAvatar from "@/components/UserAvatar";
@@ -9,6 +10,7 @@ import { PreloadLink } from "@/components/PreloadLink";
 import { PanelCard } from "@/components/dashboard/PanelCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import api from "@/lib/api";
+import { EXIT_ROW, SPRING, rowEntrance } from "@/lib/motion";
 import { apiErrorMessage } from "@/lib/utils";
 
 interface SuggestionProfile {
@@ -121,51 +123,62 @@ export const SuggestedConnections = () => {
           </p>
         </div>
       ) : (
+        // `layout` + an exit that slides right is the payoff here: once a
+        // request is sent the profile drops out of the refetched list, and the
+        // rows below close the gap instead of snapping upward.
         <ul className="divide-y divide-border">
-          {rows.map((profile) => (
-            <li
-              key={profile._id}
-              className="flex items-center gap-3 py-3 first:pt-0 last:pb-0"
-            >
-              <button
-                type="button"
-                onClick={() =>
-                  navigate(`/dashboard/alumni/${profile.user!._id}`)
-                }
-                className="flex min-w-0 flex-1 items-center gap-3 text-left"
+          <AnimatePresence>
+            {rows.map((profile, index) => (
+              <motion.li
+                key={profile._id}
+                layout
+                {...rowEntrance(index)}
+                exit={EXIT_ROW}
+                className="flex items-center gap-3 py-3 first:pt-0 last:pb-0"
               >
-                <UserAvatar
-                  src={profile.profile_picture}
-                  name={profile.user!.name}
-                  size="md"
-                  className="shrink-0"
-                />
-                <span className="min-w-0">
-                  <span className="block truncate text-label-md text-foreground">
-                    {profile.user!.name}
+                <button
+                  type="button"
+                  onClick={() =>
+                    navigate(`/dashboard/alumni/${profile.user!._id}`)
+                  }
+                  className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                >
+                  <UserAvatar
+                    src={profile.profile_picture}
+                    name={profile.user!.name}
+                    size="md"
+                    className="shrink-0"
+                  />
+                  <span className="min-w-0">
+                    <span className="block truncate text-label-md text-foreground transition-colors hover:text-primary">
+                      {profile.user!.name}
+                    </span>
+                    <span className="mt-0.5 block truncate text-body-sm text-muted-foreground">
+                      {headline(profile)}
+                    </span>
                   </span>
-                  <span className="mt-0.5 block truncate text-body-sm text-muted-foreground">
-                    {headline(profile)}
-                  </span>
-                </span>
-              </button>
+                </button>
 
-              <button
-                type="button"
-                onClick={() =>
-                  setSelected({
-                    id: profile.user!._id,
-                    name: profile.user!.name,
-                  })
-                }
-                aria-label={`Connect with ${profile.user!.name}`}
-                title={`Connect with ${profile.user!.name}`}
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border text-primary transition-colors hover:border-primary hover:bg-primary-subtle"
-              >
-                <UserPlus className="h-4 w-4" />
-              </button>
-            </li>
-          ))}
+                <motion.button
+                  type="button"
+                  whileHover={{ scale: 1.12 }}
+                  whileTap={{ scale: 0.9 }}
+                  transition={SPRING}
+                  onClick={() =>
+                    setSelected({
+                      id: profile.user!._id,
+                      name: profile.user!.name,
+                    })
+                  }
+                  aria-label={`Connect with ${profile.user!.name}`}
+                  title={`Connect with ${profile.user!.name}`}
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border text-primary transition-colors hover:border-primary hover:bg-primary-subtle"
+                >
+                  <UserPlus className="h-4 w-4" />
+                </motion.button>
+              </motion.li>
+            ))}
+          </AnimatePresence>
         </ul>
       )}
 

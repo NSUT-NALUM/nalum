@@ -1,5 +1,6 @@
 import { ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { AnimatePresence, motion } from "framer-motion";
 import { toast } from "sonner";
 import { FileText, Loader2, PenSquare, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -14,6 +15,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import MyPostRow from "@/components/posts/MyPostRow";
 import api from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
+import { SPRING, chipEntrance, popVariants } from "@/lib/motion";
 import { PostRecord, PostStatus, toPlainText } from "@/lib/posts";
 import { apiErrorMessage, cn } from "@/lib/utils";
 
@@ -175,28 +177,43 @@ export const MyPostsPanel = ({ embedded, action }: MyPostsPanelProps) => {
                 placeholder="Search your posts…"
                 className="h-12 w-full rounded-full border border-border bg-card pl-12 pr-12 text-body-md text-foreground shadow-card placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-ring"
               />
-              {search && (
-                <button
-                  type="button"
-                  onClick={() => setSearch("")}
-                  aria-label="Clear search"
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              )}
+              <AnimatePresence>
+                {search && (
+                  // `y: "-50%"` in motion values, not a Tailwind translate —
+                  // framer owns `transform` once scale animates.
+                  <motion.button
+                    type="button"
+                    style={{ y: "-50%" }}
+                    variants={popVariants}
+                    initial="hidden"
+                    animate="visible"
+                    exit="exit"
+                    whileTap={{ scale: 0.85 }}
+                    transition={SPRING}
+                    onClick={() => setSearch("")}
+                    aria-label="Clear search"
+                    className="absolute right-4 top-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    <X className="h-4 w-4" />
+                  </motion.button>
+                )}
+              </AnimatePresence>
             </div>
 
             {action}
           </div>
 
           <div className="flex flex-wrap gap-2">
-            {FILTERS.map(({ value, label }) => {
+            {FILTERS.map(({ value, label }, index) => {
               const count = value === "all" ? posts.length : counts[value] || 0;
               return (
-                <button
+                <motion.button
                   key={value}
                   type="button"
+                  {...chipEntrance(index)}
+                  whileHover={{ y: -2 }}
+                  whileTap={{ scale: 0.95 }}
+                  transition={SPRING}
                   onClick={() => setFilter(value)}
                   className={cn(
                     "rounded-full border px-4 py-2 text-label-md transition-colors",
@@ -207,7 +224,7 @@ export const MyPostsPanel = ({ embedded, action }: MyPostsPanelProps) => {
                 >
                   {label}
                   {count > 0 && <span className="ml-1.5 opacity-70">{count}</span>}
-                </button>
+                </motion.button>
               );
             })}
           </div>
@@ -235,10 +252,19 @@ export const MyPostsPanel = ({ embedded, action }: MyPostsPanelProps) => {
           }
         />
       ) : (
-        <div className="space-y-4">
-          {visible.map((post) => (
-            <MyPostRow key={post._id} post={post} onDelete={setDeleteTarget} />
-          ))}
+        // Keyed on the filter so switching buckets re-runs the cascade;
+        // AnimatePresence lets a deleted post leave and the rest close up.
+        <div key={filter} className="space-y-4">
+          <AnimatePresence>
+            {visible.map((post, index) => (
+              <MyPostRow
+                key={post._id}
+                post={post}
+                index={index}
+                onDelete={setDeleteTarget}
+              />
+            ))}
+          </AnimatePresence>
         </div>
       )}
 

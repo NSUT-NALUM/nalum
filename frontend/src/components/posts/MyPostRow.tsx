@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -9,6 +10,13 @@ import {
   Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  CARD_HOVER,
+  EASE_OUT,
+  EXIT_BLOCK,
+  SPRING,
+  blockEntrance,
+} from "@/lib/motion";
 import { PostRecord, PostStatus, likeIds, toPlainText } from "@/lib/posts";
 import { cn } from "@/lib/utils";
 
@@ -36,11 +44,13 @@ const STATUS_PILL: Record<
 interface MyPostRowProps {
   post: PostRecord;
   onDelete: (post: PostRecord) => void;
+  /** Position in the list — staggers this row's entrance behind the one above. */
+  index?: number;
 }
 
 // A row in the author's own management list: approval state first, then the
 // action that state affords.
-export const MyPostRow = ({ post, onDelete }: MyPostRowProps) => {
+export const MyPostRow = ({ post, onDelete, index = 0 }: MyPostRowProps) => {
   const navigate = useNavigate();
 
   const status: PostStatus = post.status || "pending";
@@ -50,14 +60,27 @@ export const MyPostRow = ({ post, onDelete }: MyPostRowProps) => {
   const excerpt = toPlainText(post.content);
 
   return (
-    <article
+    // The row isn't itself clickable — the lift is a hover affordance for the
+    // action cluster on the right, not a promise that the card navigates.
+    <motion.article
+      {...blockEntrance(index)}
+      whileHover={CARD_HOVER}
+      exit={EXIT_BLOCK}
+      transition={SPRING}
+      layout
       className={cn(
         "rounded-card border p-5 shadow-card transition-colors sm:p-6",
         rejected ? "border-primary/25 bg-accent" : "border-border bg-card"
       )}
     >
       <div className="mb-3 flex items-start justify-between gap-4">
-        <span
+        <motion.span
+          // The status pill is the whole point of this row, and it changes when
+          // an admin acts, so it springs in rather than simply being there.
+          key={status}
+          initial={{ opacity: 0, scale: 0.85 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={SPRING}
           className={cn(
             "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-label-sm uppercase tracking-wide",
             pill.className
@@ -65,7 +88,7 @@ export const MyPostRow = ({ post, onDelete }: MyPostRowProps) => {
         >
           <PillIcon className="h-3.5 w-3.5" />
           {pill.label}
-        </span>
+        </motion.span>
         <span className="shrink-0 text-body-sm text-muted-foreground">
           {new Date(post.createdAt).toLocaleDateString("en-US", {
             year: "numeric",
@@ -104,15 +127,24 @@ export const MyPostRow = ({ post, onDelete }: MyPostRowProps) => {
           )}
 
           {rejected && (
-            <div className="mt-4 rounded-lg border-l-4 border-primary bg-card p-4">
-              <p className="mb-1 text-label-md text-foreground">
-                Reviewer Feedback:
-              </p>
-              <p className="text-body-sm text-muted-foreground">
-                {post.rejection_reason ||
-                  "No specific reason was given. Review the community guidelines and resubmit."}
-              </p>
-            </div>
+            // Feedback expands rather than appearing: the height change is the
+            // cue that there's something new to read here.
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              transition={{ duration: 0.35, ease: EASE_OUT }}
+              className="overflow-hidden"
+            >
+              <div className="mt-4 rounded-lg border-l-4 border-primary bg-card p-4">
+                <p className="mb-1 text-label-md text-foreground">
+                  Reviewer Feedback:
+                </p>
+                <p className="text-body-sm text-muted-foreground">
+                  {post.rejection_reason ||
+                    "No specific reason was given. Review the community guidelines and resubmit."}
+                </p>
+              </div>
+            </motion.div>
           )}
         </div>
 
@@ -162,7 +194,7 @@ export const MyPostRow = ({ post, onDelete }: MyPostRowProps) => {
           </Button>
         </div>
       </div>
-    </article>
+    </motion.article>
   );
 };
 

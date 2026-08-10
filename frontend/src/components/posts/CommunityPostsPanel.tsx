@@ -1,10 +1,12 @@
 import { ReactNode, useCallback, useEffect, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { Loader2, MessagesSquare, Search, X } from "lucide-react";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { SmartPagination } from "@/components/ui/pagination";
 import { Skeleton } from "@/components/ui/skeleton";
 import PostRow from "@/components/posts/PostRow";
 import api from "@/lib/api";
+import { SPRING, chipEntrance, popVariants, switchVariants } from "@/lib/motion";
 import { PostRecord } from "@/lib/posts";
 import { apiErrorMessage, cn } from "@/lib/utils";
 
@@ -144,16 +146,28 @@ export const CommunityPostsPanel = ({
                 placeholder="Search posts, topics, or alumni…"
                 className="h-12 w-full rounded-full border border-border bg-card pl-12 pr-12 text-body-md text-foreground shadow-card placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-ring"
               />
-              {search && (
-                <button
-                  type="button"
-                  onClick={() => setSearch("")}
-                  aria-label="Clear search"
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              )}
+              <AnimatePresence>
+                {search && (
+                  // `y: "-50%"` rather than Tailwind's `-translate-y-1/2`:
+                  // framer writes the whole `transform`, so a class-based
+                  // translate would be dropped the moment scale animates.
+                  <motion.button
+                    type="button"
+                    style={{ y: "-50%" }}
+                    variants={popVariants}
+                    initial="hidden"
+                    animate="visible"
+                    exit="exit"
+                    whileTap={{ scale: 0.85 }}
+                    transition={SPRING}
+                    onClick={() => setSearch("")}
+                    aria-label="Clear search"
+                    className="absolute right-4 top-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    <X className="h-4 w-4" />
+                  </motion.button>
+                )}
+              </AnimatePresence>
             </div>
 
             {action}
@@ -161,9 +175,15 @@ export const CommunityPostsPanel = ({
 
           {/* Tag chips — whatever the network is actually posting about */}
           {chipTags.length > 0 && (
+            // Chips arrive after /posts/tags resolves, so they cascade in
+            // rather than popping the layout open all at once.
             <div className="flex flex-wrap gap-2">
-              <button
+              <motion.button
                 type="button"
+                {...chipEntrance(0)}
+                whileHover={{ y: -2 }}
+                whileTap={{ scale: 0.95 }}
+                transition={SPRING}
                 onClick={() => {
                   setActiveTag("");
                   setPage(1);
@@ -176,11 +196,15 @@ export const CommunityPostsPanel = ({
                 )}
               >
                 All
-              </button>
-              {chipTags.map((tag) => (
-                <button
+              </motion.button>
+              {chipTags.map((tag, index) => (
+                <motion.button
                   key={tag}
                   type="button"
+                  {...chipEntrance(index + 1)}
+                  whileHover={{ y: -2 }}
+                  whileTap={{ scale: 0.95 }}
+                  transition={SPRING}
                   onClick={() => selectTag(tag)}
                   className={cn(
                     "rounded-full border px-4 py-2 text-label-md transition-colors",
@@ -190,7 +214,7 @@ export const CommunityPostsPanel = ({
                   )}
                 >
                   {tag}
-                </button>
+                </motion.button>
               ))}
             </div>
           )}
@@ -221,9 +245,17 @@ export const CommunityPostsPanel = ({
         />
       ) : (
         <>
-          <div className="space-y-4">
-            {posts.map((post) => (
-              <PostRow key={post._id} post={post} onTagClick={selectTag} />
+          {/* Keyed on what produced the list, so changing page, tag or query
+              remounts the rows and re-runs the cascade — otherwise they would
+              swap silently and the filter would feel unresponsive. */}
+          <div key={`${page}-${activeTag}-${query}`} className="space-y-4">
+            {posts.map((post, index) => (
+              <PostRow
+                key={post._id}
+                post={post}
+                index={index}
+                onTagClick={selectTag}
+              />
             ))}
           </div>
 
@@ -243,12 +275,20 @@ export const CommunityPostsPanel = ({
       )}
 
       {/* Keeps the search spinner honest while a debounced query settles */}
-      {search !== query && (
-        <p className="flex items-center justify-center gap-2 text-body-sm text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin" />
-          Searching…
-        </p>
-      )}
+      <AnimatePresence>
+        {search !== query && (
+          <motion.p
+            variants={switchVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            className="flex items-center justify-center gap-2 text-body-sm text-muted-foreground"
+          >
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Searching…
+          </motion.p>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

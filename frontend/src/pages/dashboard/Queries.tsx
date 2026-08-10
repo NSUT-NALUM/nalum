@@ -290,8 +290,8 @@ const Queries = () => {
             />
           ) : (
             <div className="flex flex-col gap-4">
-              {queries.map((query) => (
-                <QueryRow key={query._id} query={query} />
+              {queries.map((query, index) => (
+                <QueryRow key={query._id} query={query} index={index} />
               ))}
             </div>
           )}

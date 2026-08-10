@@ -1,22 +1,32 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { AnimatePresence, motion } from "framer-motion";
 import { formatDistanceToNow } from "date-fns";
 import { MessageSquare, Share2, ThumbsUp } from "lucide-react";
 import { toast } from "sonner";
 import UserAvatar from "@/components/UserAvatar";
 import api from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
+import {
+  CARD_HOVER,
+  CARD_TAP,
+  SPRING,
+  SPRING_POP,
+  blockEntrance,
+} from "@/lib/motion";
 import { PostRecord, likeIds, toPlainText } from "@/lib/posts";
 import { cn } from "@/lib/utils";
 
 interface PostRowProps {
   post: PostRecord;
   onTagClick?: (tag: string) => void;
+  /** Position in the list — staggers this row's entrance behind the one above. */
+  index?: number;
 }
 
 // One row in the community feed. The whole card opens the discussion; the
 // action bar at the foot stops propagation so it can be used in place.
-export const PostRow = ({ post, onTagClick }: PostRowProps) => {
+export const PostRow = ({ post, onTagClick, index = 0 }: PostRowProps) => {
   const navigate = useNavigate();
   const { user } = useAuth();
 
@@ -70,9 +80,15 @@ export const PostRow = ({ post, onTagClick }: PostRowProps) => {
   const openPost = () => navigate(`/dashboard/posts/${post._id}`);
 
   return (
-    <article
+    // The entrance carries its own transition, which leaves the `transition`
+    // prop free to govern the hover lift and the press.
+    <motion.article
       role="link"
       tabIndex={0}
+      {...blockEntrance(index)}
+      whileHover={CARD_HOVER}
+      whileTap={CARD_TAP}
+      transition={SPRING}
       onClick={openPost}
       onKeyDown={(event) => event.key === "Enter" && openPost()}
       className="cursor-pointer rounded-card border border-border bg-card p-5 shadow-card transition-colors hover:border-primary/25 sm:p-6"
@@ -109,9 +125,12 @@ export const PostRow = ({ post, onTagClick }: PostRowProps) => {
       {(post.tags || []).length > 0 && (
         <div className="mt-4 flex flex-wrap gap-2">
           {post.tags!.map((tag) => (
-            <button
+            <motion.button
               key={tag}
               type="button"
+              whileHover={{ y: -2 }}
+              whileTap={{ scale: 0.94 }}
+              transition={SPRING}
               onClick={(event) => {
                 event.stopPropagation();
                 onTagClick?.(tag);
@@ -119,15 +138,17 @@ export const PostRow = ({ post, onTagClick }: PostRowProps) => {
               className="ap-chip transition-colors hover:bg-primary-subtle hover:text-primary-subtle-foreground"
             >
               {tag}
-            </button>
+            </motion.button>
           ))}
         </div>
       )}
 
       {/* Actions */}
       <div className="mt-4 flex items-center gap-1 border-t border-border pt-3">
-        <button
+        <motion.button
           type="button"
+          whileTap={{ scale: 0.92 }}
+          transition={SPRING}
           onClick={toggleLike}
           aria-pressed={liked}
           aria-label={liked ? "Remove upvote" : "Upvote post"}
@@ -138,12 +159,34 @@ export const PostRow = ({ post, onTagClick }: PostRowProps) => {
               : "text-muted-foreground hover:bg-muted hover:text-primary"
           )}
         >
-          <ThumbsUp className={cn("h-4 w-4", liked && "fill-current")} />
-          {likes.length}
-        </button>
+          {/* Keyed on `liked` so the icon re-mounts and springs each time the
+              vote flips — the only confirmation the optimistic update gets. */}
+          <motion.span
+            key={String(liked)}
+            initial={{ scale: 0.6 }}
+            animate={{ scale: 1 }}
+            transition={SPRING_POP}
+            className="flex"
+          >
+            <ThumbsUp className={cn("h-4 w-4", liked && "fill-current")} />
+          </motion.span>
+          <AnimatePresence mode="popLayout" initial={false}>
+            <motion.span
+              key={likes.length}
+              initial={{ opacity: 0, y: liked ? 6 : -6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: liked ? -6 : 6 }}
+              transition={{ duration: 0.15 }}
+            >
+              {likes.length}
+            </motion.span>
+          </AnimatePresence>
+        </motion.button>
 
-        <button
+        <motion.button
           type="button"
+          whileTap={{ scale: 0.92 }}
+          transition={SPRING}
           onClick={(event) => {
             event.stopPropagation();
             openPost();
@@ -155,18 +198,20 @@ export const PostRow = ({ post, onTagClick }: PostRowProps) => {
           <span className="hidden sm:inline">
             {comments === 1 ? "Comment" : "Comments"}
           </span>
-        </button>
+        </motion.button>
 
-        <button
+        <motion.button
           type="button"
+          whileTap={{ scale: 0.92 }}
+          transition={SPRING}
           onClick={share}
           className="ml-auto flex items-center gap-2 rounded-full px-3 py-2 text-label-md text-muted-foreground transition-colors hover:bg-muted hover:text-primary"
         >
           <Share2 className="h-4 w-4" />
           <span className="hidden sm:inline">Share</span>
-        </button>
+        </motion.button>
       </div>
-    </article>
+    </motion.article>
   );
 };
 

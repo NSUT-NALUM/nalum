@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { motion } from "framer-motion";
 import { CheckCircle2, Clock, Eye, MessageCircle, X } from "lucide-react";
 import { BASE_URL } from "@/lib/constants";
+import { blockEntrance } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
 export interface QueryRecord {
@@ -60,11 +62,13 @@ function renderContent(text: string) {
 
 interface QueryRowProps {
   query: QueryRecord;
+  /** Position in the list — staggers this row's entrance behind the one above. */
+  index?: number;
 }
 
 // A single submitted query: status, the question itself, any attached
 // photos, and the admin's answer once one exists.
-export const QueryRow = ({ query }: QueryRowProps) => {
+export const QueryRow = ({ query, index = 0 }: QueryRowProps) => {
   const [lightbox, setLightbox] = useState<string | null>(null);
 
   const pill = STATUS_PILL[query.status];
@@ -72,7 +76,10 @@ export const QueryRow = ({ query }: QueryRowProps) => {
 
   return (
     <>
-      <article className="rounded-card border border-border bg-card p-5 shadow-card sm:p-6">
+      <motion.article
+        {...blockEntrance(index)}
+        className="rounded-card border border-border bg-card p-5 shadow-card sm:p-6"
+      >
         <div className="mb-3 flex items-start justify-between gap-4">
           <span
             className={cn(
@@ -145,7 +152,7 @@ export const QueryRow = ({ query }: QueryRowProps) => {
               : "Submitted — an administrator will review it shortly."}
           </p>
         )}
-      </article>
+      </motion.article>
 
       {lightbox && (
         <div

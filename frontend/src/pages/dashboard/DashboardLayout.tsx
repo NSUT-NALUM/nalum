@@ -1,4 +1,5 @@
 import { Outlet, useLocation } from "react-router-dom";
+import { MotionConfig } from "framer-motion";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
 import { ProfileProvider, useProfile } from "@/context/ProfileContext";
@@ -178,10 +179,15 @@ const DashboardContent = () => {
 
 const DashboardLayout = () => {
   return (
-    <ProfileProvider>
-      <DashboardContent />
-      <PWAInstallPrompt />
-    </ProfileProvider>
+    // `reducedMotion="user"` is the single opt-out for every animation under
+    // /dashboard: when the OS asks for reduced motion, framer drops transforms
+    // and keeps opacity, so nothing individual components do needs to check.
+    <MotionConfig reducedMotion="user">
+      <ProfileProvider>
+        <DashboardContent />
+        <PWAInstallPrompt />
+      </ProfileProvider>
+    </MotionConfig>
   );
 };
 

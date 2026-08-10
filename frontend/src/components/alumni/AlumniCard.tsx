@@ -1,24 +1,43 @@
+import { motion } from "framer-motion";
 import { GraduationCap, Briefcase, Building2 } from "lucide-react";
 import UserAvatar from "@/components/UserAvatar";
 import { ConnectionButton } from "@/components/ui/ConnectionButton";
 import type { AlumniProfile } from "@/hooks/useAlumniDirectory";
+import { CARD_HOVER, CARD_TAP, SPRING, blockEntrance } from "@/lib/motion";
 
 interface AlumniCardProps {
   alumni: AlumniProfile;
   onConnect: (userId: string, message?: string) => void;
   onClick: () => void;
+  /** Position in the grid — staggers this card's entrance behind the last. */
+  index?: number;
 }
 
-export const AlumniCard = ({ alumni, onConnect, onClick }: AlumniCardProps) => {
+export const AlumniCard = ({
+  alumni,
+  onConnect,
+  onClick,
+  index = 0,
+}: AlumniCardProps) => {
   const isStudent = alumni.user.role === "student";
   const classLabel = alumni.batch
     ? `${isStudent ? "Student - " : ""}Class of ${alumni.batch}`
     : undefined;
 
   return (
-    <div
+    // The lift moved from `hover:-translate-y-1` into framer: motion owns this
+    // element's `transform` once it animates, so a class-based translate would
+    // simply be overwritten. For the same reason the CSS transition lists its
+    // properties instead of using `transition-all` — `all` covers `transform`,
+    // and CSS smoothing the property framer drives frame by frame makes the
+    // lift lag behind the cursor.
+    <motion.div
       onClick={onClick}
-      className="group rounded-card border border-border bg-card hover:bg-accent transition-all duration-300 cursor-pointer p-6 hover:-translate-y-1 hover:shadow-2xl hover:shadow-primary/10 hover:border-primary/50 flex flex-col h-full min-w-0 overflow-hidden"
+      {...blockEntrance(index)}
+      whileHover={CARD_HOVER}
+      whileTap={CARD_TAP}
+      transition={SPRING}
+      className="group rounded-card border border-border bg-card hover:bg-accent transition-[background-color,border-color,box-shadow] duration-300 cursor-pointer p-6 hover:shadow-2xl hover:shadow-primary/10 hover:border-primary/50 flex flex-col h-full min-w-0 overflow-hidden"
     >
       {/* Header Section */}
       <div className="flex items-center gap-4 mb-4 w-full min-w-0">
@@ -96,6 +115,6 @@ export const AlumniCard = ({ alumni, onConnect, onClick }: AlumniCardProps) => {
           recipientName={alumni.user.name}
         />
       </div>
-    </div>
+    </motion.div>
   );
 };

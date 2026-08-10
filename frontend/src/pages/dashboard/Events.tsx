@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { Link, useSearchParams } from "react-router-dom";
+import { AnimatePresence, motion } from "framer-motion";
 import { toast } from "sonner";
 import io from "socket.io-client";
 import { Calendar, LayoutGrid, ListChecks, Plus } from "lucide-react";
@@ -14,7 +15,9 @@ import { SmartPagination } from "@/components/ui/pagination";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EventRow } from "@/components/events/EventRow";
 import { MyEventsPanel } from "@/components/events/MyEventsPanel";
+import { FadeIn } from "@/components/ui/motion";
 import api from "@/lib/api";
+import { DURATION, SPRING, popVariants, switchVariants } from "@/lib/motion";
 import { BASE_URL } from "@/lib/constants";
 import { useAuth } from "@/context/AuthContext";
 import { EVENT_TYPES, EVENT_TYPE_LABELS } from "@/constants/eventTypes";
@@ -134,20 +137,32 @@ export default function Events() {
   };
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 text-foreground duration-500">
+    // No page-level wrapper animation: the header's fade and the panel's own
+    // entrance below already cover the page, and stacking a third rise on top
+    // of them just moves the same pixels twice.
+    <div className="text-foreground">
       <div className="mx-auto max-w-7xl pb-12">
-        {/* Header */}
-        <div className="mb-8 flex flex-col gap-4 border-b border-border pb-6 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h1 className="mb-2 text-headline-lg-mobile text-primary md:text-headline-xl">
-              {tab === "my" ? "My Events" : "Upcoming Events"}
-            </h1>
-            <p className="text-body-lg text-muted-foreground">
-              {tab === "my"
-                ? "Manage your hosted events and track their approval status."
-                : "Discover networking opportunities, reunions, and workshops."}
-            </p>
-          </div>
+        {/* Header — keyed on the tab so the title and its description
+            cross-fade with the panel below. */}
+        <FadeIn className="mb-8 flex flex-col gap-4 border-b border-border pb-6 sm:flex-row sm:items-end sm:justify-between">
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={tab}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ duration: DURATION.fast }}
+            >
+              <h1 className="mb-2 text-headline-lg-mobile text-primary md:text-headline-xl">
+                {tab === "my" ? "My Events" : "Upcoming Events"}
+              </h1>
+              <p className="text-body-lg text-muted-foreground">
+                {tab === "my"
+                  ? "Manage your hosted events and track their approval status."
+                  : "Discover networking opportunities, reunions, and workshops."}
+              </p>
+            </motion.div>
+          </AnimatePresence>
 
           {canHost && (
             <SegmentedToggle
@@ -157,101 +172,130 @@ export default function Events() {
               options={TAB_OPTIONS}
             />
           )}
-        </div>
+        </FadeIn>
 
-        {tab === "my" ? (
-          <MyEventsPanel />
-        ) : (
-          <>
-            {/* Filter row */}
-            <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-              <FilterPillSelect
-                value={filterType === "all" ? "" : filterType}
-                onValueChange={(value) => {
-                  setFilterType(value);
-                  setCurrentPage(1);
-                }}
-                onClear={() => {
-                  setFilterType("all");
-                  setCurrentPage(1);
-                }}
-                placeholder="All categories"
-                options={EVENT_TYPES}
-                labels={EVENT_TYPE_LABELS}
-                triggerClassName="w-[180px]"
-              />
-
-              {canHost && (
-                <Link to="/dashboard/host-event" className="hidden sm:block">
-                  <Button className="gap-2 rounded-full bg-primary px-5 text-label-md text-primary-foreground hover:bg-primary-hover">
-                    <Plus className="h-4 w-4" />
-                    Host New Event
-                  </Button>
-                </Link>
-              )}
-            </div>
-
-            {/* Listing */}
-            {loading ? (
-              <div className="space-y-4">
-                <EventRowSkeleton />
-                <EventRowSkeleton />
-                <EventRowSkeleton />
-              </div>
-            ) : events.length === 0 ? (
-              <EmptyState
-                icon={
-                  <Calendar className="mx-auto h-14 w-14 text-muted-foreground/50" />
-                }
-                title="No events found"
-                description={
-                  filterType === "all"
-                    ? "Check back later for upcoming events from the alumni community."
-                    : "No events in this category right now. Try clearing the filter."
-                }
-              />
+        {/* `mode="wait"` matters here: the two panels have very different
+            heights, and overlapping them would make the page jump. No
+            `initial={false}`: that would propagate "skip your entrance" to
+            every descendant and flatten the row cascades inside. */}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={tab}
+            variants={switchVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+          >
+            {tab === "my" ? (
+              <MyEventsPanel />
             ) : (
               <>
-                <div className="space-y-4">
-                  {events.map((event) => (
-                    <EventRow
-                      key={event._id}
-                      event={event}
-                      liked={likedEvents.has(event._id)}
-                      onToggleLike={handleToggleLike}
-                      isOwn={
-                        !!user?.email && event.creator_email === user.email
-                      }
-                    />
-                  ))}
+                {/* Filter row */}
+                <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+                  <FilterPillSelect
+                    value={filterType === "all" ? "" : filterType}
+                    onValueChange={(value) => {
+                      setFilterType(value);
+                      setCurrentPage(1);
+                    }}
+                    onClear={() => {
+                      setFilterType("all");
+                      setCurrentPage(1);
+                    }}
+                    placeholder="All categories"
+                    options={EVENT_TYPES}
+                    labels={EVENT_TYPE_LABELS}
+                    triggerClassName="w-[180px]"
+                  />
+
+                  {canHost && (
+                    <Link
+                      to="/dashboard/host-event"
+                      className="hidden sm:block"
+                    >
+                      <Button className="gap-2 rounded-full bg-primary px-5 text-label-md text-primary-foreground hover:bg-primary-hover">
+                        <Plus className="h-4 w-4" />
+                        Host New Event
+                      </Button>
+                    </Link>
+                  )}
                 </div>
 
-                <div className="pt-8">
-                  <SmartPagination
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    onPageChange={setCurrentPage}
+                {/* Listing */}
+                {loading ? (
+                  <div className="space-y-4">
+                    <EventRowSkeleton />
+                    <EventRowSkeleton />
+                    <EventRowSkeleton />
+                  </div>
+                ) : events.length === 0 ? (
+                  <EmptyState
+                    icon={
+                      <Calendar className="mx-auto h-14 w-14 text-muted-foreground/50" />
+                    }
+                    title="No events found"
+                    description={
+                      filterType === "all"
+                        ? "Check back later for upcoming events from the alumni community."
+                        : "No events in this category right now. Try clearing the filter."
+                    }
                   />
-                </div>
+                ) : (
+                  <>
+                    {/* Keyed on page + filter so paging or re-filtering
+                        re-runs the cascade instead of swapping rows silently. */}
+                    <div
+                      key={`${currentPage}-${filterType}`}
+                      className="space-y-4"
+                    >
+                      {events.map((event, index) => (
+                        <EventRow
+                          key={event._id}
+                          event={event}
+                          index={index}
+                          liked={likedEvents.has(event._id)}
+                          onToggleLike={handleToggleLike}
+                          isOwn={
+                            !!user?.email && event.creator_email === user.email
+                          }
+                        />
+                      ))}
+                    </div>
+
+                    <div className="pt-8">
+                      <SmartPagination
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        onPageChange={setCurrentPage}
+                      />
+                    </div>
+                  </>
+                )}
               </>
             )}
-          </>
-        )}
+          </motion.div>
+        </AnimatePresence>
       </div>
 
       {/* Mobile host shortcut */}
       {canHost && (
-        <Link
-          to="/dashboard/host-event"
+        <motion.div
+          variants={popVariants}
+          initial="hidden"
+          animate="visible"
+          whileTap={{ scale: 0.9 }}
+          transition={SPRING}
           className="fixed bottom-20 right-4 z-30 sm:hidden"
         >
-          <Button
-            aria-label="Host a new event"
-            className="h-14 w-14 rounded-full bg-primary p-0 text-primary-foreground shadow-overlay hover:bg-primary-hover"
-          >
-            <Plus className="h-6 w-6" />
-          </Button>
-        </Link>
+          <Link to="/dashboard/host-event">
+            <Button
+              aria-label="Host a new event"
+              className="h-14 w-14 rounded-full bg-primary p-0 text-primary-foreground shadow-overlay hover:bg-primary-hover"
+            >
+              <Plus className="h-6 w-6" />
+            </Button>
+          </Link>
+        </motion.div>
       )}
     </div>
   );

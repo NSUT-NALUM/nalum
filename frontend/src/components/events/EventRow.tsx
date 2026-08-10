@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 import { Calendar, MapPin, Users, ThumbsUp, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BASE_URL } from "@/lib/constants";
@@ -8,6 +9,14 @@ import {
   formatEventWhen,
   ensureUrlProtocol,
 } from "@/lib/events";
+import {
+  CARD_HOVER,
+  CARD_TAP,
+  EASE_OUT,
+  SPRING,
+  SPRING_POP,
+  blockEntrance,
+} from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
 interface EventRowProps {
@@ -16,6 +25,8 @@ interface EventRowProps {
   onToggleLike: (eventId: string) => void;
   /** Shows the "Hosted by you" pill on events the viewer created. */
   isOwn?: boolean;
+  /** Position in the list — staggers this row's entrance behind the one above. */
+  index?: number;
 }
 
 // Full-width horizontal event card: banner on the left, details on the right.
@@ -26,27 +37,39 @@ export const EventRow = ({
   liked,
   onToggleLike,
   isOwn,
+  index = 0,
 }: EventRowProps) => {
   const navigate = useNavigate();
   const goToDetail = () => navigate(`/dashboard/events/${event._id}`);
 
   return (
-    <article
+    // One `whileHover="hover"` drives both the card lift and the banner's slow
+    // push-in; the card's own `overflow-hidden` is what crops the oversize image.
+    <motion.article
       onClick={goToDetail}
+      {...blockEntrance(index)}
+      variants={{ hover: CARD_HOVER }}
+      whileHover="hover"
+      whileTap={CARD_TAP}
+      transition={SPRING}
       className="group flex cursor-pointer flex-col overflow-hidden rounded-card border border-border bg-card shadow-card transition-colors hover:border-primary/30 md:flex-row"
     >
       {/* Banner */}
-      <div className="relative h-48 shrink-0 bg-muted md:h-auto md:w-2/5">
+      <div className="relative h-48 shrink-0 overflow-hidden bg-muted md:h-auto md:w-2/5">
         {event.image_url ? (
-          <img
+          <motion.img
             src={`${BASE_URL}${event.image_url}`}
             alt={event.title}
             loading="lazy"
+            variants={{ hover: { scale: 1.05 } }}
+            transition={{ duration: 0.5, ease: EASE_OUT }}
             className="absolute inset-0 h-full w-full object-cover"
           />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center bg-secondary">
-            <Calendar className="h-12 w-12 text-muted-foreground/50" />
+            <motion.span variants={{ hover: { scale: 1.1 } }} transition={SPRING}>
+              <Calendar className="h-12 w-12 text-muted-foreground/50" />
+            </motion.span>
           </div>
         )}
         {isOwn && (
@@ -105,7 +128,15 @@ export const EventRow = ({
                 : "text-muted-foreground hover:text-primary"
             )}
           >
-            <ThumbsUp className={cn("h-4 w-4", liked && "fill-current")} />
+            <motion.span
+              key={String(liked)}
+              initial={{ scale: 0.6 }}
+              animate={{ scale: 1 }}
+              transition={SPRING_POP}
+              className="flex"
+            >
+              <ThumbsUp className={cn("h-4 w-4", liked && "fill-current")} />
+            </motion.span>
             {event.likes}
           </Button>
 
@@ -130,11 +161,18 @@ export const EventRow = ({
               className="gap-1.5 rounded-full border-border px-5 text-label-md hover:border-primary hover:text-primary"
             >
               View Event
-              <ArrowRight className="h-4 w-4" />
+              {/* Nudges toward the destination on card hover. */}
+              <motion.span
+                variants={{ hover: { x: 4 } }}
+                transition={SPRING}
+                className="flex"
+              >
+                <ArrowRight className="h-4 w-4" />
+              </motion.span>
             </Button>
           )}
         </div>
       </div>
-    </article>
+    </motion.article>
   );
 };

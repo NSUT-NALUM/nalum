@@ -466,11 +466,17 @@ const AlumniDirectory = () => {
                         ) : (
                           <>
                             {/* Alumni Grid */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8 auto-rows-fr">
-                              {filteredAlumni.map((alumnus) => (
+                            {/* Keyed on the page so paging re-runs the
+                                cascade rather than swapping cards silently. */}
+                            <div
+                              key={currentPage}
+                              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8 auto-rows-fr"
+                            >
+                              {filteredAlumni.map((alumnus, index) => (
                                 <AlumniCard
                                   key={alumnus._id}
                                   alumni={alumnus}
+                                  index={index}
                                   onConnect={handleConnect}
                                   onClick={() =>
                                     navigate(

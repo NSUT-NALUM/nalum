@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { motion } from "framer-motion";
 import { formatDistanceToNow } from "date-fns";
 import { MessageSquare, MessagesSquare, ThumbsUp } from "lucide-react";
 import { PanelCard } from "@/components/dashboard/PanelCard";
@@ -7,6 +8,7 @@ import { PreloadLink } from "@/components/PreloadLink";
 import UserAvatar from "@/components/UserAvatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import api from "@/lib/api";
+import { rowEntrance } from "@/lib/motion";
 import { PostRecord, likeIds, toPlainText } from "@/lib/posts";
 
 const LIMIT = 5;
@@ -73,10 +75,10 @@ export const RecentPostsCard = () => {
         </div>
       ) : (
         <ul className="divide-y divide-border">
-          {posts.map((post) => {
+          {posts.map((post, index) => {
             const excerpt = toPlainText(post.content);
             return (
-              <li key={post._id}>
+              <motion.li key={post._id} {...rowEntrance(index)}>
                 <article
                   role="link"
                   tabIndex={0}
@@ -127,7 +129,7 @@ export const RecentPostsCard = () => {
                     </span>
                   </div>
                 </article>
-              </li>
+              </motion.li>
             );
           })}
         </ul>
