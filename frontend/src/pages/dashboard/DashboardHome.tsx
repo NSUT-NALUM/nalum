@@ -1,42 +1,31 @@
-import { Link } from "react-router-dom";
-import { PenSquare } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import PeopleYouMightKnow from "@/pages/dashboard/PeopleYouMightKnow";
-import UpcomingEvents from "@/pages/dashboard/UpcomingEvents";
-import CommunityPostsPanel from "@/components/posts/CommunityPostsPanel";
-import { useAuth } from "@/context/AuthContext";
+import QuickActions from "@/components/dashboard/QuickActions";
+import SuggestedConnections from "@/components/dashboard/SuggestedConnections";
+import UpcomingEventsCard from "@/components/dashboard/UpcomingEventsCard";
+import WelcomeBanner from "@/components/dashboard/WelcomeBanner";
+import RecentPostsCard from "@/components/posts/RecentPostsCard";
 
-const DashboardHome = () => {
-  const { user } = useAuth();
-  const canPost = user?.role === "alumni" || user?.role === "admin";
+// Overview: greeting, the four things you're most likely to do, a window onto
+// the feed, and a right rail of people and dates. The full post listing lives
+// at /dashboard/posts — this page deliberately does not duplicate its search,
+// tag filters or pagination.
+const DashboardHome = () => (
+  <div className="animate-in fade-in slide-in-from-bottom-4 text-foreground duration-500">
+    <div className="grid grid-cols-1 gap-gutter lg:grid-cols-12">
+      {/* Main column */}
+      <div className="flex flex-col gap-6 lg:col-span-8">
+        <WelcomeBanner />
+        <QuickActions />
+        <RecentPostsCard />
+      </div>
 
-  return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 space-y-8 text-foreground duration-500">
-      <div className="flex flex-col gap-8 lg:flex-row">
-        {/* Feed */}
-        <div className="min-w-0 flex-grow space-y-6">
-          <CommunityPostsPanel />
-        </div>
-
-        {/* Rail */}
-        <div className="order-first w-full flex-shrink-0 space-y-6 lg:order-none lg:w-72">
-          {canPost && (
-            <Link to="/dashboard/posts/new" className="hidden md:block">
-              <Button className="w-full gap-2 rounded-full bg-primary text-label-md text-primary-foreground hover:bg-primary-hover">
-                <PenSquare className="h-4 w-4" />
-                Share an update
-              </Button>
-            </Link>
-          )}
-
-          <div className="hidden space-y-6 lg:block">
-            <PeopleYouMightKnow />
-            <UpcomingEvents />
-          </div>
-        </div>
+      {/* Rail — desktop only, matching the reference. The mobile bottom nav
+          already covers Network and Events, so nothing here is stranded. */}
+      <div className="hidden flex-col gap-6 lg:col-span-4 lg:flex">
+        <SuggestedConnections />
+        <UpcomingEventsCard />
       </div>
     </div>
-  );
-};
+  </div>
+);
 
 export default DashboardHome;
