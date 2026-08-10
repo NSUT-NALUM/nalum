@@ -190,7 +190,7 @@ export const useAlumniDirectory = () => {
 
   }, [itemsPerPage]); // Only depend on itemsPerPage to avoid infinite loops
 
-  const handleFilterChange = (key: keyof Filters, value: string) => {
+  const handleFilterChange = <K extends keyof Filters>(key: K, value: Filters[K]) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
   };
 

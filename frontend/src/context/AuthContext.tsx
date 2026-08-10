@@ -27,6 +27,7 @@ interface AuthContextType {
   isLoading: boolean;
   isAuthenticated: boolean;
   isAdmin: boolean;
+  isVerifiedAlumni: boolean | null;
 
   setAuth: (
     token: string,
@@ -56,6 +57,7 @@ export const AuthProvider = ({
 
   const isAuthenticated = !!accessToken;
   const isAdmin = user?.role === "admin";
+  const isVerifiedAlumni = user ? (user.verified_alumni ?? false) : null;
 
   const setAuth = (
     token: string,
@@ -143,6 +145,7 @@ export const AuthProvider = ({
         isLoading,
         isAuthenticated,
         isAdmin,
+        isVerifiedAlumni,
         setAuth,
         logout,
         refreshUser,
