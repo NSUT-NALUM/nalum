@@ -43,10 +43,11 @@ export function SegmentedToggle<T extends string>({
       role="tablist"
       aria-label={label}
       className={cn(
-        "relative inline-flex h-11 shrink-0 items-center rounded-full p-1",
+        "relative grid h-11 shrink-0 items-center rounded-full p-1",
         trackClassName,
         className
       )}
+      style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }}
     >
       <span
         aria-hidden="true"
@@ -67,7 +68,7 @@ export function SegmentedToggle<T extends string>({
             aria-selected={isActive}
             onClick={() => onChange(optionValue)}
             className={cn(
-              "relative z-10 flex flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-full px-4 py-2 text-label-md transition-colors duration-300 motion-reduce:transition-none",
+              "relative z-10 flex items-center justify-center gap-2 whitespace-nowrap rounded-full px-4 py-2 text-label-md transition-colors duration-300 motion-reduce:transition-none",
               isActive
                 ? "text-primary-foreground"
                 : "text-muted-foreground hover:text-primary"

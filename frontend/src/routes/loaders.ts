@@ -38,7 +38,6 @@ export const loadShowProfile = () => import("@/pages/dashboard/showProfile");
 export const loadUpdateProfile = () => import("@/pages/dashboard/updateProfile");
 export const loadAlumniDirectory = () => import("@/pages/dashboard/alumniDirectory");
 export const loadViewProfile = () => import("@/pages/dashboard/viewProfile");
-export const loadConnectionsPage = () => import("@/pages/dashboard/ConnectionsPage");
 export const loadVerifyAlumni = () => import("@/pages/dashboard/verifyAlumni");
 export const loadChatPage = () =>
   import("@/pages/dashboard/chat/ChatPage").then((module) => ({ default: module.ChatPage }));

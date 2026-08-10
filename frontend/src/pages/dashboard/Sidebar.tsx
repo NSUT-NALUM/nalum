@@ -107,14 +107,16 @@ const Sidebar = ({ onNavigate }: SidebarProps) => {
           </PreloadLink>
         )}
 
-        <PreloadLink
-          to="/dashboard/giving"
-          onClick={onNavigate}
-          className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary-hover transition-colors"
-        >
-          <Heart className="h-4 w-4" />
-          <span>Give</span>
-        </PreloadLink>
+        {isAlumni && (
+          <PreloadLink
+            to="/dashboard/giving"
+            onClick={onNavigate}
+            className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary-hover transition-colors"
+          >
+            <Heart className="h-4 w-4" />
+            <span>Give</span>
+          </PreloadLink>
+        )}
 
         <button
           onClick={logout}

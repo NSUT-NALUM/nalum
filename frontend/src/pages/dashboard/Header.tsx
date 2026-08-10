@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Search, MessageSquare, Bell } from "lucide-react";
+import { Search, Bell } from "lucide-react";
 import { useProfile } from "@/context/ProfileContext";
-import { useConversations } from "@/hooks/useConversations";
 import { useNotifications } from "@/context/NotificationContext";
 import UserAvatar from "@/components/UserAvatar";
 import NotificationsPopover from "@/components/NotificationsPopover";
 import GlobalSearchModal from "@/components/GlobalSearchModal";
+import ProfileMenu from "@/components/ProfileMenu";
 import { PreloadLink } from "@/components/PreloadLink";
+import { cn } from "@/lib/utils";
 import nsutLogo from "@/assets/nsut-logo.svg";
 
 // Static titles for the desktop header. Routes not listed here (dynamic
@@ -23,7 +24,6 @@ const PAGE_TITLES: Record<string, string> = {
   "/dashboard/giving": "Give",
   "/dashboard/profile": "Profile",
   "/dashboard/update-profile": "Account Settings",
-  "/dashboard/connections": "Connections",
   "/dashboard/host-event": "Host Event",
 };
 
@@ -31,12 +31,10 @@ const Header = () => {
   const location = useLocation();
   const pageTitle = PAGE_TITLES[location.pathname];
   const { profile } = useProfile();
-  const { conversations } = useConversations();
   const { unreadCount: notificationUnreadCount } = useNotifications();
 
-  const unreadCount = conversations.reduce((acc: number, conv: any) => acc + (conv.unreadCount || 0), 0);
-
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
 
   // Close the search modal when switching routes
   useEffect(() => {
@@ -107,18 +105,26 @@ const Header = () => {
           <NotificationsPopover />
         </div>
 
-        {/* Mobile: bottom nav has no messages entry, so keep it reachable here */}
-        <Link
-          to="/dashboard/chat"
-          className="md:hidden relative p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-full transition-colors"
+        {/* Mobile: bottom nav is all primary destinations now, so the avatar opens
+            the profile sheet (Logout, Queries, Giving, etc.) instead of linking out */}
+        <button
+          type="button"
+          onClick={() => setIsProfileMenuOpen(true)}
+          className="md:hidden"
+          aria-label="Open profile menu"
         >
-          <MessageSquare className="h-5 w-5" />
-          {unreadCount > 0 && (
-            <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-primary ring-2 ring-card" />
-          )}
-        </Link>
+          <UserAvatar
+            src={profile?.profile_picture}
+            name={profile?.user?.name || "User"}
+            size="sm"
+            className={cn(
+              "ring-2 transition-all",
+              isProfileMenuOpen ? "ring-primary" : "ring-transparent"
+            )}
+          />
+        </button>
 
-        {/* Desktop: avatar links straight to the profile (mobile reaches it via the bottom nav sheet) */}
+        {/* Desktop: avatar links straight to the profile page (sidebar already carries Logout etc.) */}
         <Link to="/dashboard/profile" className="hidden md:block">
           <UserAvatar
             src={profile?.profile_picture}
@@ -128,6 +134,8 @@ const Header = () => {
           />
         </Link>
       </div>
+
+      <ProfileMenu isOpen={isProfileMenuOpen} onClose={() => setIsProfileMenuOpen(false)} />
     </header>
   );
 };

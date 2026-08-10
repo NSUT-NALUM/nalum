@@ -48,7 +48,7 @@ export const WelcomeBanner = () => {
 
         {requests > 0 && (
           <PreloadLink
-            to="/dashboard/connections"
+            to="/dashboard/alumni?tab=my"
             className="mt-3 inline-flex items-center rounded-full bg-primary-subtle px-4 py-2 text-label-md text-primary-subtle-foreground transition-colors hover:bg-primary hover:text-primary-foreground"
           >
             Review requests

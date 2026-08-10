@@ -11,7 +11,6 @@ import {
   loadUpdateProfile,
   loadAlumniDirectory,
   loadViewProfile,
-  loadConnectionsPage,
   loadVerifyAlumni,
   loadChatPage,
   loadEvents,
@@ -32,7 +31,6 @@ const ShowProfile = lazy(loadShowProfile);
 const UpdateProfile = lazy(loadUpdateProfile);
 const AlumniDirectory = lazy(loadAlumniDirectory);
 const ViewProfile = lazy(loadViewProfile);
-const ConnectionsPage = lazy(loadConnectionsPage);
 const VerifyAlumni = lazy(loadVerifyAlumni);
 const ChatPage = lazy(loadChatPage);
 const Events = lazy(loadEvents);
@@ -78,7 +76,11 @@ export function DashboardRoutes() {
         <Route path="/dashboard/update-profile" element={<UpdateProfile />} />
         <Route path="/dashboard/alumni" element={<AlumniDirectory />} />
         <Route path="/dashboard/alumni/:userId" element={<ViewProfile />} />
-        <Route path="/dashboard/connections" element={<ConnectionsPage />} />
+        {/* Connections used to be its own page; it's now the "My Connections" tab on Directory. */}
+        <Route
+          path="/dashboard/connections"
+          element={<Navigate to="/dashboard/alumni?tab=my" replace />}
+        />
         <Route path="/dashboard/notifications" element={<MobileNotifications />} />
         
         {/* Chat routes */}

@@ -98,7 +98,7 @@ export const routeImportMap: Record<string, () => void> = {
   "/dashboard/update-profile": preloadDashboardPage(loaders.loadUpdateProfile),
   "/dashboard/alumni": preloadDashboardPage(loaders.loadAlumniDirectory),
   "/dashboard/alumni/:userId": preloadDashboardPage(loaders.loadViewProfile),
-  "/dashboard/connections": preloadDashboardPage(loaders.loadConnectionsPage),
+  "/dashboard/connections": preloadDashboardPage(loaders.loadAlumniDirectory),
   "/dashboard/notifications": preloadDashboardPage(loaders.loadMobileNotifications),
   "/dashboard/chat": preloadDashboardPage(loaders.loadChatPage),
   "/dashboard/chat/:conversationId": preloadDashboardPage(loaders.loadChatPage),
