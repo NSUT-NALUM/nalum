@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { CheckCircle2, Clock, Eye, MessageCircle, X } from "lucide-react";
+import { CheckCircle2, Clock, Eye, MessageCircle, Trash2, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { BASE_URL } from "@/lib/constants";
 import { blockEntrance } from "@/lib/motion";
 import { cn } from "@/lib/utils";
@@ -64,11 +65,13 @@ interface QueryRowProps {
   query: QueryRecord;
   /** Position in the list — staggers this row's entrance behind the one above. */
   index?: number;
+  /** Omitted on read-only lists; this page only ever shows the viewer's own queries. */
+  onDelete?: (query: QueryRecord) => void;
 }
 
 // A single submitted query: status, the question itself, any attached
 // photos, and the admin's answer once one exists.
-export const QueryRow = ({ query, index = 0 }: QueryRowProps) => {
+export const QueryRow = ({ query, index = 0, onDelete }: QueryRowProps) => {
   const [lightbox, setLightbox] = useState<string | null>(null);
 
   const pill = STATUS_PILL[query.status];
@@ -90,13 +93,27 @@ export const QueryRow = ({ query, index = 0 }: QueryRowProps) => {
             <PillIcon className="h-3.5 w-3.5" />
             {pill.label}
           </span>
-          <span className="shrink-0 text-body-sm text-muted-foreground">
-            {new Date(query.createdAt).toLocaleDateString("en-US", {
-              year: "numeric",
-              month: "short",
-              day: "numeric",
-            })}
-          </span>
+          <div className="flex shrink-0 items-center gap-1">
+            <span className="text-body-sm text-muted-foreground">
+              {new Date(query.createdAt).toLocaleDateString("en-US", {
+                year: "numeric",
+                month: "short",
+                day: "numeric",
+              })}
+            </span>
+            {onDelete && (
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Delete query"
+                title="Delete query"
+                onClick={() => onDelete(query)}
+                className="rounded-full text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
         </div>
 
         <h3 className="text-headline-md text-foreground">{query.title}</h3>

@@ -35,7 +35,21 @@ exports.protect = async (req, res, next) => {
       });
     }
 
-    req.user = decoded;
+    const userId = decoded.user_id || decoded.decoded?.user_id;
+    let userRole = decoded.role || decoded.decoded?.role;
+
+    if (!userRole && userId) {
+      const userObj = await User.findById(userId).select("role").lean();
+      if (userObj) {
+        userRole = userObj.role;
+      }
+    }
+
+    req.user = {
+      ...decoded,
+      user_id: userId,
+      role: userRole || "student",
+    };
     next();
   } catch (err) {
     return res.status(401).json({

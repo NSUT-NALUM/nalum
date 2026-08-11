@@ -11,11 +11,13 @@ const {
   getAllGiving,
   updateGivingStatus,
   respondToGiving,
+  deleteGiving,
 } = require('../controllers/giving.controller');
 
-// User routes (Alumni only - checked in controller)
+// User routes (Alumni only — checked in controller)
 router.post('/', protect, checkBanned, uploadGivingImage.array('images', 2), compressionPresets.postImage, createGiving);
 router.get('/my', protect, getMyGiving);
+router.delete('/:id', protect, deleteGiving);
 
 // Admin routes
 router.get('/all', protectAdmin, getAllGiving);

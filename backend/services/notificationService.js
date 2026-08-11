@@ -573,6 +573,16 @@ class NotificationService {
       pages: Math.ceil(total / limit),
     };
   }
+
+  /**
+   * Clear (hard-delete) all notifications for a user. (Task 3.4)
+   * @param {string} userId
+   * @returns {{ deletedCount: number }}
+   */
+  async clearAllNotifications(userId) {
+    const result = await Notification.deleteMany({ recipient: userId });
+    return { deletedCount: result.deletedCount };
+  }
 }
 
 module.exports = new NotificationService();

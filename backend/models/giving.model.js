@@ -37,6 +37,14 @@ const givingSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
+    isDeleted: {
+      type: Boolean,
+      default: false,
+    },
+    deletedAt: {
+      type: Date,
+      default: null,
+    },
   },
   { timestamps: true }
 );
@@ -46,5 +54,6 @@ givingSchema.index({ status: 1 });
 givingSchema.index({ userId: 1 });
 givingSchema.index({ status: 1, createdAt: -1 });
 givingSchema.index({ createdAt: -1 });
+givingSchema.index({ userId: 1, isDeleted: 1 }); // for user's own givings excluding deleted
 
 module.exports = mongoose.model('Giving', givingSchema);

@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  AlertTriangle,
   ArrowLeft,
   Github,
   Globe,
@@ -24,6 +25,16 @@ import {
   Trash2,
   X,
 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import XIcon from "@/components/icons/XIcon";
 import { useAuth } from "@/context/AuthContext";
 import { useProfile, Profile } from "@/context/ProfileContext";
@@ -148,13 +159,16 @@ const SuggestionList = ({
 };
 
 const UpdateProfile = () => {
-  const { accessToken, user } = useAuth();
+  const { accessToken, user, logout } = useAuth();
   const { profile: contextProfile, isLoading, refetchProfile } = useProfile();
   const navigate = useNavigate();
   const [isSaving, setIsSaving] = useState(false);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [initialData, setInitialData] = useState<any>(null);
   const [isDirty, setIsDirty] = useState(false);
+  const [deactivateOpen, setDeactivateOpen] = useState(false);
+  const [deactivateConfirmation, setDeactivateConfirmation] = useState("");
+  const [isDeactivating, setIsDeactivating] = useState(false);
 
   // Check if user is alumni
   const isAlumni = user?.role === "alumni";
@@ -610,6 +624,27 @@ const UpdateProfile = () => {
   const handleCancel = () => {
     handleDiscard();
     navigate("/dashboard/profile");
+  };
+
+  // Soft-deletes the account server-side and cascades to the user's posts,
+  // comments, events, givings and queries. The typed confirmation is the only
+  // guard, so the request is gated on it here as well as on the button.
+  const handleDeactivateAccount = async () => {
+    if (deactivateConfirmation !== "DELETE") return;
+    setIsDeactivating(true);
+    try {
+      await api.delete("/auth/account");
+      toast.success("Account deactivated");
+      await logout();
+      navigate("/");
+    } catch (error: any) {
+      console.error("Error deactivating account:", error);
+      toast.error(
+        error.response?.data?.message || "Failed to deactivate account"
+      );
+    } finally {
+      setIsDeactivating(false);
+    }
   };
 
   if (isLoading) {
@@ -1424,8 +1459,91 @@ const UpdateProfile = () => {
             </FormCard>
           </div>
         </form>
+
+        {/* Deliberately outside the form: this is an account action, not a
+            profile edit, and it must not be reachable by submitting. */}
+        <section className="mt-6 rounded-card border border-destructive/30 bg-destructive/5 p-6">
+          <div className="flex items-center gap-2 pb-4 mb-5 border-b border-destructive/20">
+            <AlertTriangle className="h-5 w-5 text-destructive" />
+            <h3 className="text-headline-md text-destructive">Danger Zone</h3>
+          </div>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-body-sm text-muted-foreground max-w-2xl">
+              Deactivating your account removes your posts, comments, events,
+              givings and queries from the network. This cannot be easily undone.
+            </p>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={() => {
+                setDeactivateConfirmation("");
+                setDeactivateOpen(true);
+              }}
+              className="shrink-0"
+            >
+              Deactivate Account
+            </Button>
+          </div>
+        </section>
       </div>
 
+      <AlertDialog
+        open={deactivateOpen}
+        onOpenChange={(open) => {
+          setDeactivateOpen(open);
+          if (!open) setDeactivateConfirmation("");
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Deactivate account?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This deactivates your account and removes your posts, comments,
+              events, givings and queries. Type{" "}
+              <span className="font-semibold text-destructive">DELETE</span> to
+              confirm.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <div className="my-2">
+            <Label htmlFor="deactivate-confirm" className="sr-only">
+              Type DELETE to confirm
+            </Label>
+            <Input
+              id="deactivate-confirm"
+              value={deactivateConfirmation}
+              onChange={(e) => setDeactivateConfirmation(e.target.value)}
+              placeholder="DELETE"
+              autoComplete="off"
+            />
+          </div>
+
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeactivating}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                // Keep the dialog mounted while the request is in flight;
+                // Radix closes on action click by default.
+                e.preventDefault();
+                handleDeactivateAccount();
+              }}
+              disabled={deactivateConfirmation !== "DELETE" || isDeactivating}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeactivating ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deactivating…
+                </>
+              ) : (
+                "Confirm Deactivation"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

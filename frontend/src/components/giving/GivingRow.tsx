@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { CheckCircle2, Clock, Eye, MessageCircle, X } from "lucide-react";
+import { CheckCircle2, Clock, Eye, MessageCircle, Trash2, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { BASE_URL } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
@@ -36,11 +37,13 @@ const STATUS_PILL: Record<
 
 interface GivingRowProps {
   giving: GivingRecord;
+  /** Omitted on read-only lists; this page only ever shows the viewer's own givings. */
+  onDelete?: (giving: GivingRecord) => void;
 }
 
 // A single pledge of support: status, the offer itself, any attached
 // photos, and the admin's acknowledgement once one exists.
-export const GivingRow = ({ giving }: GivingRowProps) => {
+export const GivingRow = ({ giving, onDelete }: GivingRowProps) => {
   const [lightbox, setLightbox] = useState<string | null>(null);
 
   const pill = STATUS_PILL[giving.status];
@@ -59,13 +62,27 @@ export const GivingRow = ({ giving }: GivingRowProps) => {
             <PillIcon className="h-3.5 w-3.5" />
             {pill.label}
           </span>
-          <span className="shrink-0 text-body-sm text-muted-foreground">
-            {new Date(giving.createdAt).toLocaleDateString("en-US", {
-              year: "numeric",
-              month: "short",
-              day: "numeric",
-            })}
-          </span>
+          <div className="flex shrink-0 items-center gap-1">
+            <span className="text-body-sm text-muted-foreground">
+              {new Date(giving.createdAt).toLocaleDateString("en-US", {
+                year: "numeric",
+                month: "short",
+                day: "numeric",
+              })}
+            </span>
+            {onDelete && (
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Delete giving"
+                title="Delete giving"
+                onClick={() => onDelete(giving)}
+                className="rounded-full text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
         </div>
 
         <h3 className="text-headline-md text-foreground">{giving.title}</h3>

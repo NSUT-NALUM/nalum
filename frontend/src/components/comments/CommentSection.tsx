@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
+import { DeleteConfirmDialog } from "@/components/ui/DeleteConfirmDialog";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -133,11 +134,14 @@ function CommentCard({
   const [editValue, setEditValue] = useState(comment.content || "");
   const [isSaving, setIsSaving] = useState(false);
   const [showReplies, setShowReplies] = useState(true);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const currentUserId = user?.id;
   const commentAuthorId = comment.author?._id ?? comment.authorId;
   const isOwner = String(currentUserId ?? "") === String(commentAuthorId ?? "");
   const canManage = isOwner || user?.role === "admin";
+  // The API nulls the content of a deleted comment; we keep the node in the
+  // thread and show a tombstone so replies below it stay anchored.
   const displayContent = comment.isDeleted
     ? "This comment was deleted."
     : comment.content || "";
@@ -178,6 +182,7 @@ function CommentCard({
     try {
       setIsSaving(true);
       await deletePostComment(postId, comment._id);
+      setConfirmOpen(false);
       await onChanged();
     } catch (error) {
       console.error("Failed to delete comment:", error);
@@ -245,7 +250,7 @@ function CommentCard({
                         Edit
                       </DropdownMenuItem>
                       <DropdownMenuItem
-                        onClick={handleDelete}
+                        onClick={() => setConfirmOpen(true)}
                         disabled={isSaving}
                         className="text-destructive focus:text-destructive"
                       >
@@ -295,7 +300,7 @@ function CommentCard({
                   className="flex items-center gap-1 transition-colors hover:text-primary"
                 >
                   {showReplies
-                    ? "Hide replies"
+                    ? `Hide replies (${comment.replies.length})`
                     : `View ${comment.replies.length} ${
                         comment.replies.length === 1 ? "reply" : "replies"
                       }`}
@@ -311,6 +316,15 @@ function CommentCard({
           )}
         </div>
       </div>
+
+      <DeleteConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title="Delete comment?"
+        description="This will permanently remove your comment."
+        isDeleting={isSaving}
+        onConfirm={handleDelete}
+      />
 
       {replyOpen && (
         <div className="ml-11 mt-2">
@@ -349,6 +363,7 @@ export default function CommentSection({ postId }: CommentSectionProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [commentValue, setCommentValue] = useState("");
+
 
   const loadComments = async () => {
     try {

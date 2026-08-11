@@ -70,6 +70,7 @@ beforeEach(() => {
     isLoading: false,
     isAuthenticated: false,
     isAdmin: false,
+    isVerifiedAlumni: null,
     setAuth: setAuthMock,
     logout: vi.fn(),
     refreshUser: vi.fn(),

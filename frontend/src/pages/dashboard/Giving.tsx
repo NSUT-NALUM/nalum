@@ -12,6 +12,8 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { trackFormSubmit, trackEvent } from "@/lib/analytics";
+import { DeleteConfirmDialog } from "@/components/ui/DeleteConfirmDialog";
+import { useDelete } from "@/hooks/useDelete";
 
 const TITLE_LIMIT = 50;
 const CONTENT_LIMIT = 500;
@@ -44,6 +46,17 @@ const Giving = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [givingToDelete, setGivingToDelete] = useState<GivingRecord | null>(null);
+
+  const { isDeleting, confirmOpen, setConfirmOpen, confirmDelete } = useDelete({
+    endpoint: givingToDelete ? `/givings/${givingToDelete._id}` : "",
+    onSuccess: () => {
+      setGivings((prev) => prev.filter((g) => g._id !== givingToDelete?._id));
+      setGivingToDelete(null);
+    },
+    successMessage: "Giving submission deleted successfully",
+    errorMessage: "Failed to delete giving submission",
+  });
 
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
@@ -324,12 +337,28 @@ const Giving = () => {
           ) : (
             <div className="flex flex-col gap-4">
               {givings.map((giving) => (
-                <GivingRow key={giving._id} giving={giving} />
+                <GivingRow
+                  key={giving._id}
+                  giving={giving}
+                  onDelete={(target) => {
+                    setGivingToDelete(target);
+                    setConfirmOpen(true);
+                  }}
+                />
               ))}
             </div>
           )}
         </div>
       </div>
+
+      <DeleteConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title="Delete giving contribution?"
+        description="Are you sure you want to delete this giving submission?"
+        isDeleting={isDeleting}
+        onConfirm={confirmDelete}
+      />
     </div>
   );
 };

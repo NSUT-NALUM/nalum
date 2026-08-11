@@ -2,6 +2,7 @@ const Post = require("../../models/posts/post.model");
 const User = require("../../models/user/user.model");
 const { logAdminActivity } = require("../../middleware/adminAuth");
 const { notifyMentions } = require("../../services/mentionHelper");
+const { cascadeDeletePost } = require("../../utils/cascadeDelete");
 const fs = require("fs");
 const path = require("path");
 
@@ -246,17 +247,8 @@ exports.deletePost = async (req, res) => {
       });
     }
 
-    // Delete associated image files
-    if (post.images && post.images.length > 0) {
-      post.images.forEach((filename) => {
-        const filePath = path.join(__dirname, "../../uploads/posts", filename);
-        if (fs.existsSync(filePath)) {
-          fs.unlinkSync(filePath);
-        }
-      });
-    }
-
-    // Delete post from database
+    // Task 2.1: cascade — deletes child Comments + image files
+    await cascadeDeletePost(post);
     await Post.findByIdAndDelete(postId);
 
     // Log activity
