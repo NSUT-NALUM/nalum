@@ -178,22 +178,22 @@ const Header = () => {
         {/* Search results dropdown — carried over from the old mobile-only bar as-is;
             still dark themed and pending its own redesign pass. */}
         {isSearchOpen && ((searchResults.users.length > 0 || searchResults.posts.length > 0) || searchQuery.trim().length > 0) && (
-          <div className="absolute top-full inset-x-0 -mx-4 md:mx-0 md:inset-x-auto md:right-0 md:left-auto md:w-[26rem] md:mt-2 z-40 bg-card backdrop-blur-md border-b md:border md:rounded-lg border-border shadow-lg animate-in slide-in-from-top-2 duration-200 max-h-[70vh] overflow-y-auto">
+          <div className="absolute top-full inset-x-0 -mx-4 md:mx-0 md:inset-x-auto md:right-0 md:left-auto md:w-[26rem] md:mt-2 z-40 bg-slate-900/95 backdrop-blur-md border-b md:border md:rounded-lg border-white/10 shadow-lg animate-in slide-in-from-top-2 duration-200 max-h-[70vh] overflow-y-auto">
 
             {/* Tabs - Instagram style */}
-            <div className="flex border-b border-border bg-muted/50">
+            <div className="flex border-b border-white/10 bg-black/20">
               <button
                 onClick={() => setSearchTab('people')}
                 className={cn(
                   "flex-1 py-3 text-sm font-medium transition-colors relative",
                   searchTab === 'people'
-                    ? "text-foreground"
-                    : "text-muted-foreground hover:text-foreground"
+                    ? "text-white"
+                    : "text-gray-400 hover:text-gray-300"
                 )}
               >
                 People ({searchResults.users.length})
                 {searchTab === 'people' && (
-                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-white" />
                 )}
               </button>
               <button
@@ -201,27 +201,27 @@ const Header = () => {
                 className={cn(
                   "flex-1 py-3 text-sm font-medium transition-colors relative",
                   searchTab === 'posts'
-                    ? "text-foreground"
-                    : "text-muted-foreground hover:text-foreground"
+                    ? "text-white"
+                    : "text-gray-400 hover:text-gray-300"
                 )}
               >
                 Posts ({searchResults.posts.length})
                 {searchTab === 'posts' && (
-                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-white" />
                 )}
               </button>
             </div>
 
             {/* Filter Header - Only show for people tab */}
             {searchTab === 'people' && (
-              <div className="flex justify-between items-center p-3 border-b border-border bg-muted/50">
+              <div className="flex justify-between items-center p-3 border-b border-white/10 bg-black/20">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-medium text-muted-foreground">
+                  <span className="text-xs font-medium text-gray-400">
                     {searchResults.users.length} result{searchResults.users.length !== 1 ? 's' : ''}
                   </span>
                   {(searchFilters.batch || searchFilters.branch || searchFilters.campus || searchFilters.company || searchFilters.skills.length > 0 || searchFilters.connectionFilter !== "all") && (
-                    <span className="flex items-center gap-1 text-xs text-primary">
-                      <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                    <span className="flex items-center gap-1 text-xs text-blue-400">
+                      <span className="h-1.5 w-1.5 rounded-full bg-blue-400" />
                       filtered
                     </span>
                   )}
@@ -230,7 +230,7 @@ const Header = () => {
                   variant="ghost"
                   size="sm"
                   onClick={() => setShowFilters(!showFilters)}
-                  className="h-7 px-2 text-xs hover:bg-transparent text-primary"
+                  className="h-7 px-2 text-xs hover:bg-transparent text-blue-400"
                 >
                   <SlidersHorizontal className="w-4 h-4 mr-1.5" />
                   Filters
@@ -240,9 +240,9 @@ const Header = () => {
 
             {/* Filter Panel */}
             {searchTab === 'people' && showFilters && (
-              <div className="p-3 bg-muted/40 border-b border-border space-y-2">
+              <div className="p-3 bg-black/30 border-b border-white/10 space-y-2">
                 <div className="flex justify-between items-center">
-                  <span className="text-xs font-medium text-foreground">Refine Results</span>
+                  <span className="text-xs font-medium text-white">Refine Results</span>
                   <Button
                     variant="ghost"
                     size="sm"
@@ -256,7 +256,7 @@ const Header = () => {
                         });
                       }
                     }}
-                    className="h-5 px-2 text-xs text-destructive hover:text-destructive/80"
+                    className="h-5 px-2 text-xs text-red-400 hover:text-red-300"
                   >
                     Reset
                   </Button>
@@ -276,7 +276,7 @@ const Header = () => {
                         setSearchResults(results);
                       }, 300);
                     }}
-                    className="h-7 bg-background border-input text-xs text-foreground"
+                    className="h-7 bg-black/30 border-white/10 text-xs text-white"
                   />
                   <Input
                     placeholder="Company"
@@ -290,7 +290,7 @@ const Header = () => {
                         setSearchResults(results);
                       }, 300);
                     }}
-                    className="h-7 bg-background border-input text-xs text-foreground"
+                    className="h-7 bg-black/30 border-white/10 text-xs text-white"
                   />
                 </div>
 
@@ -306,10 +306,10 @@ const Header = () => {
                       });
                     }}
                   >
-                    <SelectTrigger className="h-7 bg-background border-input text-xs text-foreground">
+                    <SelectTrigger className="h-7 bg-black/30 border-white/10 text-xs text-white">
                       <SelectValue placeholder="Branch" />
                     </SelectTrigger>
-                    <SelectContent className="bg-popover border-border text-popover-foreground max-h-48">
+                    <SelectContent className="bg-slate-900 border-white/10 text-white max-h-48">
                       <SelectItem value="all">All Branches</SelectItem>
                       {BRANCHES.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}
                     </SelectContent>
@@ -324,10 +324,10 @@ const Header = () => {
                       });
                     }}
                   >
-                    <SelectTrigger className="h-7 bg-background border-input text-xs text-foreground">
+                    <SelectTrigger className="h-7 bg-black/30 border-white/10 text-xs text-white">
                       <SelectValue placeholder="Campus" />
                     </SelectTrigger>
-                    <SelectContent className="bg-popover border-border text-popover-foreground">
+                    <SelectContent className="bg-slate-900 border-white/10 text-white">
                       <SelectItem value="all">All Campuses</SelectItem>
                       {CAMPUSES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
                     </SelectContent>
@@ -352,7 +352,7 @@ const Header = () => {
                         });
                       }
                     }}
-                    className="h-7 bg-background border-input text-xs text-foreground flex-1"
+                    className="h-7 bg-black/30 border-white/10 text-xs text-white flex-1"
                   />
                   <Button
                     size="sm"
@@ -367,7 +367,7 @@ const Header = () => {
                         });
                       }
                     }}
-                    className="h-7 px-2 text-xs bg-primary hover:bg-primary-hover"
+                    className="h-7 px-2 text-xs bg-blue-600 hover:bg-blue-500"
                   >
                     Add
                   </Button>
@@ -378,7 +378,7 @@ const Header = () => {
                       <Badge
                         key={i}
                         variant="secondary"
-                        className="text-xs h-5 bg-muted text-muted-foreground hover:bg-secondary cursor-pointer"
+                        className="text-xs h-5 bg-white/10 text-gray-200 hover:bg-white/20 cursor-pointer"
                         onClick={() => {
                           const newSkills = searchFilters.skills.filter((_, idx) => idx !== i);
                           const newFilters = { ...searchFilters, skills: newSkills };
@@ -409,8 +409,8 @@ const Header = () => {
                         });
                       }}
                       className={`h-6 px-2 text-xs flex-1 ${searchFilters.connectionFilter === status
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-transparent border-border text-muted-foreground hover:text-foreground"
+                        ? "bg-blue-600 text-white"
+                        : "bg-transparent border-white/20 text-gray-400 hover:text-white"
                         }`}
                     >
                       {status === "all" ? "All" : status === "connected" ? "Connected" : "Not Connected"}
@@ -425,7 +425,7 @@ const Header = () => {
               {searchTab === 'people' && (
                 <>
                   {searchResults.users.length === 0 && searchQuery.trim().length > 0 && !isSearching && (
-                    <div className="p-4 text-center text-muted-foreground text-sm">
+                    <div className="p-4 text-center text-gray-400 text-sm">
                       No people found. Try adjusting filters.
                     </div>
                   )}
@@ -438,21 +438,21 @@ const Header = () => {
                         setSearchQuery("");
                         setSearchResults({ users: [], posts: [] });
                       }}
-                      className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted transition-colors"
-                      style={{ borderBottom: '1px solid hsl(var(--border) / 0.6)' }}
+                      className="flex items-center gap-3 p-3 rounded-lg hover:bg-white/10 transition-colors"
+                      style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}
                     >
                       <div className="relative flex-shrink-0">
                         <UserAvatar
                           src={result.profile_picture}
                           name={result.user.name}
-                          className="h-10 w-10 border border-border"
+                          className="h-10 w-10 border border-slate-700"
                         />
                       </div>
                       <div className="flex flex-col min-w-0">
-                        <span className="text-sm font-medium text-foreground truncate">
+                        <span className="text-sm font-medium text-white truncate">
                           {result.user.name}
                         </span>
-                        <span className="text-xs text-muted-foreground truncate">
+                        <span className="text-xs text-gray-400 truncate">
                           {result.batch} • {result.branch}
                         </span>
                       </div>
@@ -466,7 +466,7 @@ const Header = () => {
                         setSearchQuery("");
                         setSearchResults({ users: [], posts: [] });
                       }}
-                      className="p-3 text-center text-sm text-primary hover:text-primary/80 hover:bg-muted rounded-lg transition-colors"
+                      className="p-3 text-center text-sm text-blue-400 hover:text-blue-300 hover:bg-white/5 rounded-lg transition-colors"
                     >
                       View all results →
                     </Link>
@@ -478,7 +478,7 @@ const Header = () => {
               {searchTab === 'posts' && (
                 <>
                   {searchResults.posts.length === 0 && searchQuery.trim().length > 0 && !isSearching && (
-                    <div className="p-4 text-center text-muted-foreground text-sm">
+                    <div className="p-4 text-center text-gray-400 text-sm">
                       No posts found matching your search.
                     </div>
                   )}
@@ -491,29 +491,29 @@ const Header = () => {
                         setSearchQuery("");
                         setSearchResults({ users: [], posts: [] });
                       }}
-                      className="flex flex-col gap-2 p-3 rounded-lg hover:bg-muted transition-colors"
-                      style={{ borderBottom: '1px solid hsl(var(--border) / 0.6)' }}
+                      className="flex flex-col gap-2 p-3 rounded-lg hover:bg-white/10 transition-colors"
+                      style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}
                     >
                       <div className="flex items-center gap-2">
                         <UserAvatar
                           src={post.userId?.profile_picture}
                           name={post.userId?.name}
-                          className="h-8 w-8 border border-border"
+                          className="h-8 w-8 border border-slate-700"
                         />
                         <div className="flex flex-col min-w-0 flex-1">
-                          <span className="text-xs font-medium text-foreground truncate">
+                          <span className="text-xs font-medium text-white truncate">
                             {post.userId?.name}
                           </span>
-                          <span className="text-xs text-muted-foreground">
+                          <span className="text-xs text-gray-500">
                             {new Date(post.createdAt).toLocaleDateString()}
                           </span>
                         </div>
                       </div>
                       <div className="flex flex-col gap-1">
-                        <h4 className="text-sm font-semibold text-foreground line-clamp-1">
+                        <h4 className="text-sm font-semibold text-white line-clamp-1">
                           {post.title}
                         </h4>
-                        <p className="text-xs text-muted-foreground line-clamp-2">
+                        <p className="text-xs text-gray-400 line-clamp-2">
                           {post.content}
                         </p>
                       </div>
