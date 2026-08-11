@@ -20,7 +20,7 @@ const PaginationContent = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <ul
     ref={ref}
-    className={cn("flex flex-row items-center gap-1 flex-wrap justify-center", className)}
+    className={cn("flex flex-row items-center gap-1", className)}
     {...props}
   />
 ));
@@ -49,14 +49,13 @@ const PaginationLink = ({
     aria-current={isActive ? "page" : undefined}
     className={cn(
       buttonVariants({
-        variant: isActive ? "default" : "outline",
+        variant: isActive ? "default" : "ghost",
         size,
       }),
-      "rounded-lg",
       isActive
-        ? "border-primary"
-        : "border-border bg-card text-muted-foreground hover:border-primary hover:bg-transparent hover:text-primary",
-      "focus-visible:ring-2 focus-visible:ring-ring",
+        ? "bg-black text-white border border-white/20"
+        : "hover:bg-transparent hover:text-gray-300",
+      "focus-visible:ring-0 focus:outline-none",
       className
     )}
     {...props}
@@ -71,7 +70,10 @@ const PaginationPrevious = ({
   <PaginationLink
     aria-label="Go to previous page"
     size="default"
-    className={cn("gap-1 pl-2.5", className)}
+    className={cn(
+      "gap-1 pl-2.5 text-gray-300 hover:bg-transparent hover:text-gray-300 focus-visible:ring-0 focus:outline-none",
+      className
+    )}
     {...props}
   >
     <ChevronLeft className="h-4 w-4" />
@@ -87,7 +89,10 @@ const PaginationNext = ({
   <PaginationLink
     aria-label="Go to next page"
     size="default"
-    className={cn("gap-1 pr-2.5", className)}
+    className={cn(
+      "gap-1 pr-2.5 text-gray-300 hover:bg-transparent hover:text-gray-300 focus-visible:ring-0 focus:outline-none",
+      className
+    )}
     {...props}
   >
     <span>Next</span>
@@ -102,10 +107,7 @@ const PaginationEllipsis = ({
 }: React.ComponentProps<"span">) => (
   <span
     aria-hidden
-    className={cn(
-      "flex h-9 w-9 items-center justify-center text-muted-foreground",
-      className
-    )}
+    className={cn("flex h-9 w-9 items-center justify-center", className)}
     {...props}
   >
     <MoreHorizontal className="h-4 w-4" />
@@ -178,7 +180,7 @@ const SmartPagination = ({
             className={cn(
               currentPage === 1
                 ? "pointer-events-none opacity-50 cursor-not-allowed"
-                : "cursor-pointer hover:bg-accent"
+                : "cursor-pointer hover:bg-white/10"
             )}
           />
         </PaginationItem>
@@ -217,7 +219,7 @@ const SmartPagination = ({
             className={cn(
               currentPage >= totalPages
                 ? "pointer-events-none opacity-50 cursor-not-allowed"
-                : "cursor-pointer hover:bg-accent"
+                : "cursor-pointer hover:bg-white/10"
             )}
           />
         </PaginationItem>
@@ -237,4 +239,3 @@ export {
   PaginationPrevious,
   SmartPagination,
 };
-

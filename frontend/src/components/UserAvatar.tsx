@@ -46,9 +46,9 @@ const UserAvatar = ({ src, name, size = 'md', className = '' }: UserAvatarProps)
   const imageUrl = src ? `${BASE_URL}${src}` : undefined;
 
   return (
-    <Avatar className={`${sizeClasses[size]} border-2 border-border shadow-md ${className}`}>
+    <Avatar className={`${sizeClasses[size]} border-2 border-white shadow-md ${className}`}>
       <AvatarImage src={imageUrl} alt={name} crossOrigin="anonymous" />
-      <AvatarFallback className={`bg-gradient-to-br ${gradient} text-primary-foreground font-semibold`}>
+      <AvatarFallback className={`bg-gradient-to-br ${gradient} text-white font-semibold`}>
         {initials}
       </AvatarFallback>
     </Avatar>

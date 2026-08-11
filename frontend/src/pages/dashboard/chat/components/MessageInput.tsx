@@ -82,23 +82,23 @@ export const MessageInput = ({
   };
 
   return (
-    <div className="p-3 border-t border-border bg-card">
-      <div className="flex gap-2 items-center">
+    <div className="p-3 border-t border-white/10 bg-black/20 backdrop-blur-md">
+      <div className="flex gap-2 items-end">
         <MentionTextarea
           value={message}
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
           onFocus={handleFocus}
           placeholder="Type a message... (@mention)"
-          className="flex-1 min-h-[44px] resize-none bg-background border-input focus:border-primary focus:ring-ring/20 rounded-lg transition-all shadow-sm text-sm text-foreground placeholder:text-muted-foreground pr-2"
+          className="flex-1 min-h-[44px] resize-none bg-white/5 border-white/10 focus:bg-white/10 backdrop-blur-sm rounded-lg transition-all shadow-sm text-sm text-white placeholder:text-gray-400 pr-2"
           disabled={disabled}
-          style={{ maxHeight: "84px", overflowY: "auto" }}
+          style={{ maxHeight: "120px", overflowY: "auto" }}
         />
         <Button
           onClick={handleSend}
           disabled={!message.trim() || disabled}
           size="icon"
-          className="h-[44px] w-[44px] rounded-full shadow-sm transition-all hover:scale-105 shrink-0 bg-primary hover:bg-primary-hover text-primary-foreground mb-0"
+          className="h-[44px] w-[44px] rounded-lg shadow-sm transition-all hover:scale-105 shrink-0 bg-indigo-600 hover:bg-indigo-700 text-white border border-white/10 mb-0"
         >
           <Send className="h-4 w-4" />
         </Button>

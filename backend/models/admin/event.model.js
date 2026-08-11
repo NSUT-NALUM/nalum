@@ -28,19 +28,7 @@ const EventSchema = new Schema(
     },
     event_type: {
       type: String,
-      enum: [
-        "workshop",
-        "seminar",
-        "conference",
-        "meetup",
-        "webinar",
-        "networking",
-        "social",
-        "career",
-        "sports",
-        "cultural",
-        "other",
-      ],
+      enum: ["workshop", "seminar", "conference", "meetup", "webinar", "other"],
       default: "other",
     },
     image_url: {

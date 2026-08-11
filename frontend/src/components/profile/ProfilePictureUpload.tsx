@@ -246,9 +246,9 @@ const ProfilePictureUpload = ({ currentImage, onImageSelect, userName = "User" }
     <>
       <div className="flex flex-col items-center gap-4">
         <div className="relative">
-          <Avatar className="w-32 h-32 border-4 border-card shadow-overlay">
+          <Avatar className="w-32 h-32 border-4 border-white shadow-lg">
             <AvatarImage src={preview || undefined} alt="Profile picture" />
-            <AvatarFallback className="bg-gradient-to-br from-primary to-primary-hover text-primary-foreground text-3xl font-semibold">
+            <AvatarFallback className="bg-gradient-to-br from-[#800000] to-[#600000] text-white text-3xl font-semibold">
               {getInitials(userName)}
             </AvatarFallback>
           </Avatar>
@@ -271,7 +271,7 @@ const ProfilePictureUpload = ({ currentImage, onImageSelect, userName = "User" }
                 variant="default"
                 size="sm"
                 onClick={handleSaveImage}
-                className="gap-2 bg-success hover:bg-success/90 text-success-foreground"
+                className="gap-2 bg-green-600 hover:bg-green-700 text-white"
               >
                 <Check className="w-4 h-4" />
                 Save Image
@@ -282,7 +282,7 @@ const ProfilePictureUpload = ({ currentImage, onImageSelect, userName = "User" }
                 size="sm"
                 onClick={handleClick}
                 disabled={isProcessing}
-                className="gap-2 border-border bg-card text-foreground hover:bg-accent hover:text-accent-foreground"
+                className="gap-2 border-white/10 bg-white/5 text-gray-300 hover:bg-white/10 hover:text-white"
               >
                 <Upload className="w-4 h-4" />
                 Change Photo
@@ -295,7 +295,7 @@ const ProfilePictureUpload = ({ currentImage, onImageSelect, userName = "User" }
               size="sm"
               onClick={handleClick}
               disabled={isProcessing}
-              className="gap-2 border-border bg-card text-foreground hover:bg-accent hover:text-accent-foreground"
+              className="gap-2 border-white/10 bg-white/5 text-gray-300 hover:bg-white/10 hover:text-white"
             >
               <Upload className="w-4 h-4" />
               {preview ? 'Change Photo' : 'Upload Photo'}
@@ -308,7 +308,7 @@ const ProfilePictureUpload = ({ currentImage, onImageSelect, userName = "User" }
               variant="ghost"
               size="sm"
               onClick={handleRemove}
-              className="gap-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+              className="gap-2 text-red-600 hover:text-red-700 hover:bg-red-50"
             >
               <X className="w-4 h-4" />
               Remove
@@ -316,7 +316,7 @@ const ProfilePictureUpload = ({ currentImage, onImageSelect, userName = "User" }
           )}
         </div>
 
-        <p className="text-label-sm text-muted-foreground text-center max-w-xs">
+        <p className="text-xs text-gray-500 text-center max-w-xs">
           Upload a photo (JPG, PNG, max 10MB). You can crop and adjust before saving.
         </p>
       </div>
@@ -325,15 +325,15 @@ const ProfilePictureUpload = ({ currentImage, onImageSelect, userName = "User" }
       <Dialog open={showCropModal} onOpenChange={setShowCropModal}>
         <DialogContent className="max-w-[95vw] sm:max-w-[600px] p-0 max-h-[95vh] flex flex-col">
           <DialogHeader className="px-4 sm:px-6 pt-4 sm:pt-6">
-            <DialogTitle className="text-headline-md sm:text-headline-lg text-foreground">
+            <DialogTitle className="text-lg sm:text-2xl font-bold text-gray-900">
               Crop Your Photo
             </DialogTitle>
-            <DialogDescription className="text-body-sm text-muted-foreground mt-1 sm:mt-2">
+            <DialogDescription className="text-xs sm:text-sm text-gray-600 mt-1 sm:mt-2">
               Adjust the position and size to get the perfect square crop
             </DialogDescription>
           </DialogHeader>
           
-          <div className="relative h-[300px] sm:h-[400px] bg-surface-container">
+          <div className="relative h-[300px] sm:h-[400px] bg-gray-100">
             {imageToCrop && (
               <Cropper
                 image={imageToCrop}
@@ -351,7 +351,7 @@ const ProfilePictureUpload = ({ currentImage, onImageSelect, userName = "User" }
 
           <div className="px-4 sm:px-6 py-3 sm:py-4 space-y-3 sm:space-y-4">
             <div className="space-y-2">
-              <label className="text-label-sm text-muted-foreground">
+              <label className="text-xs sm:text-sm font-medium text-gray-700">
                 Zoom
               </label>
               <input
@@ -361,7 +361,7 @@ const ProfilePictureUpload = ({ currentImage, onImageSelect, userName = "User" }
                 step={0.1}
                 value={zoom}
                 onChange={(e) => setZoom(Number(e.target.value))}
-                className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
+                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#800000]"
                 aria-label="Zoom level"
               />
             </div>
@@ -372,7 +372,7 @@ const ProfilePictureUpload = ({ currentImage, onImageSelect, userName = "User" }
               type="button"
               variant="outline"
               onClick={handleCropCancel}
-              className="gap-2 w-full sm:w-auto border-border text-foreground hover:bg-accent hover:text-accent-foreground"
+              className="gap-2 w-full sm:w-auto border-gray-300 text-gray-700 hover:bg-gray-100"
             >
               <X className="w-4 h-4" />
               Cancel
@@ -380,7 +380,7 @@ const ProfilePictureUpload = ({ currentImage, onImageSelect, userName = "User" }
             <Button
               type="button"
               onClick={handleCropConfirm}
-              className="gap-2 w-full sm:w-auto bg-primary hover:bg-primary-hover text-primary-foreground"
+              className="gap-2 w-full sm:w-auto bg-[#800000] hover:bg-[#600000] text-white"
             >
               <Check className="w-4 h-4" />
               Crop & Save

@@ -2,26 +2,21 @@ import { useState, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Search, UserPlus } from "lucide-react";
+import { Search, MessageSquare, UserPlus } from "lucide-react";
+import { useChatContext } from "@/context/ChatContext";
+// import { useConversations } from "@/hooks/useConversations";
 import { useAuth } from "@/context/AuthContext";
 import { format, isToday, isYesterday, isThisWeek } from "date-fns";
 import UserAvatar from "@/components/UserAvatar";
-import { cn } from "@/lib/utils";
+// import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
+// import Sidebar from "../../Sidebar";
 
 interface ChatListProps {
   onSelectConversation: (conversation: any) => void;
   selectedConversation: any | null;
   chats: any[];
 }
-
-type RoleFilter = "all" | "alumni" | "student";
 
 const formatMessageDate = (dateString: string) => {
   if (!dateString) return "";
@@ -34,19 +29,18 @@ const formatMessageDate = (dateString: string) => {
 
 /**
  * ChatList Component
- *
+ * 
  * Displays a list of active conversations and accepted connections.
  * It merges existing conversations with connections that don't have a conversation yet,
  * allowing users to start chatting immediately with any connection.
  */
 export const ChatList = ({ onSelectConversation, selectedConversation, chats = [] }: ChatListProps) => {
+  const { isConnected } = useChatContext();
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
-  type FilterType = "all" | "unread" | "alumni" | "student";
-  const [activeFilter, setActiveFilter] = useState<FilterType>("all");
 
   if (!user) {
-    return <div className="p-4 text-center text-sm text-muted-foreground">Loading user data...</div>;
+    return <div className="p-4 text-center text-sm text-gray-400">Loading user data...</div>;
   }
 
   const filteredChats = useMemo(() =>
@@ -55,79 +49,61 @@ export const ChatList = ({ onSelectConversation, selectedConversation, chats = [
       const name = chat.itemType === 'community'
         ? chat.name?.toLowerCase()
         : chat.otherParticipant?.name?.toLowerCase();
-      if (search && !(name || '').includes(search)) return false;
-
-      if (activeFilter === "unread" && !(chat.unreadCount > 0)) return false;
-
-      if (activeFilter === "alumni" || activeFilter === "student") {
-        if (chat.itemType === 'community') return false;
-        if (chat.otherParticipant?.role !== activeFilter) return false;
-      }
-
-      return true;
+      if (!search) return true;
+      return (name || '').includes(search);
     }),
-    [chats, searchQuery, activeFilter]);
-
-  const filters: { id: FilterType; label: string }[] = [
-    { id: "all", label: "All" },
-    { id: "unread", label: "Unread" },
-    { id: "student", label: "Students" },
-    { id: "alumni", label: "Alumni" },
-  ];
+    [chats, searchQuery]);
 
   return (
-    <div className="w-full h-full flex flex-col min-h-0 bg-transparent">
+    <div className="w-full h-full flex flex-col bg-transparent">
       {/* Header with Search */}
-      <div className="p-4 border-b border-border space-y-3 bg-card shrink-0">
-        <h2 className="text-headline-md text-foreground">Messages</h2>
-
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search conversations..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 h-10 text-body-sm bg-background border-input text-foreground placeholder:text-muted-foreground focus-visible:ring-ring"
-          />
+      <div className="p-3 border-b border-white/10 space-y-3 bg-black/20">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-gray-100 flex items-center gap-2">
+            Messages
+          </h2>
+          <div className="flex items-center gap-2">
+            <Badge
+              variant="outline"
+              className={`text-[10px] h-5 px-2 ${isConnected ? "text-green-400 border-green-500/30 bg-green-500/10" : "text-gray-400 border-gray-600"} backdrop-blur-sm`}
+            >
+              {isConnected ? "Online" : "Offline"}
+            </Badge>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide pb-1">
-          {filters.map((filter) => (
-            <button
-              key={filter.id}
-              onClick={() => setActiveFilter(filter.id)}
-              className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-label-sm font-medium transition-colors whitespace-nowrap",
-                activeFilter === filter.id
-                  ? "border-primary bg-primary-subtle text-primary"
-                  : "border-border text-muted-foreground hover:border-primary hover:text-primary"
-              )}
-            >
-              {filter.label}
-            </button>
-          ))}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+          <Input
+            placeholder="Search..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9 h-9 text-sm bg-white/5 border-white/10 focus:bg-white/10 transition-all text-gray-200 placeholder:text-gray-500"
+          />
         </div>
       </div>
 
       {/* Chat List Area */}
-      <ScrollArea className="flex-1 min-h-0">
-        {filteredChats.length === 0 ? (
-          <div className="p-8 text-center text-muted-foreground space-y-2">
-            {searchQuery || activeFilter !== "all" ? (
+      <ScrollArea className="flex-1">
+        {false ? ( // isLoading removed from props for now
+          <div className="p-4 text-center text-sm text-gray-400">Loading chats...</div>
+        ) : filteredChats.length === 0 ? (
+          <div className="p-8 text-center text-gray-500 space-y-2">
+            {searchQuery ? (
               <>
-                <Search className="h-10 w-10 mx-auto opacity-30" />
+                <Search className="h-10 w-10 mx-auto opacity-20" />
                 <p className="text-sm">No results found</p>
               </>
             ) : (
               <>
-                <UserPlus className="h-10 w-10 mx-auto opacity-30" />
+                <UserPlus className="h-10 w-10 mx-auto opacity-20" />
                 <p className="text-sm">No connections yet</p>
-                <p className="text-xs opacity-70">Find alumni to connect with!</p>
+                <p className="text-xs opacity-60">Find alumni to connect with!</p>
               </>
             )}
           </div>
         ) : (
-          <div className="divide-y divide-border">
+          <div className="divide-y divide-white/5">
             {filteredChats.map((chat: any) => {
               const isSelected = selectedConversation && (
                 selectedConversation._id === chat._id ||
@@ -139,44 +115,44 @@ export const ChatList = ({ onSelectConversation, selectedConversation, chats = [
                 <button
                   key={chat._id}
                   onClick={() => onSelectConversation(chat)}
-                  className={cn(
-                    "w-full p-4 text-left transition-colors group relative",
-                    isSelected
-                      ? "bg-primary-subtle hover:bg-primary-subtle"
-                      : "hover:bg-muted"
-                  )}
+                  className={`w-full p-3 text-left transition-all group relative ${isSelected
+                    ? "bg-violet-500/15 hover:bg-violet-500/20"
+                    : chat.unreadCount > 0
+                      ? "bg-emerald-500/15 hover:bg-emerald-500/20"
+                      : "hover:bg-white/5"
+                    }`}
                 >
                   {isSelected && (
-                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary" />
+                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-violet-400" />
                   )}
-                  <div className="flex items-start gap-3">
-                    <UserAvatar
-                      name={chat.itemType === 'community' ? chat.name : (chat.otherParticipant?.name || "Unknown")}
-                      src={chat.itemType === 'community' ? chat.avatar : (chat.otherParticipant?.profile_picture || chat.otherParticipant?.profilePicture)}
-                      size="md"
-                      className="shrink-0"
-                    />
+                  <div className="flex items-start gap-3 pl-2">
+                    <div className="relative">
+                      <UserAvatar
+                        name={chat.itemType === 'community' ? chat.name : (chat.otherParticipant?.name || "Unknown")}
+                        src={chat.itemType === 'community' ? chat.avatar : (chat.otherParticipant?.profile_picture || chat.otherParticipant?.profilePicture)}
+                        size="md"
+                        className={`border-opacity-20 ${isSelected ? 'border-violet-400' : chat.unreadCount > 0 ? 'border-emerald-400' : 'border-white'}`}
+                      />
+                      {/* Optional: Add online status indicator here if available */}
+                    </div>
 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
-                        <p className="font-medium text-sm truncate text-foreground">
+                        <p className={`font-medium text-sm truncate ${isSelected ? "text-white" : "text-gray-200"}`}>
                           {chat.itemType === 'community' ? chat.name : (chat.otherParticipant?.name || "Unknown User")}
                         </p>
                         {(chat.lastMessage?.createdAt || chat.lastMessage?.timestamp) && (
-                          <span className={cn(
-                            "text-[11px] shrink-0",
-                            chat.unreadCount > 0 ? "text-primary font-medium" : "text-muted-foreground"
-                          )}>
+                          <span className={`text-[10px] ${chat.unreadCount > 0 ? "text-emerald-400 font-medium" : "text-gray-500"}`}>
                             {formatMessageDate(chat.lastMessage.createdAt || chat.lastMessage.timestamp)}
                           </span>
                         )}
                       </div>
 
                       <div className="flex items-center justify-between gap-2 mt-0.5">
-                        <p className={cn(
-                          "text-xs truncate max-w-[70%]",
-                          chat.unreadCount > 0 ? "text-foreground font-medium" : "text-muted-foreground"
-                        )}>
+                        <p className={`text-xs truncate max-w-[140px] ${chat.unreadCount > 0
+                          ? "text-white font-medium" // Changed from text-gray-100 to text-white
+                          : "text-gray-400"
+                          }`}>
                           {chat.isConnectionOnly ? (
                             <span className="italic opacity-70">Start chatting</span>
                           ) : chat.unreadCount >= 4 ? (
@@ -189,7 +165,7 @@ export const ChatList = ({ onSelectConversation, selectedConversation, chats = [
                           )}
                         </p>
                         {chat.unreadCount > 0 && (
-                          <Badge className="h-4 min-w-[16px] p-0 flex items-center justify-center text-[10px] bg-primary text-primary-foreground hover:bg-primary shrink-0">
+                          <Badge variant="default" className="h-4 min-w-[16px] p-0 flex items-center justify-center text-[10px] bg-indigo-600 hover:bg-indigo-700 animate-in zoom-in duration-300">
                             {chat.unreadCount}
                           </Badge>
                         )}

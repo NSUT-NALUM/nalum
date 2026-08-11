@@ -24,13 +24,13 @@ const PAGE_TITLES: Record<string, string> = {
   "/dashboard/chat": "Messages",
   "/dashboard/events": "Events",
   "/dashboard/queries": "Queries",
-  "/dashboard/posts": "Posts",
-  "/dashboard/posts/new": "Create Post",
+  "/dashboard/my-posts": "Posts",
   "/dashboard/giving": "Give",
   "/dashboard/profile": "Profile",
   "/dashboard/update-profile": "Account Settings",
   "/dashboard/connections": "Connections",
   "/dashboard/host-event": "Host Event",
+  "/dashboard/posts": "Create Post",
 };
 
 const Header = () => {

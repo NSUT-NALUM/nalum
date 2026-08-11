@@ -132,9 +132,9 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
       <div>
         <Label
           htmlFor="city"
-          className={variant === "light" ? "text-foreground" : "text-gray-300"}
+          className={variant === "light" ? "text-gray-700" : "text-gray-300"}
         >
-          City <span className="text-destructive">*</span>
+          City <span className="text-red-500">*</span>
         </Label>
         <Input
           id="city"
@@ -144,7 +144,7 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
           placeholder="Enter your city"
           className={
             variant === "light"
-              ? "bg-background border-input text-foreground placeholder:text-muted-foreground focus:border-ring focus:ring-ring"
+              ? "bg-white border-gray-300 text-gray-900 placeholder:text-gray-400"
               : "bg-black/20 border-white/10 text-white placeholder:text-gray-500 focus:border-blue-500/50 focus:ring-blue-500/20"
           }
         />
@@ -153,9 +153,9 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
       <div>
         <Label
           htmlFor="country"
-          className={variant === "light" ? "text-foreground" : "text-gray-300"}
+          className={variant === "light" ? "text-gray-700" : "text-gray-300"}
         >
-          Country <span className="text-destructive">*</span>
+          Country <span className="text-red-500">*</span>
         </Label>
         <Select
           value={countryInput}
@@ -167,15 +167,15 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
           <SelectTrigger
             className={
               variant === "light"
-                ? "bg-background border-input text-foreground focus:border-ring focus:ring-ring"
+                ? "bg-white border-gray-300 text-gray-900"
                 : "bg-black/20 border-white/10 text-white placeholder:text-gray-500 focus:border-blue-500/50 focus:ring-blue-500/20"
             }
           >
             <SelectValue placeholder="Select country" />
           </SelectTrigger>
-          <SelectContent className="bg-popover border-border shadow-overlay">
+          <SelectContent>
             {sortedCountries.map((c) => (
-              <SelectItem key={c} value={c} className="capitalize">
+              <SelectItem key={c} value={c}>
                 {c}
               </SelectItem>
             ))}
@@ -190,7 +190,7 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
         disabled={isLoading}
         className={
           variant === "light"
-            ? "w-full bg-card border-border text-foreground hover:bg-accent hover:text-accent-foreground"
+            ? "w-full bg-white border-gray-300 text-gray-900 hover:bg-gray-50"
             : "w-full bg-black/20 border-white/10 text-white hover:bg-black/30 hover:text-white"
         }
       >

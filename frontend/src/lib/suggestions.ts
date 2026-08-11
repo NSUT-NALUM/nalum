@@ -12,7 +12,7 @@ export const POPULAR_COMPANIES = [
   "LinkedIn",
   "Uber",
   "Airbnb",
-  "X (Twitter)",
+  "Twitter (X)",
   "Tesla",
   "OpenAI",
   "Alphabet",

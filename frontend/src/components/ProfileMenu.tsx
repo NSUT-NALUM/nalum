@@ -25,14 +25,14 @@ const ProfileMenu = ({ isOpen, onClose }: ProfileMenuProps) => {
     {
       icon: FileText,
       label: "My Posts",
-      href: "/dashboard/posts?tab=my",
+      href: "/dashboard/my-posts",
       show: isAlumni,
       description: "Manage your posts",
     },
     {
       icon: Calendar,
       label: "My Events",
-      href: "/dashboard/events?tab=my",
+      href: "/dashboard/host-event",
       show: isAlumni,
       description: "Manage your events",
     },

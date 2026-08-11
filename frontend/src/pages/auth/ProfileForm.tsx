@@ -17,7 +17,6 @@ import ProfilePictureUpload from "@/components/profile/ProfilePictureUpload";
 import LocationSelector from "@/components/profile/LocationSelector";
 import { BRANCHES, CAMPUSES } from "@/constants/branches";
 import BatchYearSelect from "@/components/BatchYearSelect";
-import XIcon from "@/components/icons/XIcon";
 import { POPULAR_COMPANIES, POPULAR_ROLES } from "@/lib/suggestions";
 import {
   GraduationCap,
@@ -487,12 +486,13 @@ const ProfileForm = () => {
                 htmlFor="twitter"
                 className="text-base text-gray-900 flex items-center gap-2"
               >
-                <XIcon className="h-4 w-4" />X
+                <Link2 className="h-4 w-4" />
+                Twitter/X
               </Label>
               <Input
                 id="twitter"
                 type="url"
-                placeholder="https://x.com/yourusername"
+                placeholder="https://twitter.com/yourusername"
                 value={socialLinks.twitter}
                 onChange={(e) =>
                   setSocialLinks({ ...socialLinks, twitter: e.target.value })

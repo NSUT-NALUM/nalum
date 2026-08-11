@@ -41,12 +41,10 @@ export const ConnectionMessageDialog = ({
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-            <DialogContent className="bg-card border-border text-foreground sm:max-w-md rounded-card">
+            <DialogContent className="bg-slate-900 border-white/10 text-white sm:max-w-md">
                 <DialogHeader>
-                    <DialogTitle className="text-headline-md text-foreground">
-                        Connect with {recipientName}
-                    </DialogTitle>
-                    <DialogDescription className="text-muted-foreground">
+                    <DialogTitle>Connect with {recipientName}</DialogTitle>
+                    <DialogDescription className="text-gray-400">
                         Send a message to introduce yourself.
                     </DialogDescription>
                 </DialogHeader>
@@ -55,21 +53,21 @@ export const ConnectionMessageDialog = ({
                         value={message}
                         onChange={(e) => setMessage(e.target.value)}
                         placeholder="Hi, I'd like to connect with you!"
-                        className="min-h-[100px] bg-background border-input text-foreground placeholder:text-muted-foreground focus-visible:ring-ring"
+                        className="min-h-[100px] bg-black/20 border-white/10 text-white placeholder:text-gray-500 focus:border-blue-500/50"
                     />
                 </div>
                 <DialogFooter className="flex gap-2 justify-end">
                     <Button
                         variant="ghost"
                         onClick={onClose}
-                        className="text-muted-foreground hover:text-foreground hover:bg-accent"
+                        className="text-gray-300 hover:text-white hover:bg-white/10"
                     >
                         Cancel
                     </Button>
                     <Button
                         onClick={handleConfirm}
                         disabled={!message.trim()}
-                        className="bg-primary hover:bg-primary-hover text-primary-foreground disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         Send Request
                     </Button>

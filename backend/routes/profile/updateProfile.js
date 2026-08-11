@@ -21,7 +21,6 @@ router.put("/", protect, async (req, res) => {
       batch,
       branch,
       campus,
-      bio,
       current_company,
       current_role,
       location,
@@ -67,7 +66,6 @@ router.put("/", protect, async (req, res) => {
     if (batch !== undefined) profile.batch = batch;
     if (branch !== undefined) profile.branch = branch;
     if (campus !== undefined) profile.campus = campus;
-    if (bio !== undefined) profile.bio = bio;
     if (current_company !== undefined) profile.current_company = current_company;
     if (current_role !== undefined) profile.current_role = current_role;
     if (social_media !== undefined) profile.social_media = { ...profile.social_media, ...social_media };
