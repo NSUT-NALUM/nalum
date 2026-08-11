@@ -49,16 +49,22 @@ const PostCard = ({
   const { profile } = useProfile();
   const navigate = useNavigate();
   const isAuthor = profile?.user?._id === post.userId._id;
+  const isAdminPost = post.userId.role === "admin";
   const [isExpanded, setIsExpanded] = useState(false);
   const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
   const [hasReported, setHasReported] = useState(false);
   const [isTruncated, setIsTruncated] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [showAdminQueryMessage, setShowAdminQueryMessage] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const contentRef = useRef<HTMLDivElement>(null);
 
   const handleUserClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (isAdminPost) {
+      setShowAdminQueryMessage((prev) => !prev);
+      return;
+    }
     navigate(`/dashboard/alumni/${post.userId._id}`);
   };
 
@@ -138,7 +144,6 @@ const PostCard = ({
     navigate(`/dashboard/posts/${post._id}`);
   };
 
-  const isAdminPost = post.userId.role === "admin";
 
   return (
     <div
@@ -228,6 +233,15 @@ const PostCard = ({
           </div>
         </div>
       </div>
+      
+      {isAdminPost && showAdminQueryMessage && (
+        <div
+          className="mb-4 rounded-lg border border-yellow-400/50 bg-yellow-400/10 px-4 py-3 text-sm text-yellow-200 shadow-md"
+          onClick={(e) => e.stopPropagation()}
+        >
+          Got any queries for the admin? Use the Queries page on the side bar.
+        </div>
+      )}
 
       {/* Content */}
       <div className="space-y-3">
