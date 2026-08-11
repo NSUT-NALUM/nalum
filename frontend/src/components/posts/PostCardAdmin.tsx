@@ -10,12 +10,12 @@ export interface Post {
   _id: string;
   title: string;
   content: string;
-  userId: {
-    _id: string;
-    name: string;
-    email: string;
+  userId?: {
+    _id?: string;
+    name?: string;
+    email?: string;
     profile_picture?: string;
-  };
+  } | null;
   images: string[];
   createdAt: string;
   updatedAt: string;
