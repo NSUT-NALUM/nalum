@@ -70,50 +70,49 @@ const ProfileMenu = ({ isOpen, onClose }: ProfileMenuProps) => {
       {/* Slide-out Menu */}
       <div
         className={cn(
-          "fixed bottom-0 left-0 right-0 bg-card border-t border-border z-[60] md:hidden transition-transform duration-300 ease-in-out rounded-t-3xl",
+          "fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-white/10 z-[60] md:hidden transition-transform duration-300 ease-in-out rounded-t-3xl",
           isOpen ? "translate-y-0" : "translate-y-full"
         )}
         style={{ maxHeight: "85vh" }}
       >
         {/* Handle Bar */}
         <div className="flex justify-center pt-3 pb-2">
-          <div className="w-12 h-1 bg-muted-foreground/30 rounded-full" />
+          <div className="w-12 h-1 bg-gray-600 rounded-full" />
         </div>
 
         {/* Close Button */}
         <button
           onClick={onClose}
-          aria-label="Close profile menu"
-          className="absolute top-4 right-4 p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-full transition-colors"
+          className="absolute top-4 right-4 p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-full transition-colors"
         >
           <X className="h-5 w-5" />
         </button>
 
         {/* Scrollable Content */}
-        <div className="overflow-y-auto px-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))]" style={{ maxHeight: "calc(85vh - 60px)" }}>
+        <div className="overflow-y-auto px-6 pb-6" style={{ maxHeight: "calc(85vh - 60px)" }}>
           {/* Profile Actions */}
-          <div className="py-4 border-b border-border space-y-2">
+          <div className="py-4 border-b border-white/10 space-y-2">
             {/* View Profile */}
             <PreloadLink
               to="/dashboard/profile"
               onClick={onClose}
-              className="flex items-center gap-4 py-3 hover:bg-muted -mx-2 px-2 rounded-lg transition-colors group"
+              className="flex items-center gap-4 py-3 hover:bg-white/5 -mx-2 px-2 rounded-lg transition-colors group"
             >
               <UserAvatar
                 src={profile.profile_picture}
                 name={profile.user.name}
                 size="lg"
-                className="ring-2 ring-primary/50 group-hover:ring-primary transition-all"
+                className="ring-2 ring-blue-500/50 group-hover:ring-blue-500 transition-all"
               />
               <div className="flex-1 min-w-0">
-                <h3 className="text-lg font-semibold text-foreground truncate group-hover:text-primary transition-colors">
+                <h3 className="text-lg font-semibold text-white truncate group-hover:text-blue-400 transition-colors">
                   {profile.user.name}
                 </h3>
-                <p className="text-sm text-muted-foreground truncate">
+                <p className="text-sm text-gray-400 truncate">
                   {profile.user.email}
                 </p>
                 {profile.branch && profile.batch && (
-                  <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+                  <div className="flex items-center gap-2 mt-1 text-xs text-gray-500">
                     <span className="truncate">{profile.branch}</span>
                     <span>•</span>
                     <span>Class of {profile.batch}</span>
@@ -126,9 +125,9 @@ const ProfileMenu = ({ isOpen, onClose }: ProfileMenuProps) => {
             <PreloadLink
               to="/dashboard/update-profile"
               onClick={onClose}
-              className="flex items-center gap-3 px-4 py-2.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-all group border border-border"
+              className="flex items-center gap-3 px-4 py-2.5 text-gray-300 hover:text-white hover:bg-white/5 rounded-lg transition-all group border border-white/10"
             >
-              <Settings className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0" />
+              <Settings className="h-4 w-4 text-gray-400 group-hover:text-blue-400 transition-colors flex-shrink-0" />
               <span className="text-sm font-medium">Edit Profile</span>
             </PreloadLink>
           </div>
@@ -143,13 +142,13 @@ const ProfileMenu = ({ isOpen, onClose }: ProfileMenuProps) => {
                   key={item.href}
                   to={item.href}
                   onClick={onClose}
-                  className="flex items-center gap-3 px-4 py-3 text-muted-foreground hover:text-foreground hover:bg-muted rounded-xl transition-all group"
+                  className="flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white hover:bg-white/5 rounded-xl transition-all group"
                 >
-                  <item.icon className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0" />
+                  <item.icon className="h-5 w-5 text-gray-400 group-hover:text-blue-400 transition-colors flex-shrink-0" />
                   <div className="flex-1 min-w-0">
                     <div className="font-medium">{item.label}</div>
                     {item.description && (
-                      <div className="text-xs text-muted-foreground">{item.description}</div>
+                      <div className="text-xs text-gray-500">{item.description}</div>
                     )}
                   </div>
                 </PreloadLink>
@@ -158,10 +157,10 @@ const ProfileMenu = ({ isOpen, onClose }: ProfileMenuProps) => {
           </nav>
 
           {/* Logout Button */}
-          <div className="pt-4 border-t border-border">
+          <div className="pt-4 border-t border-white/10">
             <button
               onClick={handleLogout}
-              className="w-full flex items-center gap-3 px-4 py-3 text-destructive hover:bg-destructive/10 rounded-xl transition-all group"
+              className="w-full flex items-center gap-3 px-4 py-3 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-xl transition-all group"
             >
               <LogOut className="h-5 w-5 flex-shrink-0" />
               <span className="font-medium">Logout</span>
@@ -169,11 +168,11 @@ const ProfileMenu = ({ isOpen, onClose }: ProfileMenuProps) => {
           </div>
 
           {/* Footer */}
-          <div className="mt-6 pt-4 border-t border-border text-center">
-            <p className="text-xs text-muted-foreground">
+          <div className="mt-6 pt-4 border-t border-white/10 text-center">
+            <p className="text-xs text-gray-500">
               NSUT Alumni Association
             </p>
-            <p className="text-xs text-muted-foreground mt-1">
+            <p className="text-xs text-gray-600 mt-1">
               Netaji Subhas University of Technology
             </p>
           </div>
