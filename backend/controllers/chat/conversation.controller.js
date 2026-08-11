@@ -18,7 +18,7 @@ exports.getConversations = async (req, res) => {
       [`archived.${userId}`]: { $ne: true },
       [`deletedBy.${userId}`]: { $ne: true }
     })
-      .populate('participants', 'name email profilePicture')
+      .populate('participants', 'name email profilePicture role')
       .populate('lastMessage.sender', 'name')
       .sort({ 'lastMessage.timestamp': -1 })
       .skip(skip)
@@ -132,7 +132,7 @@ exports.getConversation = async (req, res) => {
     const { conversationId } = req.params;
 
     const conversation = await Conversation.findById(conversationId)
-      .populate('participants', 'name email profilePicture')
+      .populate('participants', 'name email profilePicture role')
       .populate('lastMessage.sender', 'name');
 
     if (!conversation) {
@@ -247,7 +247,7 @@ exports.createConversation = async (req, res) => {
       await conversation.save();
     }
 
-    await conversation.populate('participants', 'name email profilePicture');
+    await conversation.populate('participants', 'name email profilePicture role');
 
     // Fetch profiles for participants
     const profiles = await Profile.find({

@@ -274,7 +274,9 @@ const MentionTextarea = forwardRef<HTMLTextAreaElement, MentionTextareaProps>(
           onChange={handleChange}
           onKeyDown={handleKeyDown}
           className={cn(
-            "w-full bg-white/5 border border-white/10 text-white placeholder:text-gray-500 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500/20 rounded-md p-3 text-sm leading-relaxed overflow-hidden",
+            // Mirrors components/ui/textarea.tsx so a MentionTextarea sits in a
+            // form indistinguishably from a plain <Textarea>.
+            "w-full resize-none overflow-hidden rounded-md border border-input bg-background px-3 py-2 text-sm leading-relaxed text-foreground ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
             className
           )}
           {...rest}
@@ -284,8 +286,10 @@ const MentionTextarea = forwardRef<HTMLTextAreaElement, MentionTextareaProps>(
         {showDropdown && suggestions.length > 0 && (
           <div
             ref={dropdownRef}
+            // Positioned inline from the caret mirror, so no `left-0`/`mt-1`
+            // here — a Tailwind `left` would fight the computed one.
             style={{ top: dropdownPosition.top, left: dropdownPosition.left }}
-            className="absolute z-50 w-full sm:w-72 max-h-56 overflow-y-auto bg-slate-900 border border-white/10 rounded-md shadow-2xl backdrop-blur-md"
+            className="absolute z-50 w-full sm:w-72 max-h-56 overflow-y-auto bg-popover text-popover-foreground border border-border rounded-xl shadow-overlay"
           >
             {suggestions.map((user, i) => (
               <button
@@ -298,12 +302,12 @@ const MentionTextarea = forwardRef<HTMLTextAreaElement, MentionTextareaProps>(
                 className={cn(
                   "flex items-center gap-3 w-full px-4 py-2.5 text-left transition-colors text-sm",
                   i === activeIndex
-                    ? "bg-blue-600/20 text-white"
-                    : "text-gray-300 hover:bg-white/5"
+                    ? "bg-accent text-accent-foreground"
+                    : "text-foreground hover:bg-muted"
                 )}
               >
                 {/* Avatar */}
-                <div className="h-8 w-8 rounded-full overflow-hidden flex-shrink-0 bg-white/10 border border-white/10 flex items-center justify-center">
+                <div className="h-8 w-8 rounded-full overflow-hidden flex-shrink-0 bg-muted border border-border flex items-center justify-center">
                   {user.profile_picture ? (
                     <img
                       src={`${BASE_URL}/uploads/profile/${user.profile_picture}`}
@@ -311,7 +315,7 @@ const MentionTextarea = forwardRef<HTMLTextAreaElement, MentionTextareaProps>(
                       className="h-full w-full object-cover"
                     />
                   ) : (
-                    <span className="text-xs font-semibold text-gray-300">
+                    <span className="text-xs font-semibold text-muted-foreground">
                       {user.name.charAt(0).toUpperCase()}
                     </span>
                   )}
@@ -320,11 +324,11 @@ const MentionTextarea = forwardRef<HTMLTextAreaElement, MentionTextareaProps>(
                 {/* Name + role */}
                 <div className="flex-1 min-w-0">
                   <p className="font-medium truncate">{user.name}</p>
-                  <p className="text-xs text-gray-500 capitalize">{user.role}</p>
+                  <p className="text-xs text-muted-foreground capitalize">{user.role}</p>
                 </div>
 
                 {/* @hint */}
-                <span className="text-xs text-blue-400 flex-shrink-0">@mention</span>
+                <span className="text-xs text-primary flex-shrink-0">@mention</span>
               </button>
             ))}
           </div>
