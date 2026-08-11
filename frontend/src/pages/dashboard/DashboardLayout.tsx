@@ -62,14 +62,14 @@ const DashboardContent = () => {
 
       {/* Mobile Bottom Navigation Bar */}
       {!isChatPage && !isNotificationsPage && (
-        <div className="fixed bottom-0 left-0 right-0 z-40 bg-slate-900/90 backdrop-blur-lg border-t border-white/10 flex items-center justify-around px-2 py-2 shadow-2xl md:hidden h-16">
+        <div className="fixed bottom-0 left-0 right-0 z-40 bg-card/95 backdrop-blur-md border-t border-border flex items-center justify-around px-2 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] shadow-2xl md:hidden min-h-16">
           <PreloadLink
             to="/dashboard"
             className={cn(
               "flex flex-col items-center gap-1 p-2 rounded-xl transition-all duration-300",
               location.pathname === "/dashboard"
-                ? "bg-blue-600/20 text-blue-400"
-                : "text-gray-400 hover:text-white"
+                ? "bg-primary-subtle text-primary"
+                : "text-muted-foreground hover:text-foreground"
             )}
           >
             <Home className="h-5 w-5" />
@@ -81,14 +81,14 @@ const DashboardContent = () => {
             className={cn(
               "flex flex-col items-center gap-1 p-2 rounded-xl transition-all duration-300 relative",
               location.pathname === "/dashboard/connections"
-                ? "bg-blue-600/20 text-blue-400"
-                : "text-gray-400 hover:text-white"
+                ? "bg-primary-subtle text-primary"
+                : "text-muted-foreground hover:text-foreground"
             )}
           >
             <Users className="h-5 w-5" />
             <span className="text-[10px] font-medium">Network</span>
             {hasPendingRequests && (
-              <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-blue-500 ring-2 ring-slate-950" />
+              <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-primary ring-2 ring-card" />
             )}
           </PreloadLink>
 
@@ -97,8 +97,8 @@ const DashboardContent = () => {
             className={cn(
               "flex flex-col items-center gap-1 p-2 rounded-xl transition-all duration-300",
               location.pathname === "/dashboard/posts"
-                ? "bg-blue-600/20 text-blue-400"
-                : "text-gray-400 hover:text-white"
+                ? "bg-primary-subtle text-primary"
+                : "text-muted-foreground hover:text-foreground"
             )}
           >
             <div className="w-6 h-6 border-2 border-current rounded-md flex items-center justify-center">
@@ -114,8 +114,8 @@ const DashboardContent = () => {
             className={cn(
               "flex flex-col items-center gap-1 p-2 rounded-xl transition-all duration-300",
               location.pathname === "/dashboard/events"
-                ? "bg-blue-600/20 text-blue-400"
-                : "text-gray-400 hover:text-white"
+                ? "bg-primary-subtle text-primary"
+                : "text-muted-foreground hover:text-foreground"
             )}
           >
             <Calendar className="h-5 w-5" />
@@ -133,15 +133,15 @@ const DashboardContent = () => {
               className={cn(
                 "h-7 w-7 ring-2",
                 isProfileMenuOpen
-                  ? "ring-blue-500"
+                  ? "ring-primary"
                   : "ring-transparent"
               )}
             />
             <span className={cn(
               "text-[10px] font-medium",
               isProfileMenuOpen
-                ? "text-blue-400"
-                : "text-gray-400"
+                ? "text-primary"
+                : "text-muted-foreground"
             )}>Profile</span>
           </button>
         </div>
