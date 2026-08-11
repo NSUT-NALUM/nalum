@@ -126,6 +126,7 @@ describe("auth pages", () => {
         email: "student@nsut.ac.in",
         password: "password123",
         role: "student",
+        rememberMe: false,
       });
     });
     expect(setAuthMock).toHaveBeenCalledWith(
