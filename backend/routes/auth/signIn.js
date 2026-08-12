@@ -80,7 +80,7 @@ router.post("/", async (req, res) => {
     });
   }
 
-  const sessionData = await sessions.getOrCreate(email, data.data._id);
+  const sessionData = await sessions.getOrCreate(email, data.data._id, rememberMe);
 
   if (sessionData.error) {
     return res.status(500).json(sessionData);
