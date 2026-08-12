@@ -58,6 +58,7 @@ const Header = ({ setHeaderHeight }) => {
   return (
     <>
       <header
+        id="site-header"
         ref={headerRef}
         className="w-full fixed top-0 z-50"
         style={{ minHeight: scrolled ? '80px' : '120px' }}

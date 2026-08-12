@@ -39,7 +39,7 @@ const Sidebar = ({ onNavigate }: SidebarProps) => {
     { to: "/dashboard/alumni", label: "Directory", icon: Users },
     { to: "/dashboard/chat", label: "Messages", icon: MessageSquare, badge: unreadCount },
     { to: "/dashboard/events", label: "Events", icon: Calendar },
-    ...(isAlumni ? [{ to: "/dashboard/my-posts", label: "Posts", icon: FileText }] : []),
+    { to: "/dashboard/posts", label: "Posts", icon: FileText },
     { to: "/dashboard/queries", label: "Queries", icon: HelpCircle },
   ];
 
@@ -107,14 +107,16 @@ const Sidebar = ({ onNavigate }: SidebarProps) => {
           </PreloadLink>
         )}
 
-        <PreloadLink
-          to="/dashboard/giving"
-          onClick={onNavigate}
-          className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary-hover transition-colors"
-        >
-          <Heart className="h-4 w-4" />
-          <span>Give</span>
-        </PreloadLink>
+        {isAlumni && (
+          <PreloadLink
+            to="/dashboard/giving"
+            onClick={onNavigate}
+            className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary-hover transition-colors"
+          >
+            <Heart className="h-4 w-4" />
+            <span>Give</span>
+          </PreloadLink>
+        )}
 
         <button
           onClick={logout}

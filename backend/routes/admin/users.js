@@ -8,5 +8,6 @@ router.post("/ban/:userId", protectAdmin, banController.banUser);
 router.post("/unban/:userId", protectAdmin, banController.unbanUser);
 router.get("/banned", protectAdmin, banController.getBannedUsers);
 router.get("/history/:userId", protectAdmin, banController.getUserBanHistory);
+router.delete("/:userId", protectAdmin, banController.deactivateUser); // Task 3.6
 
 module.exports = router;

@@ -1,4 +1,6 @@
 import { ReactNode } from "react";
+import { motion } from "framer-motion";
+import { chipEntrance, rowEntrance } from "@/lib/motion";
 
 interface EmptyStateProps {
   icon?: ReactNode;
@@ -7,6 +9,9 @@ interface EmptyStateProps {
   action?: ReactNode;
 }
 
+// An empty state is usually the answer to something the user just did — a
+// search that found nothing, a filter with no matches. Cascading it gives that
+// answer a beat of its own instead of having it appear as an abrupt swap.
 export const EmptyState = ({
   icon,
   title,
@@ -14,19 +19,28 @@ export const EmptyState = ({
   action,
 }: EmptyStateProps) => {
   return (
-    <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-md shadow-xl p-20 text-center">
+    <div className="rounded-xl border border-border bg-card shadow-sm p-20 text-center">
       {icon && (
-        <div className="mb-6">
+        <motion.div {...chipEntrance()} className="mb-6">
           {typeof icon === "string" ? (
             <div className="text-6xl mb-4">{icon}</div>
           ) : (
             <div className="mb-4">{icon}</div>
           )}
-        </div>
+        </motion.div>
       )}
-      <h3 className="text-2xl font-bold text-white mb-3">{title}</h3>
-      {description && <p className="text-gray-400 mb-6">{description}</p>}
-      {action && <div>{action}</div>}
+      <motion.h3
+        {...rowEntrance(1)}
+        className="text-2xl font-bold text-foreground mb-3"
+      >
+        {title}
+      </motion.h3>
+      {description && (
+        <motion.p {...rowEntrance(2)} className="text-muted-foreground mb-6">
+          {description}
+        </motion.p>
+      )}
+      {action && <motion.div {...rowEntrance(3)}>{action}</motion.div>}
     </div>
   );
 };

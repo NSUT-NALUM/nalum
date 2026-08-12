@@ -1,443 +1,588 @@
 import { useEffect, useRef, useState } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { toast } from "sonner";
+import {
+  AlertCircle,
+  ArrowLeft,
+  ChevronLeft,
+  ChevronRight,
+  Flag,
+  Info,
+  MoreHorizontal,
+  Pencil,
+  Share2,
+  ThumbsUp,
+  Trash2,
+  X,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Skeleton } from "@/components/ui/skeleton";
+import UserAvatar from "@/components/UserAvatar";
+import CommentSection from "@/components/comments/CommentSection";
+import PostMarkdown from "@/components/posts/PostMarkdown";
+import ReportDialog from "@/components/reports/ReportDialog";
+import api from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { useNotifications } from "@/context/NotificationContext";
-import api from "@/lib/api";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
-import UserAvatar from "@/components/UserAvatar";
-import { ArrowLeft, Calendar, Share2, Loader2, AlertCircle, ChevronLeft, ChevronRight, X } from "lucide-react";
-import { BASE_URL } from "@/lib/constants";
-import { toast } from "sonner";
-import { parseFormattedText } from "@/lib/textFormatting";
-import CommentSection from "@/components/comments/CommentSection";
+import {
+  PostRecord,
+  authorHeadline,
+  bodyWithoutTitle,
+  getPostImageUrl,
+  likeIds,
+  readingTime,
+  toPlainText,
+} from "@/lib/posts";
+import { apiErrorMessage, cn } from "@/lib/utils";
 
-interface Post {
-  _id: string;
-  title: string;
-  content: string;
-  images?: string[];
-  userId: {
-    _id: string;
-    name: string;
-    email: string;
-    role: string;
-    profile_picture?: string;
-  };
-  status: "pending" | "approved" | "rejected";
-  rejection_reason?: string;
-  createdAt: string;
-  updatedAt: string;
-}
+const SidebarCard = ({
+  title,
+  children,
+  className,
+}: {
+  title?: string;
+  children: React.ReactNode;
+  className?: string;
+}) => (
+  <section
+    className={cn(
+      "rounded-card border border-border bg-card p-6 shadow-card",
+      className
+    )}
+  >
+    {title && <h2 className="ap-overline mb-4 border-b border-border pb-3">{title}</h2>}
+    {children}
+  </section>
+);
 
-const ViewPost = () => {
+export default function ViewPost() {
   const { postId } = useParams<{ postId: string }>();
-  const { accessToken, user } = useAuth();
+  const { user } = useAuth();
   const { clearPostNotifications } = useNotifications();
   const navigate = useNavigate();
-  const [post, setPost] = useState<Post | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+
+  const [post, setPost] = useState<PostRecord | null>(null);
+  const [similar, setSimilar] = useState<PostRecord[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const clearedNotificationPostIdRef = useRef<string | null>(null);
+  const [likes, setLikes] = useState<string[]>([]);
+  const [likePending, setLikePending] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [reportOpen, setReportOpen] = useState(false);
+  const [hasReported, setHasReported] = useState(false);
+  const clearedForPostRef = useRef<string | null>(null);
+
+  const isOwner = !!post && post.userId._id === user?.id;
+  const liked = !!user?.id && likes.includes(user.id);
 
   useEffect(() => {
-    fetchPost();
+    if (!postId) return;
+
+    setLoading(true);
+    setError(null);
+
+    api
+      .get(`/posts/${postId}`)
+      .then((res) => {
+        if (res.data.success) {
+          setPost(res.data.data);
+          setLikes(likeIds(res.data.data));
+        } else {
+          setError(res.data.message || "Failed to load post");
+        }
+      })
+      .catch((err) => {
+        console.error("Error fetching post:", err);
+        setError(apiErrorMessage(err, "Failed to load post"));
+      })
+      .finally(() => setLoading(false));
+
+    api
+      .get(`/posts/${postId}/similar`)
+      .then((res) => {
+        if (res.data.success) setSimilar(res.data.data);
+      })
+      .catch((err) => console.error("Error fetching similar posts:", err));
   }, [postId]);
 
+  // Reading a post clears any notification that pointed at it.
   useEffect(() => {
     if (!postId || !post || post._id !== postId) return;
 
-    const clearVisitedPostNotifications = async () => {
+    const clear = async () => {
       if (
         document.visibilityState !== "visible" ||
-        clearedNotificationPostIdRef.current === postId
+        clearedForPostRef.current === postId
       ) {
         return;
       }
-
-      clearedNotificationPostIdRef.current = postId;
+      clearedForPostRef.current = postId;
       try {
         await clearPostNotifications(postId);
-      } catch (error) {
-        clearedNotificationPostIdRef.current = null;
-        console.error("Failed to clear visited post notifications:", error);
+      } catch (err) {
+        clearedForPostRef.current = null;
+        console.error("Failed to clear visited post notifications:", err);
       }
     };
 
-    void clearVisitedPostNotifications();
-    document.addEventListener("visibilitychange", clearVisitedPostNotifications);
-    return () => {
-      document.removeEventListener("visibilitychange", clearVisitedPostNotifications);
-    };
+    void clear();
+    document.addEventListener("visibilitychange", clear);
+    return () => document.removeEventListener("visibilitychange", clear);
   }, [clearPostNotifications, post, postId]);
 
-  const fetchPost = async () => {
-    if (!postId) return;
+  useEffect(() => {
+    if (!post || isOwner) return;
+    api
+      .get(`/reports/post/${post._id}/check`)
+      .then(({ data }) => setHasReported(!!data.hasReported))
+      .catch((err) => console.error("Error checking report status:", err));
+  }, [post, isOwner]);
+
+  const toggleLike = async () => {
+    if (!post || likePending || !user?.id) return;
+
+    const previous = likes;
+    setLikePending(true);
+    setLikes(liked ? likes.filter((id) => id !== user.id) : [...likes, user.id]);
 
     try {
-      setIsLoading(true);
-      setError(null);
-      const { data } = await api.get(`/posts/${postId}`, {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      });
-
-      if (data.success) {
-        setPost(data.data);
-      } else {
-        setError(data.message || "Failed to load post");
-      }
-    } catch (err: any) {
-      console.error("Error fetching post:", err);
-      setError(err.response?.data?.message || "Failed to load post");
+      const { data } = await api.post(`/posts/${post._id}/like`);
+      if (data.success && Array.isArray(data.likes)) setLikes(data.likes);
+    } catch (err) {
+      console.error("Error toggling like:", err);
+      setLikes(previous);
     } finally {
-      setIsLoading(false);
+      setLikePending(false);
     }
   };
 
   const handleShare = async () => {
-    const postUrl = `${window.location.origin}/dashboard/posts/${postId}`;
-    
+    if (!post) return;
+    const url = `${window.location.origin}/dashboard/posts/${post._id}`;
+
     if (navigator.share) {
       try {
         await navigator.share({
-          title: post?.title,
-          text: post?.content?.substring(0, 100) + "...",
-          url: postUrl,
+          title: post.title,
+          text: toPlainText(post.content).slice(0, 120),
+          url,
         });
-      } catch (err) {
-        console.log("Share cancelled");
+        return;
+      } catch {
+        return; // sheet dismissed
       }
-    } else {
-      // Fallback: copy to clipboard
-      navigator.clipboard.writeText(postUrl);
-      toast.success("Link Copied!", {
-        description: "Post link copied to clipboard",
-      });
+    }
+
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.success("Link copied to clipboard");
+    } catch {
+      toast.error("Could not copy the link");
     }
   };
 
-  const getImageUrl = (imagePath: string) => {
-    if (imagePath.startsWith("http")) return imagePath;
-    return `${BASE_URL}/uploads/posts/${imagePath}`;
-  };
-
-  const goToNextImage = () => {
-    setCurrentImageIndex((prev) =>
-      prev === (post?.images?.length || 0) - 1 ? 0 : prev + 1
-    );
-  };
-
-  const goToPreviousImage = () => {
-    setCurrentImageIndex((prev) =>
-      prev === 0 ? (post?.images?.length || 0) - 1 : prev - 1
-    );
-  };
-
-  const goToImage = (index: number) => {
-    setCurrentImageIndex(index);
-  };
-
-  const handleImageClick = () => {
-    if (post?.images && post.images[currentImageIndex]) {
-      setSelectedImage(getImageUrl(post.images[currentImageIndex]));
+  const handleDelete = async () => {
+    if (!post) return;
+    try {
+      await api.delete(`/posts/${post._id}`);
+      toast.success("Post deleted");
+      navigate("/dashboard/posts?tab=my");
+    } catch (err) {
+      console.error("Error deleting post:", err);
+      toast.error(apiErrorMessage(err, "Failed to delete post"));
     }
   };
 
-  const isOwner = post?.userId._id === user?.id;
-
-  if (isLoading) {
+  if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-900 via-slate-950 to-black">
-        <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin text-blue-500 mx-auto mb-4" />
-          <p className="text-gray-400">Loading post...</p>
-        </div>
+      <div className="mx-auto max-w-7xl space-y-6 pb-12">
+        <Skeleton className="h-4 w-40" />
+        <Skeleton className="h-12 w-3/4" />
+        <Skeleton className="h-6 w-56" />
+        <Skeleton className="h-72 w-full rounded-card" />
       </div>
     );
   }
 
   if (error || !post) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-900 via-slate-950 to-black p-4">
-        <Card className="max-w-md w-full bg-slate-900/50 border-red-900/30">
-          <CardContent className="pt-6 text-center">
-            <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-            <h2 className="text-xl font-bold text-white mb-2">Post Not Found</h2>
-            <p className="text-gray-400 mb-6">
-              {error || "The post you're looking for doesn't exist or you don't have permission to view it."}
-            </p>
-            <Button
-              onClick={() => navigate("/dashboard")}
-              className="bg-[#800000] hover:bg-[#600000] text-white"
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Dashboard
-            </Button>
-          </CardContent>
-        </Card>
+      <div className="mx-auto max-w-3xl py-12">
+        <EmptyState
+          icon={<AlertCircle className="mx-auto h-14 w-14 text-muted-foreground/50" />}
+          title="Post not found"
+          description={
+            error ||
+            "This post may have been removed, or it isn't published yet."
+          }
+          action={
+            <Link to="/dashboard/posts">
+              <Button className="gap-2 rounded-full bg-primary px-5 text-primary-foreground hover:bg-primary-hover">
+                <ArrowLeft className="h-4 w-4" />
+                Back to Posts
+              </Button>
+            </Link>
+          }
+        />
       </div>
     );
   }
 
+  const author = post.userId;
+  const allImages = post.images || [];
+  const body = bodyWithoutTitle(post.content, post.title);
+  const attachmentUrls = allImages.map(getPostImageUrl);
+
+  // Images the author placed inline via attachment:N already render inside the
+  // body — don't repeat them in the gallery underneath.
+  const inlineIndexes = new Set(
+    [...body.matchAll(/\(attachment:(\d+)\)/g)].map((match) => Number(match[1]) - 1)
+  );
+  const images = allImages.filter((_, index) => !inlineIndexes.has(index));
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-950 to-black">
-      {/* Background Effects */}
-      <div className="fixed top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-indigo-500/10 blur-[120px]" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-blue-600/10 blur-[120px]" />
-      </div>
+    <div className="animate-in fade-in slide-in-from-bottom-4 text-foreground duration-500">
+      <div className="mx-auto max-w-7xl pb-12">
+        {/* Breadcrumb */}
+        <nav
+          aria-label="Breadcrumb"
+          className="mb-4 flex items-center gap-1 text-body-sm text-muted-foreground"
+        >
+          <Link to="/dashboard/posts" className="hover:text-primary">
+            Posts
+          </Link>
+          <ChevronRight className="h-4 w-4" />
+          <span className="line-clamp-1 text-foreground">{post.title}</span>
+        </nav>
 
-      <div className="relative z-10 container mx-auto px-3 sm:px-4 py-4 sm:py-6 max-w-4xl">
-        {/* Header */}
-        <div className="mb-4 sm:mb-6">
-          <Button
-            variant="ghost"
-            onClick={() => navigate(-1)}
-            className="text-gray-400 hover:text-white hover:bg-white/5 mb-2 sm:mb-4 -ml-2 sm:ml-0 touch-manipulation"
-          >
-            <ArrowLeft className="h-5 w-5 sm:h-4 sm:w-4 mr-2" />
-            <span className="text-base sm:text-sm">Back</span>
-          </Button>
-        </div>
-
-        {/* Post Card */}
-        <Card className="bg-slate-900/50 border-white/10 backdrop-blur-sm">
-          <CardContent className="p-4 sm:p-6 md:p-8">
-            {/* Post Header */}
-            <div className="flex items-start gap-3 sm:gap-4 mb-4 sm:mb-6 pb-4 sm:pb-6 border-b border-white/10">
-              <Link to={`/dashboard/alumni/${post.userId._id}`} className="flex-shrink-0">
-                <UserAvatar
-                  src={post.userId.profile_picture}
-                  name={post.userId.name}
-                  className="h-10 w-10 sm:h-12 sm:w-12 md:h-14 md:w-14 border-2 border-slate-700 hover:border-[#800000] transition-colors cursor-pointer touch-manipulation"
-                />
-              </Link>
-              <div className="flex-1 min-w-0">
-                <Link
-                  to={`/dashboard/alumni/${post.userId._id}`}
-                  className="hover:underline touch-manipulation"
-                >
-                  <h3 className="font-semibold text-white text-base sm:text-lg line-clamp-2">
-                    {post.userId.name}
-                  </h3>
-                </Link>
-                <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-gray-400 mt-1">
-                  <Calendar className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
-                  <span className="truncate">{new Date(post.createdAt).toLocaleDateString("en-US", {
-                    year: "numeric",
-                    month: "short",
-                    day: "numeric"
-                  })}</span>
-                </div>
-                {post.status !== "approved" && (
-                  <Badge
-                    variant="outline"
-                    className={`mt-2 text-xs ${
-                      post.status === "pending"
-                        ? "border-yellow-500 text-yellow-500"
-                        : "border-red-500 text-red-500"
-                    }`}
-                  >
-                    {post.status}
-                  </Badge>
-                )}
-              </div>
-              {isOwner && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => navigate("/dashboard/my-posts")}
-                  className="border-white/10 text-gray-300 hover:bg-white/10 text-xs sm:text-sm shrink-0 touch-manipulation h-8 sm:h-9 px-2 sm:px-3"
-                >
-                  <span className="hidden sm:inline">Edit Post</span>
-                  <span className="sm:hidden">Edit</span>
-                </Button>
-              )}
-            </div>
-
-            {/* Post Content */}
-            <div className="mb-4 sm:mb-6">
-              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-white mb-3 sm:mb-4 leading-tight">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+          {/* Article */}
+          <article className="space-y-6 lg:col-span-2">
+            <div className="rounded-card border border-border bg-card p-6 shadow-card md:p-8">
+              <h1 className="text-headline-lg-mobile text-foreground md:text-headline-xl">
                 {post.title}
               </h1>
-              <div className="text-sm sm:text-base text-gray-300 whitespace-pre-wrap leading-relaxed space-y-1">
-                {parseFormattedText(post.content)}
-              </div>
-            </div>
 
-            {/* Post Images */}
-            {post.images && post.images.length > 0 && (
-              <div className="mb-4 sm:mb-6 relative -mx-4 sm:mx-0">
-                {/* Progress Indicators - Only show if multiple images */}
-                {post.images.length > 1 && (
-                  <div className="absolute top-2 sm:top-3 left-1/2 transform -translate-x-1/2 z-10 flex gap-1 sm:gap-1.5">
-                    {post.images.map((_, index) => (
-                      <div
-                        key={index}
-                        onClick={() => goToImage(index)}
-                        className={`h-1 sm:h-0.5 rounded-full cursor-pointer transition-all duration-300 touch-manipulation ${
-                          index === currentImageIndex
-                            ? "bg-white w-6 sm:w-8"
-                            : "bg-white/50 w-6 sm:w-8 hover:bg-white/70"
-                        }`}
-                      />
-                    ))}
-                  </div>
-                )}
-
-                {/* Image Container */}
-                <div
-                  className="relative overflow-hidden sm:rounded-lg border-y sm:border border-white/10 group cursor-pointer touch-manipulation"
-                  onClick={handleImageClick}
+              {/* Byline */}
+              <div className="mt-5 flex flex-wrap items-center justify-between gap-4 border-b border-border pb-6">
+                <Link
+                  to={`/dashboard/alumni/${author._id}`}
+                  className="flex min-w-0 items-center gap-3"
                 >
-                  <img
-                    src={getImageUrl(post.images[currentImageIndex])}
-                    alt={`Post image ${currentImageIndex + 1} of ${post.images.length}`}
-                    className="w-full h-auto max-h-[400px] sm:max-h-[600px] object-contain transition-transform duration-500 group-hover:scale-105"
+                  <UserAvatar
+                    src={author.profile_picture || undefined}
+                    name={author.name}
+                    size="md"
                   />
+                  <span className="min-w-0">
+                    <span className="block truncate text-label-md text-foreground">
+                      {author.name}
+                    </span>
+                    <span className="block text-body-sm text-muted-foreground">
+                      {new Date(post.createdAt).toLocaleDateString("en-US", {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      })}{" "}
+                      • {readingTime(post.content)} min read
+                    </span>
+                  </span>
+                </Link>
 
-                  {/* Navigation Arrows - Only show if multiple images */}
-                  {post.images.length > 1 && (
-                    <>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          goToPreviousImage();
-                        }}
-                        className="absolute left-1 sm:left-2 top-1/2 -translate-y-1/2 bg-black/60 hover:bg-black/80 text-white p-2.5 sm:p-2 rounded-full transition-all duration-200 touch-manipulation active:scale-95"
-                        aria-label="Previous image"
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    aria-pressed={liked}
+                    onClick={toggleLike}
+                    className={cn(
+                      "gap-2 rounded-full px-4 text-label-md",
+                      liked
+                        ? "border-primary text-primary"
+                        : "border-border text-muted-foreground hover:border-primary hover:text-primary"
+                    )}
+                  >
+                    <ThumbsUp className={cn("h-4 w-4", liked && "fill-current")} />
+                    {likes.length}
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    onClick={handleShare}
+                    className="gap-2 rounded-full border-border px-4 text-label-md text-muted-foreground hover:border-primary hover:text-primary"
+                  >
+                    <Share2 className="h-4 w-4" />
+                    <span className="hidden sm:inline">Share</span>
+                  </Button>
+
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        aria-label="More actions"
+                        className="rounded-full text-muted-foreground hover:text-primary"
                       >
-                        <ChevronLeft className="w-5 h-5 sm:w-5 sm:h-5" />
-                      </button>
-
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          goToNextImage();
-                        }}
-                        className="absolute right-1 sm:right-2 top-1/2 -translate-y-1/2 bg-black/60 hover:bg-black/80 text-white p-2.5 sm:p-2 rounded-full transition-all duration-200 touch-manipulation active:scale-95"
-                        aria-label="Next image"
-                      >
-                        <ChevronRight className="w-5 h-5 sm:w-5 sm:h-5" />
-                      </button>
-                    </>
-                  )}
-
-                  {/* Image Counter - Only show if multiple images */}
-                  {post.images.length > 1 && (
-                    <div className="absolute bottom-2 sm:bottom-3 right-2 sm:right-3 bg-black/70 text-white text-xs px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full font-medium">
-                      {currentImageIndex + 1} / {post.images.length}
-                    </div>
-                  )}
+                        <MoreHorizontal className="h-5 w-5" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      {isOwner ? (
+                        <>
+                          <DropdownMenuItem
+                            onClick={() =>
+                              navigate(`/dashboard/posts/${post._id}/edit`)
+                            }
+                          >
+                            <Pencil className="mr-2 h-4 w-4" />
+                            Edit post
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={handleDelete}
+                            className="text-destructive focus:text-destructive"
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete post
+                          </DropdownMenuItem>
+                        </>
+                      ) : (
+                        <DropdownMenuItem
+                          disabled={hasReported}
+                          onClick={() => setReportOpen(true)}
+                        >
+                          <Flag className="mr-2 h-4 w-4" />
+                          {hasReported ? "Already reported" : "Report post"}
+                        </DropdownMenuItem>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               </div>
-            )}
 
-            {/* Rejection Reason */}
-            {post.status === "rejected" && post.rejection_reason && (
-              <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-red-950/30 border border-red-900/50 rounded-lg">
-                <p className="text-xs sm:text-sm text-red-400">
-                  <strong>Rejection Reason:</strong> {post.rejection_reason}
-                </p>
-              </div>
-            )}
-
-            {/* Action Buttons */}
-            <div className="flex flex-wrap items-center gap-2 sm:gap-3 pt-4 sm:pt-6 border-t border-white/10">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleShare}
-                className="gap-2 border-white/10 bg-white/10 text-white hover:bg-blue-500/20 hover:text-blue-400 hover:border-blue-500/30 transition-all duration-200 h-9 sm:h-8 px-4 sm:px-3 text-sm touch-manipulation active:scale-95"
-              >
-                <Share2 className="h-4 w-4" />
-                <span>Share</span>
-              </Button>
-            </div>
-
-            <CommentSection postId={post._id} />
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Image Lightbox */}
-      {selectedImage && post?.images && post.images.length > 0 && (
-        <Dialog
-          open={!!selectedImage}
-          onOpenChange={() => setSelectedImage(null)}
-        >
-          <DialogContent className="max-w-[95vw] max-h-[95vh] p-0 bg-black border-none">
-            {/* Close Button - TOP RIGHT */}
-            <button
-              onClick={() => setSelectedImage(null)}
-              className="absolute top-4 right-4 text-white hover:text-gray-300 p-2 bg-black/50 hover:bg-black/70 rounded-full transition-colors z-50"
-              aria-label="Close"
-            >
-              <X className="w-6 h-6" />
-            </button>
-
-            {/* Progress Indicators - TOP CENTER */}
-            {post.images.length > 1 && (
-              <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-50 flex gap-2">
-                {post.images.map((_, index) => (
-                  <div
-                    key={index}
-                    onClick={() => goToImage(index)}
-                    className={`h-1 rounded-full cursor-pointer transition-all duration-300 ${
-                      index === currentImageIndex
-                        ? "bg-white w-12"
-                        : "bg-white/50 w-12 hover:bg-white/70"
-                    }`}
-                  />
-                ))}
-              </div>
-            )}
-
-            {/* Image Container */}
-            <div className="relative w-full h-[90vh] flex items-center justify-center">
-              <img
-                src={getImageUrl(post.images[currentImageIndex])}
-                alt={`Post image ${currentImageIndex + 1} of ${post.images.length}`}
-                className="max-w-full max-h-full object-contain"
-              />
-
-              {/* Navigation Arrows */}
-              {post.images.length > 1 && (
-                <>
-                  <button
-                    onClick={goToPreviousImage}
-                    className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-3 rounded-full transition-colors"
-                    aria-label="Previous image"
-                  >
-                    <ChevronLeft className="w-6 h-6" />
-                  </button>
-
-                  <button
-                    onClick={goToNextImage}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-3 rounded-full transition-colors"
-                    aria-label="Next image"
-                  >
-                    <ChevronRight className="w-6 h-6" />
-                  </button>
-                </>
+              {/* Moderation state — only the author ever sees this */}
+              {isOwner && post.status && post.status !== "approved" && (
+                <div
+                  className={cn(
+                    "mt-6 rounded-lg border p-4 text-body-sm",
+                    post.status === "pending"
+                      ? "border-warning/30 bg-warning-subtle text-foreground"
+                      : "border-primary/25 bg-accent text-foreground"
+                  )}
+                >
+                  <p className="mb-1 text-label-md">
+                    {post.status === "pending"
+                      ? "Pending review"
+                      : "Rejected by a reviewer"}
+                  </p>
+                  <p className="text-muted-foreground">
+                    {post.status === "pending"
+                      ? "Only you can see this post until an administrator approves it."
+                      : post.rejection_reason ||
+                        "No specific reason was given. Review the community guidelines and resubmit."}
+                  </p>
+                </div>
               )}
 
-              {/* Image Counter */}
-              {post.images.length > 1 && (
-                <div className="absolute bottom-4 right-4 bg-black/70 text-white px-3 py-1.5 rounded-full text-sm font-medium">
-                  {currentImageIndex + 1} / {post.images.length}
+              {/* Body */}
+              <div className="mt-6">
+                <PostMarkdown content={body} attachments={attachmentUrls} />
+              </div>
+
+              {/* Attached images */}
+              {images.length > 0 && (
+                <div
+                  className={cn(
+                    "mt-6 grid gap-4",
+                    images.length > 1 ? "sm:grid-cols-2" : "grid-cols-1"
+                  )}
+                >
+                  {images.map((image, index) => (
+                    <button
+                      key={image}
+                      type="button"
+                      onClick={() => setLightboxIndex(index)}
+                      className="overflow-hidden rounded-card border border-border"
+                    >
+                      <img
+                        src={getPostImageUrl(image)}
+                        alt={`Attachment ${index + 1}`}
+                        loading="lazy"
+                        className="h-full max-h-[420px] w-full object-cover transition-transform duration-500 hover:scale-[1.02]"
+                      />
+                    </button>
+                  ))}
                 </div>
+              )}
+            </div>
+
+            {/* Discussion */}
+            <div
+              id="comments-section"
+              className="rounded-card border border-border bg-card p-6 shadow-card md:p-8"
+            >
+              <CommentSection postId={post._id} />
+            </div>
+          </article>
+
+          {/* Sidebar */}
+          <aside className="space-y-6">
+            <SidebarCard title="About the Author">
+              <div className="text-center">
+                <Link to={`/dashboard/alumni/${author._id}`} className="inline-block">
+                  <UserAvatar
+                    src={author.profile_picture || undefined}
+                    name={author.name}
+                    size="lg"
+                    className="mx-auto"
+                  />
+                </Link>
+                <p className="mt-3 text-headline-md text-foreground">
+                  {author.name}
+                </p>
+                <p className="text-body-sm text-muted-foreground">
+                  {authorHeadline(author)}
+                </p>
+                {author.batch && (
+                  <p className="mt-1 text-label-sm text-primary">
+                    Class of {author.batch}
+                  </p>
+                )}
+                {author.bio && (
+                  <p className="mt-3 text-body-sm text-muted-foreground">
+                    {author.bio}
+                  </p>
+                )}
+                <Link to={`/dashboard/alumni/${author._id}`} className="mt-4 block">
+                  <Button
+                    variant="outline"
+                    className="w-full rounded-full border-border text-label-md text-foreground hover:border-primary hover:text-primary"
+                  >
+                    View Profile
+                  </Button>
+                </Link>
+              </div>
+            </SidebarCard>
+
+            {similar.length > 0 && (
+              <SidebarCard title="Similar Posts">
+                <ul className="divide-y divide-border">
+                  {similar.map((item) => (
+                    <li key={item._id} className="py-3 first:pt-0 last:pb-0">
+                      <Link
+                        to={`/dashboard/posts/${item._id}`}
+                        className="group block"
+                      >
+                        <p className="text-label-md text-foreground group-hover:text-primary">
+                          {item.title}
+                        </p>
+                        <p className="mt-1 line-clamp-2 text-body-sm text-muted-foreground">
+                          {toPlainText(item.content)}
+                        </p>
+                        <p className="mt-1 text-body-sm text-muted-foreground">
+                          {item.userId.name}
+                          {item.userId.batch && `, Class of ${item.userId.batch}`}
+                        </p>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </SidebarCard>
+            )}
+
+            {(post.tags || []).length > 0 && (
+              <SidebarCard title="Topics">
+                <div className="flex flex-wrap gap-2">
+                  {post.tags!.map((tag) => (
+                    <Link
+                      key={tag}
+                      to={`/dashboard/posts?tag=${encodeURIComponent(tag)}`}
+                      className="ap-chip transition-colors hover:bg-primary-subtle hover:text-primary-subtle-foreground"
+                    >
+                      {tag}
+                    </Link>
+                  ))}
+                </div>
+              </SidebarCard>
+            )}
+
+            <section className="rounded-card border border-border bg-accent p-6">
+              <h2 className="mb-2 flex items-center gap-2 text-headline-md text-primary">
+                <Info className="h-5 w-5" />
+                Community Guidelines
+              </h2>
+              <p className="text-body-sm text-muted-foreground">
+                Keep discussions professional, respectful, and relevant to the
+                academic nature of our alumni network. Constructive debate is
+                encouraged.
+              </p>
+            </section>
+          </aside>
+        </div>
+      </div>
+
+      {/* Lightbox */}
+      {lightboxIndex !== null && images[lightboxIndex] && (
+        <Dialog open onOpenChange={() => setLightboxIndex(null)}>
+          <DialogContent className="max-h-[95vh] max-w-[95vw] border-none bg-surface-inverse p-0">
+            <button
+              type="button"
+              onClick={() => setLightboxIndex(null)}
+              aria-label="Close"
+              className="absolute right-4 top-4 z-50 rounded-full bg-surface-inverse/70 p-2 text-surface-inverse-foreground hover:bg-surface-inverse"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            <div className="relative flex h-[85vh] w-full items-center justify-center">
+              <img
+                src={getPostImageUrl(images[lightboxIndex])}
+                alt={`Attachment ${lightboxIndex + 1}`}
+                className="max-h-full max-w-full object-contain"
+              />
+
+              {images.length > 1 && (
+                <>
+                  <button
+                    type="button"
+                    aria-label="Previous image"
+                    onClick={() =>
+                      setLightboxIndex(
+                        (lightboxIndex - 1 + images.length) % images.length
+                      )
+                    }
+                    className="absolute left-4 rounded-full bg-surface-inverse/70 p-3 text-surface-inverse-foreground hover:bg-surface-inverse"
+                  >
+                    <ChevronLeft className="h-5 w-5" />
+                  </button>
+                  <button
+                    type="button"
+                    aria-label="Next image"
+                    onClick={() =>
+                      setLightboxIndex((lightboxIndex + 1) % images.length)
+                    }
+                    className="absolute right-4 rounded-full bg-surface-inverse/70 p-3 text-surface-inverse-foreground hover:bg-surface-inverse"
+                  >
+                    <ChevronRight className="h-5 w-5" />
+                  </button>
+                </>
               )}
             </div>
           </DialogContent>
         </Dialog>
       )}
+
+      <ReportDialog
+        postId={post._id}
+        isOpen={reportOpen}
+        onClose={() => setReportOpen(false)}
+        onReportSubmitted={() => setHasReported(true)}
+      />
     </div>
   );
-};
-
-export default ViewPost;
+}

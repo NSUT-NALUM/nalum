@@ -10,11 +10,13 @@ const {
   getAllQueries,
   updateQueryStatus,
   respondToQuery,
+  deleteQuery,
 } = require('../controllers/query.controller');
 
 // User routes (Students & Alumni)
 router.post( "/", protect, checkBanned, uploadQueryImage.array("images", 2), createQuery );
 router.get("/my", protect, getMyQueries);
+router.delete("/:id", protect, deleteQuery);
 
 // Admin routes
 router.get("/all", protectAdmin, getAllQueries);

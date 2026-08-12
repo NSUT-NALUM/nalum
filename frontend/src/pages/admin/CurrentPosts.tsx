@@ -118,7 +118,7 @@ const CurrentPosts = () => {
         (post) =>
           post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
           post.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          post.userId.name.toLowerCase().includes(searchTerm.toLowerCase())
+          (post.userId?.name ?? "").toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
     if (statusFilter !== "all") {

@@ -58,8 +58,8 @@ export const NotificationItem = ({ notification, onClose }: NotificationItemProp
   return (
     <div
       className={cn(
-        "p-4 hover:bg-white/5 transition-colors cursor-pointer relative group",
-        !notification.read && "bg-blue-500/10"
+        "p-4 hover:bg-accent transition-colors cursor-pointer relative group",
+        !notification.read && "bg-primary-subtle/40"
       )}
       onClick={handleClick}
     >
@@ -75,13 +75,13 @@ export const NotificationItem = ({ notification, onClose }: NotificationItemProp
 
         {/* Content */}
         <div className="flex-1 min-w-0">
-          <p className="font-medium text-sm line-clamp-1 text-white">
+          <p className="font-medium text-sm line-clamp-1 text-foreground">
             {notification.title}
           </p>
-          <p className="text-sm text-gray-400 line-clamp-2">
+          <p className="text-sm text-muted-foreground line-clamp-2">
             {notification.message}
           </p>
-          <p className="text-xs text-gray-500 mt-1">
+          <p className="text-xs text-muted-foreground/70 mt-1">
             {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
           </p>
         </div>
@@ -89,15 +89,15 @@ export const NotificationItem = ({ notification, onClose }: NotificationItemProp
         {/* Unread indicator & Delete */}
         <div className="flex flex-col items-end gap-2">
           {!notification.read && (
-            <div className="h-2 w-2 rounded-full bg-blue-500" />
+            <div className="h-2 w-2 rounded-full bg-primary" />
           )}
           <Button
             variant="ghost"
             size="icon"
-            className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white/10"
+            className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-accent"
             onClick={handleDelete}
           >
-            <X className="h-4 w-4 text-gray-400" />
+            <X className="h-4 w-4 text-muted-foreground" />
           </Button>
         </div>
       </div>

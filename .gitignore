@@ -155,7 +155,4 @@ docs/
 .agent/*
 CLAUDE.md
 .claude/*
-
-# IDE
-.idea/
-
+/temp

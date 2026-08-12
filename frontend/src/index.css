@@ -187,10 +187,13 @@
     letter-spacing: -0.02em;
   }
 
-  /* Focus follows the container radius with a 2px offset ring. */
+  /* Focus outlines/rings disabled globally per product decision. Wins over
+     component-level `focus-visible:ring-*` utilities (button, input, select,
+     ...) regardless of stylesheet order. */
+  :focus,
   :focus-visible {
-    outline: none;
-    @apply ring-2 ring-ring ring-offset-2 ring-offset-background;
+    outline: none !important;
+    box-shadow: none !important;
   }
 
   /* Mobile-only: Prevent overscroll bounce (rubber band effect) */

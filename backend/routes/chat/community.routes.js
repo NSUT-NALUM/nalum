@@ -14,5 +14,6 @@ router.post('/:id/assign-admin', communityController.assignAdmin);
 router.post('/:id/clear', communityController.clearChatHistory);
 router.post('/:id/mute', communityController.muteCommunity);
 router.post('/:id/unmute', communityController.unmuteCommunity);
+router.delete('/:id', communityController.deleteCommunity); // Task 3.5
 
 module.exports = router;

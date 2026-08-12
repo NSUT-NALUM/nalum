@@ -19,6 +19,15 @@ exports.checkBanned = async (req, res, next) => {
       });
     }
 
+    // Check if user account is deactivated (Task 3.6)
+    if (user.isDeactivated) {
+      return res.status(403).json({
+        success: false,
+        message: "This account has been deactivated.",
+        deactivated: true,
+      });
+    }
+
     // Check if user is banned
     if (user.banned) {
       // Check if ban has expired
