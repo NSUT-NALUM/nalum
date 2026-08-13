@@ -34,13 +34,18 @@ router.post("/", async (req, res) => {
   const { refresh_token: new_refresh_token, ...rest } = data.data;
 
   // Set refresh token in httpOnly cookie
-  res.cookie("refresh_token", new_refresh_token, {
+  const cookieOptions = {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: "lax",
     path: "/",
-    maxAge: 14 * 24 * 60 * 60 * 1000, // 14 days
-  });
+  };
+
+  if (data.data.remember_me) {
+    cookieOptions.maxAge = 30 * 24 * 60 * 60 * 1000; // 30 days
+  }
+
+  res.cookie("refresh_token", new_refresh_token, cookieOptions);
 
   const access_token = data.data.access_token;
 
