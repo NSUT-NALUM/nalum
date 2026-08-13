@@ -376,7 +376,7 @@ describe("auth routes", () => {
       expect(response.body).toMatchObject({
         err: true,
         code: 401,
-        message: "The user doesn't exist. Please sign up.",
+        message: "Incorrect credentials. Please try again.",
       });
       expect(sessions.getOrCreate).not.toHaveBeenCalled();
     });

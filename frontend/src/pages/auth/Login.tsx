@@ -342,6 +342,7 @@ const Login = () => {
                     placeholder={formData.role === "student" ? "Your student email ending with @nsut.ac.in" : "your.email@example.com"}
                     value={formData.email}
                     onChange={(e) => handleInputChange("email", e.target.value)}
+                    onBlur={handleEmailBlur}
                     className={`pl-10 h-12 text-base ${errors.email ? "border-red-500" : ""}`}
                   />
                 </div>

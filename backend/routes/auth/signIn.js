@@ -76,7 +76,7 @@ router.post("/", async (req, res) => {
     return res.status(401).json({
       err: true,
       code: 401,
-      message: "The user doesn't exist. Please sign up.",
+      message: "Incorrect credentials. Please try again.",
     });
   }
 

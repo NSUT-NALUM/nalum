@@ -70,6 +70,12 @@ const Signup = () => {
     if (response.data.exists) {
       toast.error("Email already exists", {
         description: "This email is already registered. Please sign in instead.",
+        style: {
+            background: "#800000",
+            color: "white",
+            border: "2px solid #FFD700",
+            fontSize: "16px",
+          },
       });
     }
   } catch (error) {
@@ -272,6 +278,7 @@ const Signup = () => {
                     placeholder={formData.role === "student" ? "Your student email ending with @nsut.ac.in" : "your.email@example.com"}
                     value={formData.email}
                     onChange={(e) => handleChange("email", e.target.value)}
+                    onBlur={handleEmailBlur}
                     className={`pl-10 h-12 text-base ${errors.email ? "border-red-500" : ""}`}
                   />
                 </div>
