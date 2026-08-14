@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import AdminLayout from "../../components/admin/AdminLayout";
 import { Event, getAllEvents } from "../../lib/adminApi";
-import { Calendar as CalendarIcon, Edit, Trash2, RefreshCw, Search, Filter } from "lucide-react";
+import { Calendar as CalendarIcon, Edit, Trash2, RefreshCw, Search, Filter, Clock } from "lucide-react";
 import api from "../../lib/api";
 import { BASE_URL } from "../../lib/constants";
 import { Button } from "../../components/ui/button";
@@ -21,6 +21,7 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from "../../components/ui/dialog";
 
 const CurrentEvents = () => {
@@ -63,6 +64,13 @@ const CurrentEvents = () => {
   const [reasonDialogOpen, setReasonDialogOpen] = useState(false);
   const [selectedReason, setSelectedReason] = useState<string>("");
 
+  const isEventExpired = (eventDateStr: string) => {
+    const eventDate = new Date(eventDateStr);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return eventDate < today;
+  };
+
   useEffect(() => {
     fetchEvents();
   }, []);
@@ -100,7 +108,13 @@ const CurrentEvents = () => {
 
     // Filter by status
     if (statusFilter !== "all") {
-      filtered = filtered.filter((event) => event.status === statusFilter);
+      if (statusFilter === "expired") {
+        filtered = filtered.filter((event) => isEventExpired(event.event_date));
+      } else if (statusFilter === "active") {
+        filtered = filtered.filter((event) => !isEventExpired(event.event_date));
+      } else {
+        filtered = filtered.filter((event) => event.status === statusFilter);
+      }
     }
 
     // Filter by type
@@ -286,6 +300,8 @@ const CurrentEvents = () => {
                   <SelectItem value="pending">Pending</SelectItem>
                   <SelectItem value="approved">Approved</SelectItem>
                   <SelectItem value="rejected">Rejected</SelectItem>
+                  <SelectItem value="expired">Expired / Due Date Passed</SelectItem>
+                  <SelectItem value="active">Active (Upcoming)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -329,7 +345,9 @@ const CurrentEvents = () => {
             {filteredEvents.map((event) => (
               <div
                 key={event._id}
-                className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow"
+                className={`bg-white rounded-lg shadow-sm border p-4 hover:shadow-md transition-shadow ${
+                  isEventExpired(event.event_date) ? "border-amber-200 bg-amber-50/30" : "border-gray-200"
+                }`}
               >
                 <div className="flex gap-4">
                   {/* Event Image */}
@@ -354,10 +372,21 @@ const CurrentEvents = () => {
                     <div className="flex justify-between items-start mb-2">
                       <div>
                         <h3 className="text-xl font-semibold text-gray-900">{event.title}</h3>
-                        <div className="flex gap-2 mt-1">
+                        <div className="flex flex-wrap gap-2 mt-1 items-center">
                           <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full border ${getStatusBadge(event.status)}`}>
                             {event.status}
                           </span>
+                          {isEventExpired(event.event_date) ? (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-amber-100 text-amber-800 border border-amber-300 text-xs font-semibold rounded-full">
+                              <Clock size={12} />
+                              Expired / Due Date Passed
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-emerald-100 text-emerald-800 border border-emerald-300 text-xs font-semibold rounded-full">
+                              <CalendarIcon size={12} />
+                              Upcoming
+                            </span>
+                          )}
                           <span className="inline-block px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full capitalize">
                             {event.event_type}
                           </span>

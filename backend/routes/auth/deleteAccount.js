@@ -32,7 +32,11 @@ router.delete('/', protect, async (req, res) => {
     await user.save();
 
     // 3. Clear all active sessions/refresh tokens for this user in DB
-    await Session.deleteMany({ user_id: userId });
+    try {
+      await Session.deleteMany({ $or: [{ user_id: userId }, { user_id: userId.toString() }] });
+    } catch (sessionErr) {
+      console.warn("Error clearing user sessions during deactivation:", sessionErr.message);
+    }
 
     // 4. Clear client-side authentication cookies
     res.clearCookie('refresh_token', {

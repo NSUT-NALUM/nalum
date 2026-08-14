@@ -58,8 +58,17 @@ function createHttpError(message, statusCode = 400) {
  * @param {string}        opts.requestUserId - ID of the user making the request
  * @param {string}        opts.userRole      - Role of the requesting user ("admin", "alumni", "student")
  */
+function getEntityId(idOrObj) {
+  if (!idOrObj) return "";
+  if (typeof idOrObj === "string") return idOrObj;
+  if (idOrObj._id) return idOrObj._id.toString();
+  return idOrObj.toString();
+}
+
 function assertDeletePermission({ ownerId, requestUserId, userRole }) {
-  const isOwner = ownerId.toString() === requestUserId.toString();
+  const ownerStr = getEntityId(ownerId);
+  const reqUserStr = getEntityId(requestUserId);
+  const isOwner = Boolean(ownerStr && reqUserStr && ownerStr === reqUserStr);
   const isAdmin = userRole === "admin";
 
   if (!isOwner && !isAdmin) {

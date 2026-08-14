@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Eye, EyeOff, Mail, Lock, Briefcase } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, Briefcase, Home } from "lucide-react";
 import { toast } from "sonner";
 import nsutLogo from "@/assets/nsut-logo.svg";
 import nsutCampusHero from "@/assets/hero.webp";
@@ -27,6 +27,7 @@ const Login = () => {
     password: "",
     role: "student",
   });
+  const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -72,7 +73,10 @@ const Login = () => {
 
     setIsLoading(true);
     try {
-      const response = await apiClient.post("/auth/sign-in", formData);
+      const response = await apiClient.post("/auth/sign-in", {
+        ...formData,
+        rememberMe,
+      });
       const { access_token, user } = response.data.data;
 
       // Set full user data in auth context
@@ -204,10 +208,10 @@ const Login = () => {
           },
         });
       } else {
-        const errorMessage = axios.isAxiosError(error) 
+        const errorMessage = axios.isAxiosError(error)
           ? error.response?.data?.message || "Invalid email or password"
           : "Invalid email or password";
-        
+
         toast.error("Login Failed", {
           description: errorMessage,
           style: {
@@ -261,6 +265,9 @@ const Login = () => {
 
       {/* Right Column: Form */}
       <div className="flex-1 relative flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gray-50 lg:h-full lg:overflow-y-auto">
+        <Link to="/" className="absolute top-4 right-4 z-20 p-2 text-nsut-maroon hover:text-nsut-maroon/80 transition-colors bg-white/80 rounded-full shadow-sm">
+          <Home className="h-6 w-6 text-red-600" />
+        </Link>
         {/* Subtle Pattern Background */}
         <div className="absolute inset-0 opacity-5">
           <div className="absolute inset-0" style={{
@@ -361,6 +368,8 @@ const Login = () => {
                   id="remember-me"
                   name="remember-me"
                   type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
                   className="h-4 w-4 rounded border-gray-300 text-nsut-maroon focus:ring-nsut-maroon"
                 />
                 <Label htmlFor="remember-me" className="ml-2 block text-base text-gray-900">

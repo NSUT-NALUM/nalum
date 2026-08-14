@@ -185,8 +185,8 @@ const NotificationsPopover = () => {
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
       <PopoverTrigger asChild>
-        <button className="relative p-3 hover:bg-white/10 rounded-xl transition-all border border-white/10">
-          <Bell className="h-5 w-5 text-gray-400" />
+        <button className="relative p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-full transition-colors">
+          <Bell className="h-5 w-5" />
           {totalUnread > 0 && (
             <Badge
               variant="destructive"
@@ -198,17 +198,17 @@ const NotificationsPopover = () => {
         </button>
       </PopoverTrigger>
       <PopoverContent
-        className="w-[calc(100vw-2rem)] sm:w-96 max-h-[calc(100vh-2rem)] p-0 overflow-hidden bg-slate-900 border-white/10"
+        className="w-[calc(100vw-2rem)] sm:w-96 max-h-[calc(100vh-2rem)] p-0 overflow-hidden bg-card border-border rounded-card shadow-lg"
         align="end"
       >
         <div className="flex flex-col h-[min(500px,calc(100vh-2rem))] min-h-0">
           {/* Header */}
-          <div className="p-4 border-b border-white/10 flex items-center justify-between">
-            <h3 className="font-semibold text-lg text-white">Notifications</h3>
+          <div className="p-4 border-b border-border flex items-center justify-between">
+            <h3 className="font-semibold text-lg text-foreground">Notifications</h3>
             {activeTab === "general" && notifications.length > 0 && (
               <button
                 onClick={handleClearAll}
-                className="text-xs text-blue-400 hover:text-blue-300 font-medium transition-colors"
+                className="text-xs text-primary hover:text-primary-hover font-medium transition-colors"
               >
                 Clear all
               </button>
@@ -217,10 +217,10 @@ const NotificationsPopover = () => {
 
           {/* Main Tabs */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 min-h-0 flex flex-col overflow-hidden">
-            <TabsList className="w-full rounded-none border-b border-white/10 bg-transparent p-0 h-auto">
+            <TabsList className="w-full rounded-none border-b border-border bg-transparent p-0 h-auto">
               <TabsTrigger
                 value="general"
-                className="flex-1 rounded-none border-b-2 border-transparent data-[state=active]:border-blue-500 data-[state=active]:bg-transparent data-[state=active]:text-blue-400 py-3 relative"
+                className="flex-1 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none py-3 relative"
               >
                 General
                 {unreadCount > 0 && (
@@ -231,7 +231,7 @@ const NotificationsPopover = () => {
               </TabsTrigger>
               <TabsTrigger
                 value="connections"
-                className="flex-1 rounded-none border-b-2 border-transparent data-[state=active]:border-blue-500 data-[state=active]:bg-transparent data-[state=active]:text-blue-400 py-3 relative"
+                className="flex-1 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none py-3 relative"
               >
                 Connections
                 {receivedRequests.length > 0 && (
@@ -248,11 +248,11 @@ const NotificationsPopover = () => {
               className="mt-0 flex-1 min-h-0 overflow-hidden data-[state=active]:flex data-[state=active]:flex-col data-[state=inactive]:hidden"
             >
               {showPushPrompt && (
-                <div className="p-3 bg-blue-500/10 border-b border-white/10">
-                  <p className="text-sm text-blue-200 mb-2">
+                <div className="p-3 bg-primary-subtle/40 border-b border-border">
+                  <p className="text-sm text-foreground mb-2">
                     Enable push notifications for updates
                   </p>
-                  <Button size="sm" className="w-full" onClick={handleEnablePush}>
+                  <Button size="sm" className="w-full bg-primary hover:bg-primary-hover text-primary-foreground" onClick={handleEnablePush}>
                     Enable Push Notifications
                   </Button>
                 </div>
@@ -260,15 +260,15 @@ const NotificationsPopover = () => {
               <ScrollArea className="flex-1 min-h-0">
                 {loading ? (
                   <div className="flex items-center justify-center h-32">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                   </div>
                 ) : notifications.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center h-32 text-gray-400">
-                    <Bell className="h-12 w-12 mb-2 opacity-50" />
+                  <div className="flex flex-col items-center justify-center h-32 text-muted-foreground">
+                    <Bell className="h-12 w-12 mb-2 opacity-40" />
                     <p className="text-sm">No notifications yet</p>
                   </div>
                 ) : (
-                  <div className="divide-y divide-white/10">
+                  <div className="divide-y divide-border">
                     {(() => {
                       // Group notifications by sender and type, keeping only the most recent
                       const deduplicatedNotifications = notifications.reduce((acc, notification) => {
@@ -312,10 +312,10 @@ const NotificationsPopover = () => {
             >
               {/* Connection Sub-tabs: Alumni | Students | Sent */}
               <Tabs value={connectionTab} onValueChange={setConnectionTab} className="flex-1 min-h-0 flex flex-col overflow-hidden">
-                <TabsList className="w-full rounded-none border-b border-white/10 bg-transparent p-0 h-auto">
+                <TabsList className="w-full rounded-none border-b border-border bg-transparent p-0 h-auto">
                   <TabsTrigger
                     value="alumni"
-                    className="flex-1 rounded-none border-b-2 border-transparent data-[state=active]:border-amber-400 data-[state=active]:bg-transparent data-[state=active]:text-amber-300 py-2 text-sm"
+                    className="flex-1 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none py-2 text-sm"
                   >
                     Alumni
                     {receivedRequests.filter(r => r.requester.role === 'alumni').length > 0 && (
@@ -326,7 +326,7 @@ const NotificationsPopover = () => {
                   </TabsTrigger>
                   <TabsTrigger
                     value="students"
-                    className="flex-1 rounded-none border-b-2 border-transparent data-[state=active]:border-blue-400 data-[state=active]:bg-transparent data-[state=active]:text-blue-300 py-2 text-sm"
+                    className="flex-1 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none py-2 text-sm"
                   >
                     Students
                     {receivedRequests.filter(r => r.requester.role === 'student').length > 0 && (
@@ -337,11 +337,11 @@ const NotificationsPopover = () => {
                   </TabsTrigger>
                   <TabsTrigger
                     value="sent"
-                    className="flex-1 rounded-none border-b-2 border-transparent data-[state=active]:border-blue-400 data-[state=active]:bg-transparent data-[state=active]:text-blue-300 py-2 text-sm"
+                    className="flex-1 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none py-2 text-sm"
                   >
                     Sent
                     {sentRequests.length > 0 && (
-                      <Badge className="ml-2 h-4 w-4 p-0 flex items-center justify-center text-xs bg-gray-500">
+                      <Badge className="ml-2 h-4 w-4 p-0 flex items-center justify-center text-xs bg-secondary text-secondary-foreground">
                         {sentRequests.length}
                       </Badge>
                     )}
@@ -356,19 +356,19 @@ const NotificationsPopover = () => {
                   <ScrollArea className="h-full min-h-0">
                     {isLoadingReceived ? (
                       <div className="flex items-center justify-center h-32">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500"></div>
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                       </div>
                     ) : receivedRequests.filter(r => r.requester.role === 'alumni').length === 0 ? (
-                      <div className="flex flex-col items-center justify-center h-32 text-gray-400">
-                        <Users className="h-12 w-12 mb-2 opacity-50" />
+                      <div className="flex flex-col items-center justify-center h-32 text-muted-foreground">
+                        <Users className="h-12 w-12 mb-2 opacity-40" />
                         <p className="text-sm">No alumni requests</p>
                       </div>
                     ) : (
-                      <div className="divide-y divide-white/10">
+                      <div className="divide-y divide-border">
                         {receivedRequests.filter(r => r.requester.role === 'alumni').map((request) => (
                           <div
                             key={request._id}
-                            className="p-4 hover:bg-white/5 transition-colors cursor-pointer"
+                            className="p-4 hover:bg-accent transition-colors cursor-pointer"
                             onClick={() => {
                               navigate(`/dashboard/alumni/${request.requester._id}`);
                               setIsOpen(false);
@@ -381,16 +381,16 @@ const NotificationsPopover = () => {
                                 size="sm"
                               />
                               <div className="flex-1 min-w-0">
-                                <p className="font-medium text-sm text-white">
+                                <p className="font-medium text-sm text-foreground">
                                   {request.requester.name}
                                 </p>
                                 {request.requesterProfile && (
-                                  <p className="text-xs text-gray-400">
+                                  <p className="text-xs text-muted-foreground">
                                     {request.requesterProfile.branch} • {request.requesterProfile.batch}
                                   </p>
                                 )}
                                 {request.requestMessage && (
-                                  <p className="text-xs text-gray-400 mt-1 line-clamp-2">
+                                  <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
                                     "{request.requestMessage}"
                                   </p>
                                 )}
@@ -398,7 +398,7 @@ const NotificationsPopover = () => {
                                   <Button
                                     size="sm"
                                     onClick={(e) => handleAccept(request._id, e)}
-                                    className="flex-1"
+                                    className="flex-1 bg-primary hover:bg-primary-hover text-primary-foreground"
                                   >
                                     <UserCheck className="h-4 w-4 mr-1" />
                                     Accept
@@ -407,7 +407,7 @@ const NotificationsPopover = () => {
                                     size="sm"
                                     variant="outline"
                                     onClick={(e) => handleReject(request._id, e)}
-                                    className="flex-1 border-white/10 hover:bg-white/5"
+                                    className="flex-1 border-border hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30"
                                   >
                                     <UserX className="h-4 w-4 mr-1" />
                                     Reject
@@ -430,19 +430,19 @@ const NotificationsPopover = () => {
                   <ScrollArea className="h-full min-h-0">
                     {isLoadingReceived ? (
                       <div className="flex items-center justify-center h-32">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                       </div>
                     ) : receivedRequests.filter(r => r.requester.role === 'student').length === 0 ? (
-                      <div className="flex flex-col items-center justify-center h-32 text-gray-400">
-                        <GraduationCap className="h-12 w-12 mb-2 opacity-50" />
+                      <div className="flex flex-col items-center justify-center h-32 text-muted-foreground">
+                        <GraduationCap className="h-12 w-12 mb-2 opacity-40" />
                         <p className="text-sm">No student requests</p>
                       </div>
                     ) : (
-                      <div className="divide-y divide-white/10">
+                      <div className="divide-y divide-border">
                         {receivedRequests.filter(r => r.requester.role === 'student').map((request) => (
                           <div
                             key={request._id}
-                            className="p-4 hover:bg-white/5 transition-colors cursor-pointer"
+                            className="p-4 hover:bg-accent transition-colors cursor-pointer"
                             onClick={() => {
                               navigate(`/dashboard/alumni/${request.requester._id}`);
                               setIsOpen(false);
@@ -455,16 +455,16 @@ const NotificationsPopover = () => {
                                 size="sm"
                               />
                               <div className="flex-1 min-w-0">
-                                <p className="font-medium text-sm text-white">
+                                <p className="font-medium text-sm text-foreground">
                                   {request.requester.name}
                                 </p>
                                 {request.requesterProfile && (
-                                  <p className="text-xs text-gray-400">
+                                  <p className="text-xs text-muted-foreground">
                                     {request.requesterProfile.branch} • {request.requesterProfile.batch}
                                   </p>
                                 )}
                                 {request.requestMessage && (
-                                  <p className="text-xs text-gray-400 mt-1 line-clamp-2">
+                                  <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
                                     "{request.requestMessage}"
                                   </p>
                                 )}
@@ -472,7 +472,7 @@ const NotificationsPopover = () => {
                                   <Button
                                     size="sm"
                                     onClick={(e) => handleAccept(request._id, e)}
-                                    className="flex-1"
+                                    className="flex-1 bg-primary hover:bg-primary-hover text-primary-foreground"
                                   >
                                     <UserCheck className="h-4 w-4 mr-1" />
                                     Accept
@@ -481,7 +481,7 @@ const NotificationsPopover = () => {
                                     size="sm"
                                     variant="outline"
                                     onClick={(e) => handleReject(request._id, e)}
-                                    className="flex-1 border-white/10 hover:bg-white/5"
+                                    className="flex-1 border-border hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30"
                                   >
                                     <UserX className="h-4 w-4 mr-1" />
                                     Reject
@@ -504,19 +504,19 @@ const NotificationsPopover = () => {
                   <ScrollArea className="h-full min-h-0">
                     {isLoadingSent ? (
                       <div className="flex items-center justify-center h-32">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                       </div>
                     ) : sentRequests.length === 0 ? (
-                      <div className="flex flex-col items-center justify-center h-32 text-gray-400">
-                        <UserCheck className="h-12 w-12 mb-2 opacity-50" />
+                      <div className="flex flex-col items-center justify-center h-32 text-muted-foreground">
+                        <UserCheck className="h-12 w-12 mb-2 opacity-40" />
                         <p className="text-sm">No sent requests</p>
                       </div>
                     ) : (
-                      <div className="divide-y divide-white/10">
+                      <div className="divide-y divide-border">
                         {sentRequests.map((request) => (
                           <div
                             key={request._id}
-                            className="p-4 hover:bg-white/5 transition-colors cursor-pointer"
+                            className="p-4 hover:bg-accent transition-colors cursor-pointer"
                             onClick={() => {
                               navigate(`/dashboard/profile/${request.recipient._id}`);
                               setIsOpen(false);
@@ -529,22 +529,22 @@ const NotificationsPopover = () => {
                                 size="sm"
                               />
                               <div className="flex-1 min-w-0">
-                                <p className="font-medium text-sm text-white">
+                                <p className="font-medium text-sm text-foreground">
                                   {request.recipient.name}
                                 </p>
                                 {request.recipientProfile && (
-                                  <p className="text-xs text-gray-400">
+                                  <p className="text-xs text-muted-foreground">
                                     {request.recipientProfile.branch} • {request.recipientProfile.batch}
                                   </p>
                                 )}
-                                <p className="text-xs text-yellow-400 mt-1">
+                                <p className="text-xs text-warning mt-1">
                                   Pending
                                 </p>
                                 <Button
                                   size="sm"
                                   variant="outline"
                                   onClick={(e) => handleCancelRequest(request.recipient._id, e)}
-                                  className="mt-2 w-full border-white/10 hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/20"
+                                  className="mt-2 w-full border-border hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30"
                                 >
                                   <UserX className="h-4 w-4 mr-1" />
                                   Cancel Request
