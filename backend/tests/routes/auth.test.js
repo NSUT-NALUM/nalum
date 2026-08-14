@@ -223,6 +223,39 @@ describe("auth routes", () => {
     });
   });
 
+  describe("POST /api/auth/check-email", () => {
+    it("reports exists: true when an account already has this email", async () => {
+      users.findOne.mockResolvedValue({ error: false, data: verifiedUser({ email: "existing@example.com" }) });
+      const response = await request(app).post("/api/auth/check-email").send({ email: "existing@example.com" });
+      expect(response.status).toBe(200);
+      expect(response.body).toMatchObject({ error: false, exists: true, message: "An account with this email already exists. Please sign in." });
+    });
+
+    it("reports exists: false when no account has this email", async () => {
+      users.findOne.mockResolvedValue({ error: false, data: null });
+      const response = await request(app).post("/api/auth/check-email").send({ email: "new@example.com" });
+      expect(response.status).toBe(200);
+      expect(response.body).toMatchObject({ error: false, exists: false, message: "No account found with this email. Please sign up." });
+    });
+
+    it("rejects check-email without an email", async () => {
+      const response = await request(app).post("/api/auth/check-email").send({});
+      expect(response.status).toBe(400);
+      expect(users.findOne).not.toHaveBeenCalled();
+    });
+
+    it("rejects check-email with a malformed email", async () => {
+      const response = await request(app).post("/api/auth/check-email").send({ email: "not-an-email" });
+      expect(response.status).toBe(400);
+    });
+
+    it("returns a server error when the user lookup fails", async () => {
+      users.findOne.mockResolvedValue({ error: true, message: "DB down" });
+      const response = await request(app).post("/api/auth/check-email").send({ email: "existing@example.com" });
+      expect(response.status).toBe(500);
+    });
+  });
+
   describe("POST /api/auth/sign-in", () => {
     it("logs in with valid credentials and sets a refresh token cookie", async () => {
       users.findOne.mockResolvedValue({

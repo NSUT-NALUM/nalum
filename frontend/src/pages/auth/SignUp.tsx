@@ -60,6 +60,25 @@ const Signup = () => {
     }
   };
 
+  const handleEmailBlur = async () => {
+  const email = formData.email;
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!email || !emailRegex.test(email)) return;
+
+  try {
+    const response = await api.post("/auth/check-email", { email });
+    if (response.data.exists) {
+      toast.error("Email already exists", {
+        description: "This email is already registered. Please sign in instead.",
+        style: { background: "#800000", color: "white", border: "2px solid #FFD700", fontSize: "16px" },
+        classNames: { title: "text-xl font-bold text-white", description: "text-base text-white" },
+      });
+    }
+  } catch (error) {
+    console.error("Email check failed:", error);
+  }
+};
+
   const handleConfirmPasswordChange = (value: string) => {
     setConfirmPassword(value);
     // Real-time password match validation
@@ -248,6 +267,7 @@ const Signup = () => {
                     placeholder={formData.role === "student" ? "Your student email ending with @nsut.ac.in" : "your.email@example.com"}
                     value={formData.email}
                     onChange={(e) => handleChange("email", e.target.value)}
+                    onBlur={handleEmailBlur}
                     className={`pl-10 h-12 text-base ${errors.email ? "border-red-500" : ""}`}
                   />
                 </div>
