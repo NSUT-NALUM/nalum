@@ -64,6 +64,7 @@ const Signup = () => {
   const email = formData.email;
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!email || !emailRegex.test(email)) return;
+  if (formData.role === "student" && !email.endsWith("@nsut.ac.in")) return;
 
   try {
     const response = await api.post("/auth/check-email", { email });

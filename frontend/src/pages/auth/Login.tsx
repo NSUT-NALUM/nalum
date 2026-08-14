@@ -49,6 +49,7 @@ const Login = () => {
   const handleEmailBlur = async () => {
   const email = formData.email;
   if (!email || !/\S+@\S+\.\S+/.test(email)) return;
+  if (formData.role === "student" && !email.endsWith("@nsut.ac.in")) return;
 
   try {
     const response = await apiClient.post("/auth/check-email", { email });

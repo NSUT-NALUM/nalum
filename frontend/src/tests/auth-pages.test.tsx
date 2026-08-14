@@ -96,6 +96,9 @@ describe("auth pages", () => {
   it("logs in and redirects completed profiles to the dashboard", async () => {
     const user = userEvent.setup();
     (mockedApi.post as Mock).mockResolvedValueOnce({
+      data: { exists: true },
+    });
+    (mockedApi.post as Mock).mockResolvedValueOnce({
       data: {
         data: {
           access_token: "access-token",
@@ -160,6 +163,9 @@ describe("auth pages", () => {
 
   it("signs up a valid student and sends them to OTP verification", async () => {
     const user = userEvent.setup();
+    (mockedApi.post as Mock).mockResolvedValueOnce({
+      data: { exists: false },
+    });
     (mockedApi.post as Mock).mockResolvedValueOnce({
       data: {
         err: false,
