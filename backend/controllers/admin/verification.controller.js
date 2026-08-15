@@ -92,7 +92,7 @@ exports.approveVerification = async (req, res) => {
     );
 
     // Notify the alumnus that they've been verified
-    sendEmail({
+    const emailSent = await sendEmail({
       to: user.email,
       subject: "Your Alumni Account Has Been Verified",
       template: "notification",
@@ -103,9 +103,11 @@ exports.approveVerification = async (req, res) => {
           "Great news! Your alumni account has been verified by our team. You now have full access to the NSUT Alumni Network.",
         actionUrl: process.env.FRONTEND_URL || "",
       },
-    }).catch((error) => {
-      console.error("Error sending verification approval email:", error);
     });
+
+    if (!emailSent) {
+      console.error("Failed to send verification approval email to:", user.email);
+    }
 
     res.status(200).json({
       success: true,
