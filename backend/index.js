@@ -26,6 +26,7 @@ const geocodeRoutes = require("./routes/geocode.js");
 const mentionRoutes = require("./routes/mention.js");
 const { startProcessing } = require("./services/geocodingQueue");
 const { checkBanned } = require("./middleware/checkBanned.js");
+const { emailWorker } = require("./queues/emailQueue");
 const morgan = require("morgan");
 const redisConfig = require("./config/redis.config.js");
 const { initializeSocket } = require("./sockets/chatSocket.js");
@@ -130,6 +131,10 @@ async function startServer() {
     logStartupStep("Starting geocoding queue worker...");
     startProcessing();
     logStartupStep("Geocoding queue worker started");
+
+    logStartupStep("Starting email queue worker...");
+    // Email worker is already initialized by requiring it
+    logStartupStep("Email queue worker started");
 
     logStartupStep("Initializing Socket.io...");
     const io = await initializeSocket(server);

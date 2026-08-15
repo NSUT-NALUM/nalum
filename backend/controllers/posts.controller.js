@@ -2,6 +2,7 @@ const Post = require("../models/posts/post.model");
 const User = require("../models/user/user.model");
 const Settings = require("../models/admin/settings.model");
 const { notifyMentions } = require("../services/mentionHelper");
+const { queueAdminPostBroadcast } = require("../queues/emailQueue");
 
 // Helper function to check if posts should be auto-approved
 async function shouldAutoApprove() {
@@ -62,6 +63,17 @@ exports.createPost = async (req, res) => {
         actionUrl: `/dashboard/posts/${post._id}`,
         entityId: post._id.toString(),
       });
+
+      // If post is created by an admin and auto-approved, queue email broadcast
+      if (user.role === "admin") {
+        try {
+          await queueAdminPostBroadcast(post, user);
+          console.log(`[Post Create] Queued email broadcast for admin post ${post._id}`);
+        } catch (error) {
+          console.error(`[Post Create] Failed to queue email broadcast:`, error);
+          // Don't fail the request if email queueing fails
+        }
+      }
     }
 
     return res.status(201).json({
