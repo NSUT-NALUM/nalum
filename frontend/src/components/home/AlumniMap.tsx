@@ -20,7 +20,7 @@ interface AlumniLocation {
   lng: number;
 }
 
-// Tracks map bounds and zoom, stores them in ref-backed state
+// Tracks map bounds and zoom for supercluster clustering
 function MapController({
   setBounds,
   setZoom,
@@ -452,6 +452,19 @@ function MapSearchControl({
   );
 }
 
+// Continent overlay label rendered at low zoom levels
+const CONTINENT_LABELS = [
+  { name: "ASIA", lat: 44.5, lng: 95.0 },
+];
+
+const createContinentIcon = (label: string) =>
+  L.divIcon({
+    html: `<div style="font-family: system-ui, -apple-system, sans-serif; font-size: 13px; font-weight: 800; letter-spacing: 2px; color: #475569; text-transform: uppercase; white-space: nowrap; pointer-events: none; text-shadow: 0 1px 3px rgba(255,255,255,0.95), 0 0 6px rgba(255,255,255,0.95);">${label}</div>`,
+    className: "continent-label-marker",
+    iconSize: [60, 20],
+    iconAnchor: [30, 10],
+  });
+
 const AlumniMap = () => {
   const [locations, setLocations] = useState<AlumniLocation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -463,11 +476,25 @@ const AlumniMap = () => {
   const [mapInstance, setMapInstance] = useState<L.Map | null>(null);
 
   useEffect(() => {
+    const abortController = new AbortController();
+
     const fetchLocations = async () => {
       try {
-        const { data } = await api.get("/alumni-map");
-        setLocations(data.locations || []);
+        const { data } = await api.get("/alumni-map", {
+          signal: abortController.signal,
+        });
+        // Defensive: drop any entries with non-finite coordinates (legacy or
+        // malformed data) so Leaflet never receives an invalid LatLng.
+        const sanitized = (data.locations || []).filter(
+          (loc: AlumniLocation) =>
+            loc.lat != null &&
+            loc.lng != null &&
+            Number.isFinite(Number(loc.lat)) &&
+            Number.isFinite(Number(loc.lng))
+        );
+        setLocations(sanitized);
       } catch (err) {
+        if ((err as { code?: string })?.code === "ERR_CANCELED") return;
         console.error("Error fetching alumni locations:", err);
         setError("Failed to load alumni map");
       } finally {
@@ -476,6 +503,9 @@ const AlumniMap = () => {
     };
 
     fetchLocations();
+
+    // Cancel the in-flight request if the map unmounts before it resolves
+    return () => abortController.abort();
   }, []);
 
   // Format raw locations as GeoJSON features for supercluster
@@ -498,8 +528,11 @@ const AlumniMap = () => {
     () => ({
       radius: 75,
       maxZoom: 17,
-      map: (props: any) => ({ sum: props.count || 1 }),
-      reduce: (accumulated: any, props: any) => {
+      map: (props: { count?: number }) => ({ sum: props.count || 1 }),
+      reduce: (
+        accumulated: { sum: number },
+        props: { count?: number; sum?: number }
+      ) => {
         accumulated.sum += props.sum || props.count || 1;
       },
     }),
@@ -548,7 +581,7 @@ const AlumniMap = () => {
         </div>
         <div className="container mx-auto px-4 relative z-10">
           <div className="text-center mb-12">
-            <h2 className="text-2xl md:text-5xl font-serif font-bold text-gray-900 mb-4 tracking-tight">
+            <h2 className="text-2xl md:text-5xl font-serif font-bold text-white mb-4 tracking-tight">
               Alumni Network Map
             </h2>
           </div>
@@ -571,7 +604,7 @@ const AlumniMap = () => {
         </div>
         <div className="container mx-auto px-4 relative z-10">
           <div className="text-center mb-12">
-            <h2 className="text-2xl md:text-5xl font-serif font-bold text-gray-900 mb-4 tracking-tight">
+            <h2 className="text-2xl md:text-5xl font-serif font-bold text-white mb-4 tracking-tight">
               Alumni Network Map
             </h2>
           </div>
@@ -594,7 +627,7 @@ const AlumniMap = () => {
         </div>
         <div className="container mx-auto px-4 relative z-10">
           <div className="text-center mb-12">
-            <h2 className="text-2xl md:text-5xl font-serif font-bold text-gray-900 mb-4 tracking-tight">
+            <h2 className="text-2xl md:text-5xl font-serif font-bold text-white mb-4 tracking-tight">
               Alumni Network Map
             </h2>
           </div>
@@ -650,8 +683,17 @@ const AlumniMap = () => {
             />
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-                url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
-              />
+              url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+            />
+            {/* English Continent Overlay Labels at low zoom levels */}
+            {zoom <= 5 &&
+              CONTINENT_LABELS.map((cont) => (
+                <Marker
+                  key={`continent-${cont.name}`}
+                  position={[cont.lat, cont.lng]}
+                  icon={createContinentIcon(cont.name)}
+                />
+              ))}
               {clusters.map((cluster) => {
                 const [lng, lat] = cluster.geometry.coordinates;
                 const {
