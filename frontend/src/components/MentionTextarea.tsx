@@ -276,7 +276,7 @@ const MentionTextarea = forwardRef<HTMLTextAreaElement, MentionTextareaProps>(
           className={cn(
             // Mirrors components/ui/textarea.tsx so a MentionTextarea sits in a
             // form indistinguishably from a plain <Textarea>.
-            "w-full resize-none overflow-hidden rounded-md border border-input bg-background px-3 py-2 text-sm leading-relaxed text-foreground ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+            "w-full min-w-0 resize-none overflow-x-hidden overflow-y-auto rounded-md border border-input bg-background px-3 py-2 text-sm leading-relaxed text-foreground ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 break-all",
             className
           )}
           {...rest}

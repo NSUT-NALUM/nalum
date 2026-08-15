@@ -83,14 +83,14 @@ export const MessageInput = ({
 
   return (
     <div className="p-3 border-t border-border bg-card">
-      <div className="flex gap-2 items-center">
+      <div className="flex gap-2 items-center min-w-0">
         <MentionTextarea
           value={message}
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
           onFocus={handleFocus}
           placeholder="Type a message... (@mention)"
-          className="flex-1 min-h-[44px] resize-none bg-background border-input focus:border-primary focus:ring-ring/20 rounded-lg transition-all shadow-sm text-sm text-foreground placeholder:text-muted-foreground pr-2"
+          className="flex-1 min-w-0 min-h-[44px] resize-none bg-background border-input focus:border-primary focus:ring-ring/20 rounded-lg transition-all shadow-sm text-sm text-foreground placeholder:text-muted-foreground pr-2"
           disabled={disabled}
           style={{ maxHeight: "84px", overflowY: "auto" }}
         />
