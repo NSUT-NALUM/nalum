@@ -1,13 +1,14 @@
 import { Link, useNavigate } from "react-router-dom";
 import api from "@/lib/api";
 
-// ── Mention token (legacy): @[Name](userId) → rendered as profile link ──────
+// ── Mention token (legacy / structured): @[Name](userId) → rendered as profile link ──────
 const MENTION_PATTERN = /@\[([^\]]+)\]\(([^)]+)\)/g;
 
 export const parseMentionSegment = (
   text: string,
   lineIndex: number,
-  partIndex: number
+  partIndex: number,
+  isOwn = false
 ): (string | JSX.Element)[] => {
   const segments = text.split(MENTION_PATTERN);
   const result: (string | JSX.Element)[] = [];
@@ -18,7 +19,11 @@ export const parseMentionSegment = (
         <Link
           key={`mention-${lineIndex}-${partIndex}-${i}`}
           to={`/dashboard/alumni/${segments[i + 2]}`}
-          className="inline-flex items-center text-blue-400 hover:text-blue-300 font-medium"
+          className={
+            isOwn
+              ? "inline-flex items-center font-bold text-white hover:underline"
+              : "inline-flex items-center font-medium text-primary hover:underline"
+          }
           onClick={(e) => e.stopPropagation()}
         >
           @{segments[i + 1]}
@@ -29,18 +34,29 @@ export const parseMentionSegment = (
   return result;
 };
 
-// ── Plain @mention: @Name → clickable, looks up profile by name on click ────
-const PLAIN_MENTION_PATTERN = /@(\w+)/g;
+// ── Plain @mention: @Name or @First Last → clickable, looks up profile by name on click ────
+const PLAIN_MENTION_PATTERN =
+  /@([A-Za-z0-9_]+(?:[-.'][A-Za-z0-9_]+)*(?:\s+[A-Z][a-zA-Z0-9_]*(?:[-.'][a-zA-Z0-9_]+)*)*)(?=[.,!?;:]*(?:\s|$))/g;
 
-const PlainMentionLink = ({ name, mentionKey }: { name: string; mentionKey: string }) => {
+const PlainMentionLink = ({
+  name,
+  mentionKey,
+  isOwn = false,
+}: {
+  name: string;
+  mentionKey: string;
+  isOwn?: boolean;
+}) => {
   const navigate = useNavigate();
   const handleClick = async (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
+    const cleanName = name.trim();
+    if (!cleanName) return;
     try {
-      const { data } = await api.get(`/mention?q=${encodeURIComponent(name)}`);
+      const { data } = await api.get(`/mention?q=${encodeURIComponent(cleanName)}`);
       const users: { _id: string; name: string }[] = data.users || [];
-      const exact = users.find(u => u.name.toLowerCase() === name.toLowerCase());
+      const exact = users.find(u => u.name.toLowerCase() === cleanName.toLowerCase());
       const target = exact ?? users[0];
       if (target) navigate(`/dashboard/alumni/${target._id}`);
     } catch { /* ignore */ }
@@ -48,7 +64,11 @@ const PlainMentionLink = ({ name, mentionKey }: { name: string; mentionKey: stri
   return (
     <span
       key={mentionKey}
-      className="text-blue-400 font-medium cursor-pointer hover:text-blue-300 hover:underline"
+      className={
+        isOwn
+          ? "inline-flex items-center font-bold text-white cursor-pointer hover:underline"
+          : "inline-flex items-center font-medium text-primary cursor-pointer hover:underline"
+      }
       onClick={handleClick}
     >
       @{name}
@@ -59,7 +79,8 @@ const PlainMentionLink = ({ name, mentionKey }: { name: string; mentionKey: stri
 const parsePlainMentions = (
   text: string,
   lineIndex: number,
-  partIndex: number
+  partIndex: number,
+  isOwn = false
 ): (string | JSX.Element)[] => {
   const segments = text.split(PLAIN_MENTION_PATTERN);
   const result: (string | JSX.Element)[] = [];
@@ -71,6 +92,7 @@ const parsePlainMentions = (
           key={`pmention-${lineIndex}-${partIndex}-${i}`}
           mentionKey={`pmention-${lineIndex}-${partIndex}-${i}`}
           name={segments[i + 1]}
+          isOwn={isOwn}
         />
       );
     }
@@ -80,13 +102,13 @@ const parsePlainMentions = (
 
 // ── Simple mention renderer (no markdown, just mentions) ─────────────────────
 // Handles both legacy @[Name](id) tokens and plain @Name mentions.
-export const renderMentions = (text: string): (string | JSX.Element)[] => {
+export const renderMentions = (text: string, isOwn = false): (string | JSX.Element)[] => {
   if (!text) return [];
   // First resolve legacy tokens, then plain @mentions on leftover strings
-  const afterLegacy = parseMentionSegment(text, 0, 0);
+  const afterLegacy = parseMentionSegment(text, 0, 0, isOwn);
   return afterLegacy.flatMap((part, i) => {
     if (typeof part !== 'string') return [part];
-    return parsePlainMentions(part, 0, i);
+    return parsePlainMentions(part, 0, i, isOwn);
   });
 };
 
@@ -181,7 +203,7 @@ export const parseFormattedText = (text: string) => {
               href={url}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-blue-400 hover:text-blue-300 underline"
+              className="text-primary hover:underline"
             >
               {segments[i + 1]}
             </a>

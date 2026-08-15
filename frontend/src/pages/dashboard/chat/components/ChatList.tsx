@@ -184,7 +184,9 @@ export const ChatList = ({ onSelectConversation, selectedConversation, chats = [
                           ) : (
                             <>
                               {chat.lastMessage?.sender === user?.id && <span className="opacity-70 mr-1">You:</span>}
-                              {chat.lastMessage?.content || "No messages"}
+                              {chat.lastMessage?.content
+                                ? chat.lastMessage.content.replace(/@\[([^\]]+)\]\([^)]+\)/g, "@$1")
+                                : "No messages"}
                             </>
                           )}
                         </p>

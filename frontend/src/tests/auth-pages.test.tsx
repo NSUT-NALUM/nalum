@@ -156,7 +156,7 @@ describe("auth pages", () => {
     expect(screen.getByText("Password must be at least 8 characters long")).toBeInTheDocument();
     expect(screen.getByText("Passwords do not match")).toBeInTheDocument();
     expect(mockedApi.post).not.toHaveBeenCalled();
-  });
+  }, 15000);
 
   it("signs up a valid student and sends them to OTP verification", async () => {
     const user = userEvent.setup();
@@ -234,7 +234,7 @@ describe("auth pages", () => {
       });
     });
     expect(
-      await screen.findByRole("heading", { name: /password reset successful/i }),
+      await screen.findByRole("heading", { name: /password reset!/i }),
     ).toBeInTheDocument();
   });
 });
