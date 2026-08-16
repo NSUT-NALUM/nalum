@@ -21,12 +21,13 @@ import { useConversations } from "@/hooks/useConversations";
 import api from "@/lib/api";
 import { apiErrorMessage, cn } from "@/lib/utils";
 
-type Bucket = "connected" | "received" | "sent";
+type Bucket = "connected" | "received" | "sent" | "blocked";
 
 const FILTERS: { value: Bucket; label: string }[] = [
   { value: "connected", label: "Connected" },
   { value: "received", label: "Requests" },
   { value: "sent", label: "Sent" },
+  { value: "blocked", label: "Blocked" },
 ];
 
 interface ConnectionRow {
@@ -76,6 +77,15 @@ export const MyConnectionsPanel = () => {
     enabled: !!user?.id,
     queryFn: async () => {
       const { data } = await api.get("/chat/connections/sent");
+      return data.data ?? [];
+    },
+  });
+
+  const { data: blocked = [], isLoading: loadingBlocked } = useQuery({
+    queryKey: ["connections", user?.id, "blocked"],
+    enabled: !!user?.id,
+    queryFn: async () => {
+      const { data } = await api.get("/chat/connections?status=blocked");
       return data.data ?? [];
     },
   });
@@ -131,6 +141,19 @@ export const MyConnectionsPanel = () => {
     }
   };
 
+  const handleUnblock = async (targetUserId: string) => {
+    setActioningId(targetUserId);
+    try {
+      await api.post("/chat/connections/unblock-user", { targetUserId });
+      toast.success("User unblocked");
+      invalidateAll();
+    } catch (error) {
+      toast.error(apiErrorMessage(error, "Failed to unblock user"));
+    } finally {
+      setActioningId(null);
+    }
+  };
+
   const rows: ConnectionRow[] = useMemo(() => {
     const source =
       bucket === "connected"
@@ -140,7 +163,14 @@ export const MyConnectionsPanel = () => {
           }))
         : bucket === "received"
           ? received.map((c: any) => ({ ...c, otherUser: c.requester }))
-          : sent.map((c: any) => ({ ...c, otherUser: c.recipient }));
+          : bucket === "sent"
+            ? sent.map((c: any) => ({ ...c, otherUser: c.recipient }))
+            : blocked
+                .filter((c: any) => c.blockedBy === user?.id)
+                .map((c: any) => ({
+                  ...c,
+                  otherUser: c.requester?._id === user?.id ? c.recipient : c.requester,
+                }));
 
     const term = search.trim().toLowerCase();
     const filtered = term
@@ -150,19 +180,22 @@ export const MyConnectionsPanel = () => {
       : source;
 
     return filtered.filter((row: any) => row.otherUser?._id);
-  }, [bucket, connected, received, sent, search, user?.id]);
+  }, [bucket, connected, received, sent, blocked, search, user?.id]);
 
   const isLoading =
     bucket === "connected"
       ? loadingConnected
       : bucket === "received"
         ? loadingReceived
-        : loadingSent;
+        : bucket === "sent"
+          ? loadingSent
+          : loadingBlocked;
 
   const counts: Record<Bucket, number> = {
     connected: connected.length,
     received: received.length,
     sent: sent.length,
+    blocked: blocked.filter((c: any) => c.blockedBy === user?.id).length,
   };
 
   return (
@@ -226,7 +259,9 @@ export const MyConnectionsPanel = () => {
                 ? "No connections yet"
                 : bucket === "received"
                   ? "No pending requests"
-                  : "No sent requests"
+                  : bucket === "sent"
+                    ? "No sent requests"
+                    : "No blocked users"
           }
           description={
             search
@@ -235,7 +270,9 @@ export const MyConnectionsPanel = () => {
                 ? "Browse the directory and start connecting with fellow alumni."
                 : bucket === "received"
                   ? "You're all caught up — new requests will show up here."
-                  : "Requests you send will show up here until they're accepted."
+                  : bucket === "sent"
+                    ? "Requests you send will show up here until they're accepted."
+                    : "Users you block will appear here."
           }
         />
       ) : (
@@ -326,6 +363,18 @@ export const MyConnectionsPanel = () => {
                     className="rounded-full border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive"
                   >
                     Cancel
+                  </Button>
+                )}
+
+                {bucket === "blocked" && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={actioningId === row.otherUser._id}
+                    onClick={() => handleUnblock(row.otherUser._id)}
+                    className="rounded-full border-border text-foreground hover:bg-muted"
+                  >
+                    Unblock
                   </Button>
                 )}
               </div>
