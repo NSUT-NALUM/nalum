@@ -20,7 +20,7 @@ router.get("/", protect, async (req, res) => {
     };
 
     if (q && q.length > 0) {
-      filter.name = { $regex: q, $options: "i" };
+      filter.name = { $regex: q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), $options: "i" };
     }
 
     const users = await User.find(filter)
