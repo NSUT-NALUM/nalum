@@ -234,7 +234,7 @@ describe("auth pages", () => {
       });
     });
     expect(
-      await screen.findByRole("heading", {name: /password reset!/i}),
+      await screen.findByRole("heading", { name: /password reset successful/i }),
     ).toBeInTheDocument();
   });
 });
