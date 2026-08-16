@@ -43,6 +43,7 @@ const ViewPost = () => {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const clearedNotificationPostIdRef = useRef<string | null>(null);
+  const [showAdminQueryMessage, setShowAdminQueryMessage] = useState(false);
 
   useEffect(() => {
     fetchPost();
@@ -148,6 +149,13 @@ const ViewPost = () => {
   };
 
   const isOwner = post?.userId._id === user?.id;
+  const isAdminPost = post?.userId.role === "admin";
+  const handleAuthorClick = (e: React.MouseEvent) => {
+    if (isAdminPost) {
+      e.preventDefault();
+      setShowAdminQueryMessage((prev) => !prev);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -209,7 +217,11 @@ const ViewPost = () => {
           <CardContent className="p-4 sm:p-6 md:p-8">
             {/* Post Header */}
             <div className="flex items-start gap-3 sm:gap-4 mb-4 sm:mb-6 pb-4 sm:pb-6 border-b border-white/10">
-              <Link to={`/dashboard/alumni/${post.userId._id}`} className="flex-shrink-0">
+              <Link
+                to={`/dashboard/alumni/${post.userId._id}`}
+                onClick={handleAuthorClick}
+                className="flex-shrink-0"
+              >
                 <UserAvatar
                   src={post.userId.profile_picture}
                   name={post.userId.name}
@@ -219,7 +231,8 @@ const ViewPost = () => {
               <div className="flex-1 min-w-0">
                 <Link
                   to={`/dashboard/alumni/${post.userId._id}`}
-                  className="hover:underline touch-manipulation"
+                  onClick={handleAuthorClick}
+                  className={`hover:underline touch-manipulation ${isAdminPost ? "text-yellow-400" : ""}`}
                 >
                   <h3 className="font-semibold text-white text-base sm:text-lg line-clamp-2">
                     {post.userId.name}
@@ -258,6 +271,12 @@ const ViewPost = () => {
                 </Button>
               )}
             </div>
+
+            {isAdminPost && showAdminQueryMessage && (
+              <div className="mb-4 sm:mb-6 rounded-lg border border-yellow-400/50 bg-yellow-400/10 px-4 py-3 text-sm text-yellow-200 shadow-md">
+                Got any queries for the admin? Use the Queries page on the side bar.
+              </div>
+            )}
 
             {/* Post Content */}
             <div className="mb-4 sm:mb-6">
