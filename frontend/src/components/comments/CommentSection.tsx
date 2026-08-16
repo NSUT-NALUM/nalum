@@ -363,6 +363,9 @@ export default function CommentSection({ postId }: CommentSectionProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [commentValue, setCommentValue] = useState("");
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
 
 
   const loadComments = async () => {
@@ -370,12 +373,34 @@ export default function CommentSection({ postId }: CommentSectionProps) {
       setIsLoading(true);
       const data = await fetchPostComments(postId);
       setComments(normalizeCommentThread(data.comments || []));
+      setPage(1);
+      setTotalPages(data.pagination?.pages || 1);
     } catch (error) {
       console.error("Failed to load comments:", error);
       toast.error("Failed to load comments");
       setComments([]);
+      setTotalPages(1);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Root comments come back newest-first, so the next page is strictly older
+  // — appending it to the end of the list is what "load more" means here.
+  const loadMoreComments = async () => {
+    if (page >= totalPages || isLoadingMore) return;
+    const nextPage = page + 1;
+    try {
+      setIsLoadingMore(true);
+      const data = await fetchPostComments(postId, nextPage);
+      setComments((prev) => [...prev, ...normalizeCommentThread(data.comments || [])]);
+      setPage(nextPage);
+      setTotalPages(data.pagination?.pages || totalPages);
+    } catch (error) {
+      console.error("Failed to load more comments:", error);
+      toast.error("Failed to load more comments");
+    } finally {
+      setIsLoadingMore(false);
     }
   };
 
@@ -444,6 +469,20 @@ export default function CommentSection({ postId }: CommentSectionProps) {
               onChanged={loadComments}
             />
           ))}
+
+          {page < totalPages && (
+            <div className="flex justify-center pt-2">
+              <Button
+                variant="outline"
+                onClick={loadMoreComments}
+                disabled={isLoadingMore}
+                className="gap-2 rounded-full border-border px-5 text-label-md text-muted-foreground hover:border-primary hover:text-primary"
+              >
+                {isLoadingMore && <Loader2 className="h-4 w-4 animate-spin" />}
+                Load more comments
+              </Button>
+            </div>
+          )}
         </div>
       )}
     </section>
