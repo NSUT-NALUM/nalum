@@ -7,8 +7,7 @@ const MENTION_PATTERN = /@\[([^\]]+)\]\(([^)]+)\)/g;
 export const parseMentionSegment = (
   text: string,
   lineIndex: number,
-  partIndex: number,
-  isOwn = false
+  partIndex: number
 ): (string | JSX.Element)[] => {
   const segments = text.split(MENTION_PATTERN);
   const result: (string | JSX.Element)[] = [];
@@ -19,11 +18,7 @@ export const parseMentionSegment = (
         <Link
           key={`mention-${lineIndex}-${partIndex}-${i}`}
           to={`/dashboard/alumni/${segments[i + 2]}`}
-          className={
-            isOwn
-              ? "inline-flex items-center font-bold text-white hover:underline"
-              : "inline-flex items-center font-medium text-primary hover:underline"
-          }
+          className="inline-flex items-center text-primary hover:underline font-medium"
           onClick={(e) => e.stopPropagation()}
         >
           @{segments[i + 1]}
@@ -41,11 +36,9 @@ const PLAIN_MENTION_PATTERN =
 const PlainMentionLink = ({
   name,
   mentionKey,
-  isOwn = false,
 }: {
   name: string;
   mentionKey: string;
-  isOwn?: boolean;
 }) => {
   const navigate = useNavigate();
   const handleClick = async (e: React.MouseEvent) => {
@@ -64,11 +57,7 @@ const PlainMentionLink = ({
   return (
     <span
       key={mentionKey}
-      className={
-        isOwn
-          ? "inline-flex items-center font-bold text-white cursor-pointer hover:underline"
-          : "inline-flex items-center font-medium text-primary cursor-pointer hover:underline"
-      }
+      className="inline-flex items-center text-primary hover:underline font-medium cursor-pointer"
       onClick={handleClick}
     >
       @{name}
@@ -79,8 +68,7 @@ const PlainMentionLink = ({
 const parsePlainMentions = (
   text: string,
   lineIndex: number,
-  partIndex: number,
-  isOwn = false
+  partIndex: number
 ): (string | JSX.Element)[] => {
   const segments = text.split(PLAIN_MENTION_PATTERN);
   const result: (string | JSX.Element)[] = [];
@@ -92,7 +80,6 @@ const parsePlainMentions = (
           key={`pmention-${lineIndex}-${partIndex}-${i}`}
           mentionKey={`pmention-${lineIndex}-${partIndex}-${i}`}
           name={segments[i + 1]}
-          isOwn={isOwn}
         />
       );
     }
@@ -102,13 +89,13 @@ const parsePlainMentions = (
 
 // ── Simple mention renderer (no markdown, just mentions) ─────────────────────
 // Handles both legacy @[Name](id) tokens and plain @Name mentions.
-export const renderMentions = (text: string, isOwn = false): (string | JSX.Element)[] => {
+export const renderMentions = (text: string): (string | JSX.Element)[] => {
   if (!text) return [];
   // First resolve legacy tokens, then plain @mentions on leftover strings
-  const afterLegacy = parseMentionSegment(text, 0, 0, isOwn);
+  const afterLegacy = parseMentionSegment(text, 0, 0);
   return afterLegacy.flatMap((part, i) => {
     if (typeof part !== 'string') return [part];
-    return parsePlainMentions(part, 0, i, isOwn);
+    return parsePlainMentions(part, 0, i);
   });
 };
 
