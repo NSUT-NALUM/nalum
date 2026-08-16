@@ -9,7 +9,7 @@ import UserAvatar from "@/components/UserAvatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import api from "@/lib/api";
 import { rowEntrance } from "@/lib/motion";
-import { PostRecord, likeIds, toPlainText } from "@/lib/posts";
+import { PostRecord, getPostImageUrl, likeIds, toPlainText } from "@/lib/posts";
 
 const LIMIT = 5;
 
@@ -27,13 +27,14 @@ const RowSkeleton = () => (
   </div>
 );
 
-// The home page's window onto the feed: the newest posts, bounded, with the
-// full searchable listing one click away at /dashboard/posts. Deliberately
-// read-only — liking and commenting happen on the post itself.
 export const RecentPostsCard = () => {
   const navigate = useNavigate();
 
-  const { data: posts = [], isLoading, isError } = useQuery({
+  const {
+    data: posts = [],
+    isLoading,
+    isError,
+  } = useQuery({
     queryKey: ["posts", "recent", LIMIT],
     queryFn: async (): Promise<PostRecord[]> => {
       const { data } = await api.get(`/posts?page=1&limit=${LIMIT}`);
@@ -77,6 +78,9 @@ export const RecentPostsCard = () => {
         <ul className="divide-y divide-border">
           {posts.map((post, index) => {
             const excerpt = toPlainText(post.content);
+            const coverImage =
+              post.images && post.images.length > 0 ? post.images[0] : null;
+
             return (
               <motion.li key={post._id} {...rowEntrance(index)}>
                 <article
@@ -107,15 +111,28 @@ export const RecentPostsCard = () => {
                       </p>
                     </div>
                   </div>
+
                   <h3 className="mt-2.5 text-headline-md text-foreground transition-colors group-hover:text-primary">
                     {post.title}
                   </h3>
-                  
+
                   {excerpt && (
                     <p className="mt-1 whitespace-pre-line text-body-md text-muted-foreground">
                       {excerpt}
                     </p>
                   )}
+
+                  {/* Render Cover Image if present */}
+                  {coverImage && (
+                    <div className="mt-3 overflow-hidden rounded-lg border border-border">
+                      <img
+                        src={getPostImageUrl(coverImage)}
+                        alt={post.title}
+                        className="max-h-64 w-full object-cover"
+                      />
+                    </div>
+                  )}
+
                   <div className="mt-2.5 flex items-center gap-5 text-muted-foreground">
                     <span className="flex items-center gap-1.5 text-label-sm">
                       <ThumbsUp className="h-4 w-4" />
