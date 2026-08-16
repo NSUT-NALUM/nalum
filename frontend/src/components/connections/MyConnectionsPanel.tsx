@@ -144,7 +144,7 @@ export const MyConnectionsPanel = () => {
   const handleUnblock = async (targetUserId: string) => {
     setActioningId(targetUserId);
     try {
-      await api.post("/chat/connections/unblock-user", { targetUserId });
+      await api.post("/chat/connections/unblock-user", { userId: targetUserId });
       toast.success("User unblocked");
       invalidateAll();
     } catch (error) {
