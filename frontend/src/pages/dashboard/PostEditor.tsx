@@ -51,6 +51,7 @@ export default function PostEditor({ mode }: PostEditorProps) {
   const { user } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const editorRef = useRef<MarkdownEditorHandle>(null);
+  const resolverRef = useRef<(text: string) => string>((t) => t);
 
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
@@ -152,7 +153,7 @@ export default function PostEditor({ mode }: PostEditorProps) {
     try {
       const formData = new FormData();
       formData.append("title", title.trim());
-      formData.append("content", content);
+      formData.append("content", resolverRef.current(content));
       formData.append("tags", JSON.stringify(tags));
       files.forEach((file) => formData.append("images", file));
 
@@ -309,6 +310,7 @@ export default function PostEditor({ mode }: PostEditorProps) {
                   ref={editorRef}
                   value={content}
                   attachments={attachmentUrls}
+                  onResolverReady={(fn) => { resolverRef.current = fn; }}
                   onChange={(next) => {
                     setContent(next);
                     if (errors.content)

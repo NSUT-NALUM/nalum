@@ -34,8 +34,9 @@ function extractMentionNames(text) {
   // Remove legacy tokens so remaining @words aren't re-scanned for them
   const stripped = text.replace(legacyRe, "");
 
-  // Plain @word
-  const plainRe = /@(\w+)/g;
+  // Plain @Name (supports single and multi-word names)
+  const plainRe =
+    /@([A-Za-z0-9_]+(?:[-.'][A-Za-z0-9_]+)*(?:\s+[A-Z][a-zA-Z0-9_]*(?:[-.'][a-zA-Z0-9_]+)*)*)(?=[.,!?;:]*(?:\s|$))/g;
   while ((m = plainRe.exec(stripped)) !== null) {
     names.add(m[1].trim().toLowerCase());
   }

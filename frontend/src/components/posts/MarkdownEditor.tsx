@@ -40,6 +40,8 @@ interface MarkdownEditorProps {
   minHeight?: string;
   /** Resolved URLs for attachment:N references, so preview matches the post. */
   attachments?: string[];
+  /** Called once on mount with a resolver that replaces @Name → @[Name](userId) */
+  onResolverReady?: (resolver: (text: string) => string) => void;
 }
 
 export interface MarkdownEditorHandle {
@@ -59,11 +61,13 @@ const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorProps>(
       placeholder = "Write your post content here… Markdown is supported.",
       minHeight = "320px",
       attachments = [],
+      onResolverReady,
     },
     ref
   ) => {
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const wrapperRef = useRef<HTMLDivElement>(null);
+    const resolverRef = useRef<(text: string) => string>((t) => t);
     const [preview, setPreview] = useState(false);
     const [insertMode, setInsertMode] = useState<InsertMode | null>(null);
     const [insertAnchor, setInsertAnchor] = useState({ top: 0, left: 0 });
@@ -236,7 +240,10 @@ const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorProps>(
           {preview ? (
             <div className="px-4 py-4" style={{ minHeight }}>
               {value.trim() ? (
-                <PostMarkdown content={value} attachments={attachments} />
+                <PostMarkdown
+                  content={resolverRef.current(value)}
+                  attachments={attachments}
+                />
               ) : (
                 <p className="text-body-md text-muted-foreground">
                   Nothing to preview yet.
@@ -248,6 +255,11 @@ const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorProps>(
               ref={textareaRef}
               value={value}
               onChange={onChange}
+              placement="bottom"
+              onResolverReady={(fn) => {
+                resolverRef.current = fn;
+                onResolverReady?.(fn);
+              }}
               placeholder={`${placeholder} Type @ to mention someone.`}
               className={cn(
                 "rounded-none border-0 bg-card px-4 py-4 text-body-md leading-relaxed",

@@ -9,9 +9,9 @@ const Profile = require('../../models/user/profile.model');
 const { alumniData, studentData } = require('./users');
 
 const sampleLocations = [
-  { city: 'delhi', country: 'india', lat: 28.6139, lng: 77.209 },
+  { city: 'new delhi', country: 'india', lat: 28.6139, lng: 77.209 },
   { city: 'mumbai', country: 'india', lat: 19.076, lng: 72.8777 },
-  { city: 'bangalore', country: 'india', lat: 12.9716, lng: 77.5946 },
+  { city: 'bengaluru', country: 'india', lat: 12.9716, lng: 77.5946 },
   { city: 'pune', country: 'india', lat: 18.5204, lng: 73.8567 },
   { city: 'hyderabad', country: 'india', lat: 17.385, lng: 78.4867 },
   { city: 'chennai', country: 'india', lat: 13.0827, lng: 80.2707 },
@@ -19,6 +19,8 @@ const sampleLocations = [
   { city: 'ahmedabad', country: 'india', lat: 23.0225, lng: 72.5714 },
   { city: 'new york', country: 'united states', lat: 40.7128, lng: -74.006 },
   { city: 'london', country: 'united kingdom', lat: 51.5074, lng: -0.1278 },
+  { city: 'singapore', country: 'singapore', lat: 1.3521, lng: 103.8198 },
+  { city: 'dubai', country: 'united arab emirates', lat: 25.2048, lng: 55.2708 },
 ];
 
 async function seedProfiles() {
