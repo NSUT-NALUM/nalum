@@ -100,7 +100,9 @@ export const MyPostRow = ({ post, onDelete, index = 0 }: MyPostRowProps) => {
 
       <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div className="min-w-0 flex-1">
-          <h3 className="text-headline-md text-foreground">{post.title}</h3>
+          <h3 className="line-clamp-2 break-words text-headline-md text-foreground">
+            {post.title}
+          </h3>
           {excerpt && (
             <p className="mt-1.5 line-clamp-2 text-body-md text-muted-foreground">
               {excerpt}

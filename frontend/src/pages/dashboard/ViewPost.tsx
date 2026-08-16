@@ -255,18 +255,20 @@ export default function ViewPost() {
           aria-label="Breadcrumb"
           className="mb-4 flex items-center gap-1 text-body-sm text-muted-foreground"
         >
-          <Link to="/dashboard/posts" className="hover:text-primary">
+          <Link to="/dashboard/posts" className="shrink-0 hover:text-primary">
             Posts
           </Link>
-          <ChevronRight className="h-4 w-4" />
-          <span className="line-clamp-1 text-foreground">{post.title}</span>
+          <ChevronRight className="h-4 w-4 shrink-0" />
+          <span className="min-w-0 flex-1 line-clamp-1 break-words text-foreground">
+            {post.title}
+          </span>
         </nav>
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           {/* Article */}
           <article className="space-y-6 lg:col-span-2">
             <div className="rounded-card border border-border bg-card p-6 shadow-card md:p-8">
-              <h1 className="text-headline-lg-mobile text-foreground md:text-headline-xl">
+              <h1 className="break-words text-headline-lg-mobile text-foreground md:text-headline-xl">
                 {post.title}
               </h1>
 
@@ -442,10 +444,10 @@ export default function ViewPost() {
                     className="mx-auto"
                   />
                 </Link>
-                <p className="mt-3 text-headline-md text-foreground">
+                <p className="mt-3 break-words text-headline-md text-foreground">
                   {author.name}
                 </p>
-                <p className="text-body-sm text-muted-foreground">
+                <p className="break-words text-body-sm text-muted-foreground">
                   {authorHeadline(author)}
                 </p>
                 {author.batch && (
@@ -454,7 +456,7 @@ export default function ViewPost() {
                   </p>
                 )}
                 {author.bio && (
-                  <p className="mt-3 text-body-sm text-muted-foreground">
+                  <p className="mt-3 break-words text-body-sm text-muted-foreground">
                     {author.bio}
                   </p>
                 )}
@@ -478,7 +480,7 @@ export default function ViewPost() {
                         to={`/dashboard/posts/${item._id}`}
                         className="group block"
                       >
-                        <p className="text-label-md text-foreground group-hover:text-primary">
+                        <p className="line-clamp-1 break-words text-label-md text-foreground group-hover:text-primary">
                           {item.title}
                         </p>
                         <p className="mt-1 line-clamp-2 text-body-sm text-muted-foreground">

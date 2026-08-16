@@ -159,7 +159,7 @@ export const ChatList = ({ onSelectConversation, selectedConversation, chats = [
 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
-                        <p className="font-medium text-sm truncate text-foreground">
+                        <p className="min-w-0 flex-1 truncate font-medium text-sm text-foreground">
                           {chat.itemType === 'community' ? chat.name : (chat.otherParticipant?.name || "Unknown User")}
                         </p>
                         {(chat.lastMessage?.createdAt || chat.lastMessage?.timestamp) && (
@@ -174,7 +174,7 @@ export const ChatList = ({ onSelectConversation, selectedConversation, chats = [
 
                       <div className="flex items-center justify-between gap-2 mt-0.5">
                         <p className={cn(
-                          "text-xs truncate max-w-[70%]",
+                          "min-w-0 flex-1 truncate text-xs",
                           chat.unreadCount > 0 ? "text-foreground font-medium" : "text-muted-foreground"
                         )}>
                           {chat.isConnectionOnly ? (
