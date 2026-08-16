@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import api from "@/lib/api";
@@ -60,25 +60,50 @@ const Signup = () => {
     }
   };
 
-  const handleEmailBlur = async () => {
-  const email = formData.email;
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!email || !emailRegex.test(email)) return;
-  if (formData.role === "student" && !email.endsWith("@nsut.ac.in")) return;
+  const emailCheckTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  try {
-    const response = await api.post("/auth/check-email", { email });
-    if (response.data.exists) {
-      toast.error("Email already exists", {
-        description: "This email is already registered. Please sign in instead.",
-        style: { background: "#800000", color: "white", border: "2px solid #FFD700", fontSize: "16px" },
-        classNames: { title: "text-xl font-bold text-white", description: "text-base text-white" },
-      });
+  useEffect(() => {
+    return () => {
+      if (emailCheckTimeout.current) clearTimeout(emailCheckTimeout.current);
+    };
+  }, []);
+
+  const handleEmailBlur = () => {
+    const email = formData.email.trim().toLowerCase();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email || !emailRegex.test(email)) return;
+    if (formData.role === "student" && !email.endsWith("@nsut.ac.in")) return;
+
+    if (emailCheckTimeout.current) clearTimeout(emailCheckTimeout.current);
+    emailCheckTimeout.current = setTimeout(async () => {
+      try {
+        const response = await api.post("/auth/check-email", { email });
+        if (response.data.exists) {
+          if (response.data.email_verified === false) {
+            toast.error("Email already registered", {
+              description:
+                "This email is registered but not verified yet. Continue signing up to resend your verification code.",
+            });
+          } else {
+            toast.error("Email already exists", {
+              description: "This email is already registered. Please sign in instead.",
+              style: { background: "#800000", color: "white", border: "2px solid #FFD700", fontSize: "16px" },
+              classNames: { title: "text-xl font-bold text-white", description: "text-base text-white" },
+            });
+          }
+        }
+      } catch (error) {
+        console.error("Email check failed:", error);
+      }
+    }, 500);
+  };
+
+  const cancelEmailCheck = () => {
+    if (emailCheckTimeout.current) {
+      clearTimeout(emailCheckTimeout.current);
+      emailCheckTimeout.current = null;
     }
-  } catch (error) {
-    console.error("Email check failed:", error);
-  }
-};
+  };
 
   const handleConfirmPasswordChange = (value: string) => {
     setConfirmPassword(value);
@@ -269,6 +294,7 @@ const Signup = () => {
                     value={formData.email}
                     onChange={(e) => handleChange("email", e.target.value)}
                     onBlur={handleEmailBlur}
+                    onFocus={cancelEmailCheck}
                     className={`pl-10 h-12 text-base ${errors.email ? "border-red-500" : ""}`}
                   />
                 </div>

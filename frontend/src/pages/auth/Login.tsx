@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,24 +46,50 @@ const Login = () => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleEmailBlur = async () => {
-  const email = formData.email;
-  if (!email || !/\S+@\S+\.\S+/.test(email)) return;
-  if (formData.role === "student" && !email.endsWith("@nsut.ac.in")) return;
+  const emailCheckTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  try {
-    const response = await apiClient.post("/auth/check-email", { email });
-    if (!response.data.exists) {
-      toast.error("Email doesn't exist", {
-        description: "No account found with this email. Please sign up.",
-        style: { background: "#800000", color: "white", border: "2px solid #FFD700", fontSize: "16px" },
-        classNames: { title: "text-xl font-bold text-white", description: "text-base text-white" },
-      });
+  useEffect(() => {
+    return () => {
+      if (emailCheckTimeout.current) clearTimeout(emailCheckTimeout.current);
+    };
+  }, []);
+
+  const handleEmailBlur = () => {
+    const email = formData.email.trim().toLowerCase();
+    if (!email || !/\S+@\S+\.\S+/.test(email)) return;
+    if (formData.role === "student" && !email.endsWith("@nsut.ac.in")) return;
+
+    if (emailCheckTimeout.current) clearTimeout(emailCheckTimeout.current);
+    emailCheckTimeout.current = setTimeout(async () => {
+      try {
+        const response = await apiClient.post("/auth/check-email", { email });
+        if (!response.data.exists) {
+          toast.error("Email doesn't exist", {
+            description: "No account found with this email. Please sign up.",
+            style: {
+              background: "#800000",
+              color: "white",
+              border: "2px solid #FFD700",
+              fontSize: "16px",
+            },
+            classNames: {
+              title: "text-xl font-bold text-white",
+              description: "text-base text-white",
+            },
+          });
+        }
+      } catch (error) {
+        console.error("Email check failed:", error);
+      }
+    }, 500);
+  };
+
+  const cancelEmailCheck = () => {
+    if (emailCheckTimeout.current) {
+      clearTimeout(emailCheckTimeout.current);
+      emailCheckTimeout.current = null;
     }
-  } catch (error) {
-    console.error("Email check failed:", error);
-  }
-};
+  };
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -351,6 +377,7 @@ const Login = () => {
                     value={formData.email}
                     onChange={(e) => handleInputChange("email", e.target.value)}
                     onBlur={handleEmailBlur}
+                    onFocus={cancelEmailCheck}
                     className={`pl-10 h-12 text-base ${errors.email ? "border-red-500" : ""}`}
                   />
                 </div>

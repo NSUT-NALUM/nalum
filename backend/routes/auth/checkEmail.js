@@ -11,7 +11,7 @@ const validateEmail = (email) => {
 // Tells the client whether an account already exists for this email,
 // so the UI can nudge the user toward sign in or sign up.
 router.post("/", async (req, res) => {
-  const { email } = req.body;
+  const email = req.body.email?.trim().toLowerCase();
 
   if (!email) {
     return res.status(400).json({ error: true, code: 400, message: "Email is required" });
@@ -28,6 +28,7 @@ router.post("/", async (req, res) => {
   }
 
   const exists = !!result.data;
+  const email_verified = exists ? result.data.email_verified : null;
 
   return res.status(200).json({
     error: false,

@@ -95,25 +95,27 @@ describe("auth pages", () => {
 
   it("logs in and redirects completed profiles to the dashboard", async () => {
     const user = userEvent.setup();
-    (mockedApi.post as Mock).mockResolvedValueOnce({
-      data: { exists: true },
-    });
-    (mockedApi.post as Mock).mockResolvedValueOnce({
-      data: {
+    (mockedApi.post as Mock).mockImplementation((url: string) => {
+      if (url === "/auth/check-email") {
+        return Promise.resolve({ data: { exists: true } });
+      }
+      return Promise.resolve({
         data: {
-          access_token: "access-token",
-          email: "student@nsut.ac.in",
-          user: {
-            id: "user-1",
-            name: "Student User",
+          data: {
+            access_token: "access-token",
             email: "student@nsut.ac.in",
-            role: "student",
-            email_verified: true,
-            profileCompleted: true,
-            verified_alumni: true,
+            user: {
+              id: "user-1",
+              name: "Student User",
+              email: "student@nsut.ac.in",
+              role: "student",
+              email_verified: true,
+              profileCompleted: true,
+              verified_alumni: true,
+            },
           },
         },
-      },
+      });
     });
     (mockedApi.get as Mock).mockResolvedValueOnce({
       data: { profileCompleted: true },
@@ -163,14 +165,16 @@ describe("auth pages", () => {
 
   it("signs up a valid student and sends them to OTP verification", async () => {
     const user = userEvent.setup();
-    (mockedApi.post as Mock).mockResolvedValueOnce({
-      data: { exists: false },
-    });
-    (mockedApi.post as Mock).mockResolvedValueOnce({
-      data: {
-        err: false,
-        data: { email: "new@nsut.ac.in" },
-      },
+    (mockedApi.post as Mock).mockImplementation((url: string) => {
+      if (url === "/auth/check-email") {
+        return Promise.resolve({ data: { exists: false } });
+      }
+      return Promise.resolve({
+        data: {
+          err: false,
+          data: { email: "new@nsut.ac.in" },
+        },
+      });
     });
 
     renderWithRouter(<Signup />, "/signup");
