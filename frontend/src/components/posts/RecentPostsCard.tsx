@@ -107,17 +107,15 @@ export const RecentPostsCard = () => {
                       </p>
                     </div>
                   </div>
-
                   <h3 className="mt-2.5 text-headline-md text-foreground transition-colors group-hover:text-primary">
                     {post.title}
                   </h3>
-
+                  
                   {excerpt && (
-                    <p className="mt-1 line-clamp-2 text-body-md text-muted-foreground">
+                    <p className="mt-1 whitespace-pre-line text-body-md text-muted-foreground">
                       {excerpt}
                     </p>
                   )}
-
                   <div className="mt-2.5 flex items-center gap-5 text-muted-foreground">
                     <span className="flex items-center gap-1.5 text-label-sm">
                       <ThumbsUp className="h-4 w-4" />
