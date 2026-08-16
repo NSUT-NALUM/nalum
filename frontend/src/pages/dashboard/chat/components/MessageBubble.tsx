@@ -41,15 +41,15 @@ export const MessageBubble = ({ message, isOwn, onDelete, isStacked, isLastInSta
 
   return (
     <div className={`flex ${isOwn ? "justify-end" : "justify-start"} group animate-in fade-in slide-in-from-bottom-2 duration-300 ${isStacked ? "mt-0.5" : "mt-4"} pr-1`}>
-      <div className={`relative max-w-[85%] sm:max-w-[75%] ${isOwn ? "items-end" : "items-start"} flex flex-col gap-1`}>
+      <div className={`relative max-w-[85%] sm:max-w-[75%] min-w-0 ${isOwn ? "items-end" : "items-start"} flex flex-col gap-1`}>
         {/* Message Content Bubble */}
         <div
-          className={`rounded-2xl px-4 py-2.5 shadow-sm border text-sm ${isOwn
-            ? "bg-primary text-primary-foreground border-primary"
+          className={`max-w-full overflow-hidden rounded-2xl px-4 py-2.5 shadow-sm border text-sm ${isOwn
+            ? "bg-card text-foreground border-border"
             : "bg-card text-foreground border-border"
             } ${isStacked ? (isOwn ? "rounded-tr-md" : "rounded-tl-md") : ""} ${!isLastInStack ? (isOwn ? "rounded-br-md" : "rounded-bl-md") : (isOwn ? "rounded-br-none" : "rounded-bl-none")}`}
         >
-          <p className="whitespace-pre-wrap break-words leading-relaxed">{renderMentions(message.content)}</p>
+          <p className="whitespace-pre-wrap break-all leading-relaxed">{renderMentions(message.content)}</p>
         </div>
 
         {/* Delete button for stacked messages (absolute to avoid layout shift) */}

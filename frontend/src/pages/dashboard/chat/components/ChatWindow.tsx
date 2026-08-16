@@ -399,7 +399,7 @@ export const ChatWindow = ({ conversation, onBack }: ChatWindowProps) => {
 
 
   return (
-    <div className="flex-1 h-full flex flex-col min-h-0 bg-transparent relative">
+    <div className="flex-1 h-full flex flex-col min-h-0 min-w-0 bg-transparent relative">
       {/* Header */}
       <div className="p-3 border-b border-border flex items-center gap-3 bg-card z-10 shrink-0">
         <Button variant="ghost" size="icon" onClick={onBack} className="md:hidden text-muted-foreground hover:text-foreground hover:bg-muted">
@@ -487,8 +487,8 @@ export const ChatWindow = ({ conversation, onBack }: ChatWindowProps) => {
       </div>
 
       {/* Messages */}
-      <ScrollArea className="flex-1 shrink min-h-0">
-        <div className="p-4 pb-2">
+      <ScrollArea className="flex-1 shrink min-h-0 min-w-0">
+        <div className="p-4 pb-2 min-w-0">
         {isLoading ? (
           <div className="text-center text-muted-foreground pt-10 text-sm">Loading messages...</div>
         ) : messages.length === 0 ? (
@@ -503,7 +503,7 @@ export const ChatWindow = ({ conversation, onBack }: ChatWindowProps) => {
             )}
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-4 min-w-0">
             {messages.map((message: any, index: number) => {
               const senderId = message.sender?._id || message.sender || message.senderId;
               const isOwn = message.isOptimistic || senderId === user?.id;
