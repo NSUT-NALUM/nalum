@@ -6,6 +6,7 @@ const User = require("../../models/user/user.model");
 const uploadProfilePicture = require("../../config/profilePicture.multer");
 const { compressionPresets } = require("../../middleware/imageCompression");
 const { addToQueue } = require("../../services/geocodingQueue");
+const { invalidateAlumniMapCache } = require("../../config/cacheKeys");
 
 // POST /profile - Create profile with optional profile picture
 router.post(
@@ -129,14 +130,32 @@ router.post(
       await profile.save();
       await User.findByIdAndUpdate(userId, { profileCompleted: true });
 
-      // Queue for geocoding if location provided but no coordinates
+      // A new location changes the map, so drop the cached response — both when
+      // coordinates came with the profile (e.g. "Use My Location" GPS) and when
+      // the queue will resolve them later.
+      if (location && location.city && location.country) {
+        await invalidateAlumniMapCache();
+      }
+
+      // Queue for geocoding if location provided but no coordinates (lat/lng of
+      // 0 are valid coordinates, so only null/undefined mean "not yet
+      // geocoded"). Wrapped in try/catch: geocoding is a background task — a
+      // Redis blip must NOT fail a profile creation that already succeeded (the
+      // profile is already saved).
       if (
         location &&
         location.city &&
         location.country &&
-        (!location.lat || !location.lng)
+        (location.lat == null || location.lng == null)
       ) {
-        await addToQueue(userId, location.city, location.country);
+        try {
+          await addToQueue(userId, location.city, location.country);
+        } catch (queueError) {
+          console.error(
+            "Failed to enqueue geocoding job; coordinates will be filled later:",
+            queueError,
+          );
+        }
       }
 
       res

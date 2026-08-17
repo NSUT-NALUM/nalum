@@ -114,7 +114,9 @@ export const PostRow = ({ post, onTagClick, index = 0 }: PostRowProps) => {
         </div>
       </div>
 
-      <h3 className="mt-4 text-headline-md text-foreground">{post.title}</h3>
+      <h3 className="mt-4 line-clamp-2 break-words text-headline-md text-foreground">
+        {post.title}
+      </h3>
 
       {excerpt && (
         <p className="mt-1.5 line-clamp-2 text-body-md text-muted-foreground">
