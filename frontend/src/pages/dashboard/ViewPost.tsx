@@ -55,10 +55,12 @@ const SidebarCard = ({
   <section
     className={cn(
       "rounded-card border border-border bg-card p-6 shadow-card",
-      className
+      className,
     )}
   >
-    {title && <h2 className="ap-overline mb-4 border-b border-border pb-3">{title}</h2>}
+    {title && (
+      <h2 className="ap-overline mb-4 border-b border-border pb-3">{title}</h2>
+    )}
     {children}
   </section>
 );
@@ -151,7 +153,9 @@ export default function ViewPost() {
 
     const previous = likes;
     setLikePending(true);
-    setLikes(liked ? likes.filter((id) => id !== user.id) : [...likes, user.id]);
+    setLikes(
+      liked ? likes.filter((id) => id !== user.id) : [...likes, user.id],
+    );
 
     try {
       const { data } = await api.post(`/posts/${post._id}/like`);
@@ -216,7 +220,9 @@ export default function ViewPost() {
     return (
       <div className="mx-auto max-w-3xl py-12">
         <EmptyState
-          icon={<AlertCircle className="mx-auto h-14 w-14 text-muted-foreground/50" />}
+          icon={
+            <AlertCircle className="mx-auto h-14 w-14 text-muted-foreground/50" />
+          }
           title="Post not found"
           description={
             error ||
@@ -243,7 +249,9 @@ export default function ViewPost() {
   // Images the author placed inline via attachment:N already render inside the
   // body — don't repeat them in the gallery underneath.
   const inlineIndexes = new Set(
-    [...body.matchAll(/\(attachment:(\d+)\)/g)].map((match) => Number(match[1]) - 1)
+    [...body.matchAll(/\(attachment:(\d+)\)/g)].map(
+      (match) => Number(match[1]) - 1,
+    ),
   );
   const images = allImages.filter((_, index) => !inlineIndexes.has(index));
 
@@ -305,10 +313,12 @@ export default function ViewPost() {
                       "gap-2 rounded-full px-4 text-label-md",
                       liked
                         ? "border-primary text-primary"
-                        : "border-border text-muted-foreground hover:border-primary hover:text-primary"
+                        : "border-border text-muted-foreground hover:border-primary hover:text-primary",
                     )}
                   >
-                    <ThumbsUp className={cn("h-4 w-4", liked && "fill-current")} />
+                    <ThumbsUp
+                      className={cn("h-4 w-4", liked && "fill-current")}
+                    />
                     {likes.length}
                   </Button>
 
@@ -372,7 +382,7 @@ export default function ViewPost() {
                     "mt-6 rounded-lg border p-4 text-body-sm",
                     post.status === "pending"
                       ? "border-warning/30 bg-warning-subtle text-foreground"
-                      : "border-primary/25 bg-accent text-foreground"
+                      : "border-primary/25 bg-accent text-foreground",
                   )}
                 >
                   <p className="mb-1 text-label-md">
@@ -399,7 +409,7 @@ export default function ViewPost() {
                 <div
                   className={cn(
                     "mt-6 grid gap-4",
-                    images.length > 1 ? "sm:grid-cols-2" : "grid-cols-1"
+                    images.length > 1 ? "sm:grid-cols-2" : "grid-cols-1",
                   )}
                 >
                   {images.map((image, index) => (
@@ -434,7 +444,10 @@ export default function ViewPost() {
           <aside className="space-y-6">
             <SidebarCard title="About the Author">
               <div className="text-center">
-                <Link to={`/dashboard/alumni/${author._id}`} className="inline-block">
+                <Link
+                  to={`/dashboard/alumni/${author._id}`}
+                  className="inline-block"
+                >
                   <UserAvatar
                     src={author.profile_picture || undefined}
                     name={author.name}
@@ -458,7 +471,10 @@ export default function ViewPost() {
                     {author.bio}
                   </p>
                 )}
-                <Link to={`/dashboard/alumni/${author._id}`} className="mt-4 block">
+                <Link
+                  to={`/dashboard/alumni/${author._id}`}
+                  className="mt-4 block"
+                >
                   <Button
                     variant="outline"
                     className="w-full rounded-full border-border text-label-md text-foreground hover:border-primary hover:text-primary"
@@ -481,12 +497,13 @@ export default function ViewPost() {
                         <p className="text-label-md text-foreground group-hover:text-primary">
                           {item.title}
                         </p>
-                        <p className="mt-1 line-clamp-2 text-body-sm text-muted-foreground">
+                        <p className="mt-1 whitespace-pre-line text-body-sm text-muted-foreground">
                           {toPlainText(item.content)}
                         </p>
                         <p className="mt-1 text-body-sm text-muted-foreground">
                           {item.userId.name}
-                          {item.userId.batch && `, Class of ${item.userId.batch}`}
+                          {item.userId.batch &&
+                            `, Class of ${item.userId.batch}`}
                         </p>
                       </Link>
                     </li>
@@ -553,7 +570,7 @@ export default function ViewPost() {
                     aria-label="Previous image"
                     onClick={() =>
                       setLightboxIndex(
-                        (lightboxIndex - 1 + images.length) % images.length
+                        (lightboxIndex - 1 + images.length) % images.length,
                       )
                     }
                     className="absolute left-4 rounded-full bg-surface-inverse/70 p-3 text-surface-inverse-foreground hover:bg-surface-inverse"

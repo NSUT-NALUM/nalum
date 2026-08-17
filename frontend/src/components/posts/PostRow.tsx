@@ -14,7 +14,7 @@ import {
   SPRING_POP,
   blockEntrance,
 } from "@/lib/motion";
-import { PostRecord, likeIds, toPlainText } from "@/lib/posts";
+import { PostRecord, getPostImageUrl, likeIds, toPlainText } from "@/lib/posts";
 import { cn } from "@/lib/utils";
 
 interface PostRowProps {
@@ -36,6 +36,8 @@ export const PostRow = ({ post, onTagClick, index = 0 }: PostRowProps) => {
   const liked = !!user?.id && likes.includes(user.id);
   const excerpt = toPlainText(post.content);
   const comments = post.commentCount ?? 0;
+  const coverImage =
+    post.images && post.images.length > 0 ? post.images[0] : null;
 
   const toggleLike = async (event: React.MouseEvent) => {
     event.stopPropagation();
@@ -43,7 +45,9 @@ export const PostRow = ({ post, onTagClick, index = 0 }: PostRowProps) => {
 
     const previous = likes;
     setPending(true);
-    setLikes(liked ? likes.filter((id) => id !== user.id) : [...likes, user.id]);
+    setLikes(
+      liked ? likes.filter((id) => id !== user.id) : [...likes, user.id],
+    );
 
     try {
       const { data } = await api.post(`/posts/${post._id}/like`);
@@ -62,7 +66,11 @@ export const PostRow = ({ post, onTagClick, index = 0 }: PostRowProps) => {
 
     if (navigator.share) {
       try {
-        await navigator.share({ title: post.title, text: excerpt.slice(0, 120), url });
+        await navigator.share({
+          title: post.title,
+          text: excerpt.slice(0, 120),
+          url,
+        });
         return;
       } catch {
         return; // sheet dismissed
@@ -108,7 +116,9 @@ export const PostRow = ({ post, onTagClick, index = 0 }: PostRowProps) => {
             {post.userId.batch && <span>Class of {post.userId.batch}</span>}
             {post.userId.batch && <span aria-hidden="true">•</span>}
             <span>
-              {formatDistanceToNow(new Date(post.createdAt), { addSuffix: true })}
+              {formatDistanceToNow(new Date(post.createdAt), {
+                addSuffix: true,
+              })}
             </span>
           </p>
         </div>
@@ -117,9 +127,20 @@ export const PostRow = ({ post, onTagClick, index = 0 }: PostRowProps) => {
       <h3 className="mt-4 text-headline-md text-foreground">{post.title}</h3>
 
       {excerpt && (
-        <p className="mt-1.5 line-clamp-2 text-body-md text-muted-foreground">
+        <p className="mt-1.5 whitespace-pre-line text-body-md text-muted-foreground">
           {excerpt}
         </p>
+      )}
+
+      {/* Render Cover Image Preview */}
+      {coverImage && (
+        <div className="mt-3 overflow-hidden rounded-lg border border-border max-w-md">
+          <img
+            src={getPostImageUrl(coverImage)}
+            alt={post.title}
+            className="max-h-60 w-full object-cover"
+          />
+        </div>
       )}
 
       {(post.tags || []).length > 0 && (
@@ -156,7 +177,7 @@ export const PostRow = ({ post, onTagClick, index = 0 }: PostRowProps) => {
             "flex items-center gap-2 rounded-full px-3 py-2 text-label-md transition-colors",
             liked
               ? "bg-primary-subtle text-primary"
-              : "text-muted-foreground hover:bg-muted hover:text-primary"
+              : "text-muted-foreground hover:bg-muted hover:text-primary",
           )}
         >
           {/* Keyed on `liked` so the icon re-mounts and springs each time the

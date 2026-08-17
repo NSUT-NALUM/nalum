@@ -71,8 +71,6 @@ function CommentComposer({
 }) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Replies open pre-filled with "@author ", and focus alone would park the
-  // caret at position 0 — in front of the mention rather than after it.
   useEffect(() => {
     if (!autoFocus) return;
     const textarea = textareaRef.current;
@@ -80,8 +78,6 @@ function CommentComposer({
     const end = textarea.value.length;
     textarea.focus();
     textarea.setSelectionRange(end, end);
-    // Deliberately keyed on autoFocus alone — later value changes are the user
-    // typing, and re-running would yank their caret to the end.
   }, [autoFocus]);
 
   return (
@@ -145,8 +141,6 @@ function CommentCard({
   const commentAuthorId = comment.author?._id ?? comment.authorId;
   const isOwner = String(currentUserId ?? "") === String(commentAuthorId ?? "");
   const canManage = isOwner || user?.role === "admin";
-  // The API nulls the content of a deleted comment; we keep the node in the
-  // thread and show a tombstone so replies below it stay anchored.
   const displayContent = comment.isDeleted
     ? "This comment was deleted."
     : comment.content || "";
@@ -213,7 +207,11 @@ function CommentCard({
     <div className={cn("flex flex-col gap-2", depth > 0 && "mt-4")}>
       <div className="flex gap-3">
         <Link to={`/dashboard/alumni/${authorId}`} className="shrink-0">
-          <UserAvatar src={undefined} name={comment.author?.name || "User"} size="sm" />
+          <UserAvatar
+            src={undefined}
+            name={comment.author?.name || "User"}
+            size="sm"
+          />
         </Link>
 
         <div className="min-w-0 flex-1">
@@ -288,7 +286,13 @@ function CommentCard({
                 {displayContent}
               </p>
             ) : (
-              <PostMarkdown content={displayContent} compact className="mt-1" />
+              <div className="whitespace-pre-line">
+                <PostMarkdown
+                  content={displayContent}
+                  compact
+                  className="mt-1"
+                />
+              </div>
             )}
           </div>
 
@@ -315,7 +319,7 @@ function CommentCard({
                   <ChevronDown
                     className={cn(
                       "h-3.5 w-3.5 transition-transform",
-                      showReplies && "rotate-180"
+                      showReplies && "rotate-180",
                     )}
                   />
                 </button>
@@ -374,7 +378,6 @@ export default function CommentSection({ postId }: CommentSectionProps) {
   const [commentValue, setCommentValue] = useState("");
   const commentResolverRef = useRef<(text: string) => string>((t) => t);
 
-
   const loadComments = async () => {
     try {
       setIsLoading(true);
@@ -411,10 +414,9 @@ export default function CommentSection({ postId }: CommentSectionProps) {
     }
   };
 
-  // Replies are nested one level deep, so the headline count has to include them.
   const total = comments.reduce(
     (count, comment) => count + 1 + comment.replies.length,
-    0
+    0,
   );
 
   return (
