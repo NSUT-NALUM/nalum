@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { FilterPillSelect } from "@/components/ui/FilterPillSelect";
+import { FilterPillCombobox } from "@/components/ui/FilterPillCombobox";
 import {
   SegmentedToggle,
   SegmentedToggleOption,
@@ -222,34 +223,26 @@ const AlumniDirectory = () => {
 
                   {/* Second Row: Filter Pills & Advanced Toggle */}
                   <div className="flex flex-wrap items-center gap-2">
-                    <FilterPillSelect
+                    <FilterPillCombobox
                       value={filters.batch}
                       onValueChange={(value) => handleFilterChange("batch", value)}
                       onClear={() => handleFilterChange("batch", "")}
                       placeholder="Class Year"
+                      searchPlaceholder="Search year..."
                       options={CLASS_YEARS}
                       className="w-[45%] sm:w-auto"
                       triggerClassName="w-full sm:w-32"
                     />
 
-                    <FilterPillSelect
+                    <FilterPillCombobox
                       value={filters.branch}
                       onValueChange={(value) => handleFilterChange("branch", value)}
                       onClear={() => handleFilterChange("branch", "")}
                       placeholder="All Branches"
+                      searchPlaceholder="Search branch..."
                       options={BRANCHES}
                       className="w-[45%] sm:w-auto"
                       triggerClassName="w-full sm:w-52"
-                    />
-
-                    <FilterPillSelect
-                      value={filters.campus}
-                      onValueChange={(value) => handleFilterChange("campus", value)}
-                      onClear={() => handleFilterChange("campus", "")}
-                      placeholder="All Campuses"
-                      options={CAMPUSES}
-                      className="w-[45%] sm:w-auto"
-                      triggerClassName="w-full sm:w-40"
                     />
 
                     <FilterPillSelect
@@ -348,6 +341,22 @@ const AlumniDirectory = () => {
                               handleFilterChange("country", e.target.value)
                             }
                             className="bg-background border-input text-foreground placeholder:text-muted-foreground focus:border-ring focus:ring-ring"
+                          />
+                        </div>
+
+                        {/* Campus Filter */}
+                        <div className="space-y-2">
+                          <Label className="text-foreground">
+                            Campus
+                          </Label>
+                          <FilterPillSelect
+                            value={filters.campus}
+                            onValueChange={(value) => handleFilterChange("campus", value)}
+                            onClear={() => handleFilterChange("campus", "")}
+                            placeholder="All Campuses"
+                            options={CAMPUSES}
+                            className="w-full"
+                            triggerClassName="w-full h-10 border-input bg-background rounded-md px-3"
                           />
                         </div>
                       </div>
