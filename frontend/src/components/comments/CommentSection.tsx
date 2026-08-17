@@ -57,6 +57,7 @@ function CommentComposer({
   placeholder,
   autoFocus = false,
   onCancel,
+  onResolverReady,
 }: {
   value: string;
   onChange: (value: string) => void;
@@ -66,6 +67,7 @@ function CommentComposer({
   placeholder: string;
   autoFocus?: boolean;
   onCancel?: () => void;
+  onResolverReady?: (resolver: (text: string) => string) => void;
 }) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -88,6 +90,7 @@ function CommentComposer({
         ref={textareaRef}
         value={value}
         onChange={onChange}
+        onResolverReady={onResolverReady}
         placeholder={placeholder}
         className="min-h-[96px] rounded-lg border-input bg-card px-4 py-3 text-body-md"
       />
@@ -135,6 +138,8 @@ function CommentCard({
   const [isSaving, setIsSaving] = useState(false);
   const [showReplies, setShowReplies] = useState(true);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const replyResolverRef = useRef<(text: string) => string>((t) => t);
+  const editResolverRef = useRef<(text: string) => string>((t) => t);
 
   const currentUserId = user?.id;
   const commentAuthorId = comment.author?._id ?? comment.authorId;
@@ -150,7 +155,8 @@ function CommentCard({
     if (!replyValue.trim()) return;
     try {
       setIsReplying(true);
-      await createCommentReply(postId, comment._id, replyValue.trim());
+      const resolved = replyResolverRef.current(replyValue.trim());
+      await createCommentReply(postId, comment._id, resolved);
       setReplyValue("");
       setReplyOpen(false);
       setShowReplies(true);
@@ -167,7 +173,8 @@ function CommentCard({
     if (!editValue.trim()) return;
     try {
       setIsSaving(true);
-      await updatePostComment(postId, comment._id, editValue.trim());
+      const resolved = editResolverRef.current(editValue.trim());
+      await updatePostComment(postId, comment._id, resolved);
       setIsEditing(false);
       await onChanged();
     } catch (error) {
@@ -269,6 +276,7 @@ function CommentCard({
                   value={editValue}
                   onChange={setEditValue}
                   onSubmit={handleUpdate}
+                  onResolverReady={(fn) => { editResolverRef.current = fn; }}
                   submitLabel="Save"
                   isSubmitting={isSaving}
                   placeholder="Edit your comment…"
@@ -332,6 +340,7 @@ function CommentCard({
             value={replyValue}
             onChange={setReplyValue}
             onSubmit={handleReply}
+            onResolverReady={(fn) => { replyResolverRef.current = fn; }}
             submitLabel="Reply"
             isSubmitting={isReplying}
             placeholder={`Replying to @${comment.author?.name || "user"}…`}
@@ -366,6 +375,7 @@ export default function CommentSection({ postId }: CommentSectionProps) {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const commentResolverRef = useRef<(text: string) => string>((t) => t);
 
 
   const loadComments = async () => {
@@ -414,7 +424,8 @@ export default function CommentSection({ postId }: CommentSectionProps) {
 
     try {
       setIsSubmitting(true);
-      await createPostComment(postId, commentValue.trim());
+      const resolved = commentResolverRef.current(commentValue.trim());
+      await createPostComment(postId, resolved);
       setCommentValue("");
       await loadComments();
     } catch (error) {
@@ -439,6 +450,7 @@ export default function CommentSection({ postId }: CommentSectionProps) {
         value={commentValue}
         onChange={setCommentValue}
         onSubmit={handleCreateComment}
+        onResolverReady={(fn) => { commentResolverRef.current = fn; }}
         submitLabel="Post Comment"
         isSubmitting={isSubmitting}
         placeholder="Add a comment to the discussion…"
