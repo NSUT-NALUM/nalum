@@ -54,6 +54,8 @@ interface MyPostRowProps {
   index?: number;
 }
 
+// A row in the author's own management list: approval state first, then the
+// action that state affords.
 export const MyPostRow = ({ post, onDelete, index = 0 }: MyPostRowProps) => {
   const navigate = useNavigate();
 
@@ -66,6 +68,8 @@ export const MyPostRow = ({ post, onDelete, index = 0 }: MyPostRowProps) => {
     post.images && post.images.length > 0 ? post.images[0] : null;
 
   return (
+    // The row isn't itself clickable — the lift is a hover affordance for the
+    // action cluster on the right, not a promise that the card navigates.
     <motion.article
       {...blockEntrance(index)}
       whileHover={CARD_HOVER}
@@ -74,18 +78,20 @@ export const MyPostRow = ({ post, onDelete, index = 0 }: MyPostRowProps) => {
       layout
       className={cn(
         "rounded-card border p-5 shadow-card transition-colors sm:p-6",
-        rejected ? "border-primary/25 bg-accent" : "border-border bg-card",
+        rejected ? "border-primary/25 bg-accent" : "border-border bg-card"
       )}
     >
       <div className="mb-3 flex items-start justify-between gap-4">
         <motion.span
+          // The status pill is the whole point of this row, and it changes when
+          // an admin acts, so it springs in rather than simply being there.
           key={status}
           initial={{ opacity: 0, scale: 0.85 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={SPRING}
           className={cn(
             "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-label-sm uppercase tracking-wide",
-            pill.className,
+            pill.className
           )}
         >
           <PillIcon className="h-3.5 w-3.5" />
@@ -102,9 +108,11 @@ export const MyPostRow = ({ post, onDelete, index = 0 }: MyPostRowProps) => {
 
       <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div className="min-w-0 flex-1">
-          <h3 className="text-headline-md text-foreground">{post.title}</h3>
+          <h3 className="line-clamp-2 [overflow-wrap:anywhere] text-headline-md text-foreground">
+            {post.title}
+          </h3>
           {excerpt && (
-            <p className="mt-1.5 whitespace-pre-line text-body-md text-muted-foreground">
+            <p className="mt-1.5 line-clamp-2 whitespace-pre-line text-body-md text-muted-foreground">
               {excerpt}
             </p>
           )}
@@ -140,6 +148,8 @@ export const MyPostRow = ({ post, onDelete, index = 0 }: MyPostRowProps) => {
           )}
 
           {rejected && (
+            // Feedback expands rather than appearing: the height change is the
+            // cue that there's something new to read here.
             <motion.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}

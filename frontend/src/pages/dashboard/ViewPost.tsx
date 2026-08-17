@@ -33,6 +33,7 @@ import api from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { useNotifications } from "@/context/NotificationContext";
 import {
+  PostAuthor,
   PostRecord,
   authorHeadline,
   bodyWithoutTitle,
@@ -55,12 +56,10 @@ const SidebarCard = ({
   <section
     className={cn(
       "rounded-card border border-border bg-card p-6 shadow-card",
-      className,
+      className
     )}
   >
-    {title && (
-      <h2 className="ap-overline mb-4 border-b border-border pb-3">{title}</h2>
-    )}
+    {title && <h2 className="ap-overline mb-4 border-b border-border pb-3">{title}</h2>}
     {children}
   </section>
 );
@@ -82,7 +81,7 @@ export default function ViewPost() {
   const [hasReported, setHasReported] = useState(false);
   const clearedForPostRef = useRef<string | null>(null);
 
-  const isOwner = !!post && post.userId._id === user?.id;
+  const isOwner = !!post && post.userId?._id === user?.id;
   const liked = !!user?.id && likes.includes(user.id);
 
   useEffect(() => {
@@ -153,9 +152,7 @@ export default function ViewPost() {
 
     const previous = likes;
     setLikePending(true);
-    setLikes(
-      liked ? likes.filter((id) => id !== user.id) : [...likes, user.id],
-    );
+    setLikes(liked ? likes.filter((id) => id !== user.id) : [...likes, user.id]);
 
     try {
       const { data } = await api.post(`/posts/${post._id}/like`);
@@ -220,9 +217,7 @@ export default function ViewPost() {
     return (
       <div className="mx-auto max-w-3xl py-12">
         <EmptyState
-          icon={
-            <AlertCircle className="mx-auto h-14 w-14 text-muted-foreground/50" />
-          }
+          icon={<AlertCircle className="mx-auto h-14 w-14 text-muted-foreground/50" />}
           title="Post not found"
           description={
             error ||
@@ -241,7 +236,7 @@ export default function ViewPost() {
     );
   }
 
-  const author = post.userId;
+  const author: PostAuthor = post.userId ?? { _id: "", name: "Unknown user" };
   const allImages = post.images || [];
   const body = bodyWithoutTitle(post.content, post.title);
   const attachmentUrls = allImages.map(getPostImageUrl);
@@ -249,9 +244,7 @@ export default function ViewPost() {
   // Images the author placed inline via attachment:N already render inside the
   // body — don't repeat them in the gallery underneath.
   const inlineIndexes = new Set(
-    [...body.matchAll(/\(attachment:(\d+)\)/g)].map(
-      (match) => Number(match[1]) - 1,
-    ),
+    [...body.matchAll(/\(attachment:(\d+)\)/g)].map((match) => Number(match[1]) - 1)
   );
   const images = allImages.filter((_, index) => !inlineIndexes.has(index));
 
@@ -263,18 +256,20 @@ export default function ViewPost() {
           aria-label="Breadcrumb"
           className="mb-4 flex items-center gap-1 text-body-sm text-muted-foreground"
         >
-          <Link to="/dashboard/posts" className="hover:text-primary">
+          <Link to="/dashboard/posts" className="shrink-0 hover:text-primary">
             Posts
           </Link>
-          <ChevronRight className="h-4 w-4" />
-          <span className="line-clamp-1 text-foreground">{post.title}</span>
+          <ChevronRight className="h-4 w-4 shrink-0" />
+          <span className="min-w-0 flex-1 line-clamp-1 break-words text-foreground">
+            {post.title}
+          </span>
         </nav>
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           {/* Article */}
           <article className="space-y-6 lg:col-span-2">
             <div className="rounded-card border border-border bg-card p-6 shadow-card md:p-8">
-              <h1 className="text-headline-lg-mobile text-foreground md:text-headline-xl">
+              <h1 className="break-words text-headline-lg-mobile text-foreground md:text-headline-xl">
                 {post.title}
               </h1>
 
@@ -313,12 +308,10 @@ export default function ViewPost() {
                       "gap-2 rounded-full px-4 text-label-md",
                       liked
                         ? "border-primary text-primary"
-                        : "border-border text-muted-foreground hover:border-primary hover:text-primary",
+                        : "border-border text-muted-foreground hover:border-primary hover:text-primary"
                     )}
                   >
-                    <ThumbsUp
-                      className={cn("h-4 w-4", liked && "fill-current")}
-                    />
+                    <ThumbsUp className={cn("h-4 w-4", liked && "fill-current")} />
                     {likes.length}
                   </Button>
 
@@ -382,7 +375,7 @@ export default function ViewPost() {
                     "mt-6 rounded-lg border p-4 text-body-sm",
                     post.status === "pending"
                       ? "border-warning/30 bg-warning-subtle text-foreground"
-                      : "border-primary/25 bg-accent text-foreground",
+                      : "border-primary/25 bg-accent text-foreground"
                   )}
                 >
                   <p className="mb-1 text-label-md">
@@ -409,7 +402,7 @@ export default function ViewPost() {
                 <div
                   className={cn(
                     "mt-6 grid gap-4",
-                    images.length > 1 ? "sm:grid-cols-2" : "grid-cols-1",
+                    images.length > 1 ? "sm:grid-cols-2" : "grid-cols-1"
                   )}
                 >
                   {images.map((image, index) => (
@@ -444,10 +437,7 @@ export default function ViewPost() {
           <aside className="space-y-6">
             <SidebarCard title="About the Author">
               <div className="text-center">
-                <Link
-                  to={`/dashboard/alumni/${author._id}`}
-                  className="inline-block"
-                >
+                <Link to={`/dashboard/alumni/${author._id}`} className="inline-block">
                   <UserAvatar
                     src={author.profile_picture || undefined}
                     name={author.name}
@@ -455,10 +445,10 @@ export default function ViewPost() {
                     className="mx-auto"
                   />
                 </Link>
-                <p className="mt-3 text-headline-md text-foreground">
+                <p className="mt-3 break-words text-headline-md text-foreground">
                   {author.name}
                 </p>
-                <p className="text-body-sm text-muted-foreground">
+                <p className="break-words text-body-sm text-muted-foreground">
                   {authorHeadline(author)}
                 </p>
                 {author.batch && (
@@ -467,14 +457,11 @@ export default function ViewPost() {
                   </p>
                 )}
                 {author.bio && (
-                  <p className="mt-3 text-body-sm text-muted-foreground">
+                  <p className="mt-3 break-words text-body-sm text-muted-foreground">
                     {author.bio}
                   </p>
                 )}
-                <Link
-                  to={`/dashboard/alumni/${author._id}`}
-                  className="mt-4 block"
-                >
+                <Link to={`/dashboard/alumni/${author._id}`} className="mt-4 block">
                   <Button
                     variant="outline"
                     className="w-full rounded-full border-border text-label-md text-foreground hover:border-primary hover:text-primary"
@@ -494,16 +481,15 @@ export default function ViewPost() {
                         to={`/dashboard/posts/${item._id}`}
                         className="group block"
                       >
-                        <p className="text-label-md text-foreground group-hover:text-primary">
+                        <p className="line-clamp-1 break-words text-label-md text-foreground group-hover:text-primary">
                           {item.title}
                         </p>
-                        <p className="mt-1 whitespace-pre-line text-body-sm text-muted-foreground">
+                        <p className="mt-1 line-clamp-2 whitespace-pre-line text-body-sm text-muted-foreground">
                           {toPlainText(item.content)}
                         </p>
                         <p className="mt-1 text-body-sm text-muted-foreground">
-                          {item.userId.name}
-                          {item.userId.batch &&
-                            `, Class of ${item.userId.batch}`}
+                          {item.userId?.name ?? "Unknown user"}
+                          {item.userId?.batch && `, Class of ${item.userId.batch}`}
                         </p>
                       </Link>
                     </li>
@@ -569,9 +555,7 @@ export default function ViewPost() {
                     type="button"
                     aria-label="Previous image"
                     onClick={() =>
-                      setLightboxIndex(
-                        (lightboxIndex - 1 + images.length) % images.length,
-                      )
+                      setLightboxIndex((lightboxIndex - 1 + images.length) % images.length)
                     }
                     className="absolute left-4 rounded-full bg-surface-inverse/70 p-3 text-surface-inverse-foreground hover:bg-surface-inverse"
                   >

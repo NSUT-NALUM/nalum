@@ -381,7 +381,7 @@ const NotificationsPopover = () => {
                                 size="sm"
                               />
                               <div className="flex-1 min-w-0">
-                                <p className="font-medium text-sm text-foreground">
+                                <p className="truncate font-medium text-sm text-foreground">
                                   {request.requester.name}
                                 </p>
                                 {request.requesterProfile && (
@@ -390,7 +390,7 @@ const NotificationsPopover = () => {
                                   </p>
                                 )}
                                 {request.requestMessage && (
-                                  <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                                  <p className="break-words text-xs text-muted-foreground mt-1 line-clamp-2">
                                     "{request.requestMessage}"
                                   </p>
                                 )}
@@ -455,7 +455,7 @@ const NotificationsPopover = () => {
                                 size="sm"
                               />
                               <div className="flex-1 min-w-0">
-                                <p className="font-medium text-sm text-foreground">
+                                <p className="truncate font-medium text-sm text-foreground">
                                   {request.requester.name}
                                 </p>
                                 {request.requesterProfile && (
@@ -464,7 +464,7 @@ const NotificationsPopover = () => {
                                   </p>
                                 )}
                                 {request.requestMessage && (
-                                  <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                                  <p className="break-words text-xs text-muted-foreground mt-1 line-clamp-2">
                                     "{request.requestMessage}"
                                   </p>
                                 )}
@@ -529,7 +529,7 @@ const NotificationsPopover = () => {
                                 size="sm"
                               />
                               <div className="flex-1 min-w-0">
-                                <p className="font-medium text-sm text-foreground">
+                                <p className="truncate font-medium text-sm text-foreground">
                                   {request.recipient.name}
                                 </p>
                                 {request.recipientProfile && (

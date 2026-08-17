@@ -27,14 +27,13 @@ const RowSkeleton = () => (
   </div>
 );
 
+// The home page's window onto the feed: the newest posts, bounded, with the
+// full searchable listing one click away at /dashboard/posts. Deliberately
+// read-only — liking and commenting happen on the post itself.
 export const RecentPostsCard = () => {
   const navigate = useNavigate();
 
-  const {
-    data: posts = [],
-    isLoading,
-    isError,
-  } = useQuery({
+  const { data: posts = [], isLoading, isError } = useQuery({
     queryKey: ["posts", "recent", LIMIT],
     queryFn: async (): Promise<PostRecord[]> => {
       const { data } = await api.get(`/posts?page=1&limit=${LIMIT}`);
@@ -96,13 +95,13 @@ export const RecentPostsCard = () => {
                   {/* Byline */}
                   <div className="flex items-center gap-3">
                     <UserAvatar
-                      src={post.userId.profile_picture || undefined}
-                      name={post.userId.name}
+                      src={post.userId?.profile_picture || undefined}
+                      name={post.userId?.name ?? "Unknown user"}
                       size="md"
                     />
                     <div className="min-w-0">
                       <p className="truncate text-label-md text-foreground">
-                        {post.userId.name}
+                        {post.userId?.name ?? "Unknown user"}
                       </p>
                       <p className="text-body-sm text-muted-foreground">
                         {formatDistanceToNow(new Date(post.createdAt), {
@@ -117,7 +116,7 @@ export const RecentPostsCard = () => {
                   </h3>
 
                   {excerpt && (
-                    <p className="mt-1 whitespace-pre-line text-body-md text-muted-foreground">
+                    <p className="mt-1 line-clamp-2 whitespace-pre-line text-body-md text-muted-foreground">
                       {excerpt}
                     </p>
                   )}

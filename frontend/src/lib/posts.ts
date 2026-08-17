@@ -40,9 +40,7 @@ export const getPostImageUrl = (image: string) =>
 
 // Likes have been stored two ways over the life of this collection; everything
 // downstream wants the id array.
-export const likeIds = (
-  post: Pick<PostRecord, "likes" | "liked_by">,
-): string[] => {
+export const likeIds = (post: Pick<PostRecord, "likes" | "liked_by">): string[] => {
   if (Array.isArray(post.likes)) return post.likes;
   if (Array.isArray(post.liked_by)) return post.liked_by;
   return [];

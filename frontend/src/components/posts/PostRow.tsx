@@ -45,9 +45,7 @@ export const PostRow = ({ post, onTagClick, index = 0 }: PostRowProps) => {
 
     const previous = likes;
     setPending(true);
-    setLikes(
-      liked ? likes.filter((id) => id !== user.id) : [...likes, user.id],
-    );
+    setLikes(liked ? likes.filter((id) => id !== user.id) : [...likes, user.id]);
 
     try {
       const { data } = await api.post(`/posts/${post._id}/like`);
@@ -66,11 +64,7 @@ export const PostRow = ({ post, onTagClick, index = 0 }: PostRowProps) => {
 
     if (navigator.share) {
       try {
-        await navigator.share({
-          title: post.title,
-          text: excerpt.slice(0, 120),
-          url,
-        });
+        await navigator.share({ title: post.title, text: excerpt.slice(0, 120), url });
         return;
       } catch {
         return; // sheet dismissed
@@ -104,30 +98,30 @@ export const PostRow = ({ post, onTagClick, index = 0 }: PostRowProps) => {
       {/* Byline */}
       <div className="flex items-center gap-3">
         <UserAvatar
-          src={post.userId.profile_picture || undefined}
-          name={post.userId.name}
+          src={post.userId?.profile_picture || undefined}
+          name={post.userId?.name ?? "Unknown user"}
           size="md"
         />
         <div className="min-w-0">
           <p className="truncate text-label-md text-foreground">
-            {post.userId.name}
+            {post.userId?.name ?? "Unknown user"}
           </p>
           <p className="flex flex-wrap items-center gap-x-2 text-body-sm text-muted-foreground">
-            {post.userId.batch && <span>Class of {post.userId.batch}</span>}
-            {post.userId.batch && <span aria-hidden="true">•</span>}
+            {post.userId?.batch && <span>Class of {post.userId.batch}</span>}
+            {post.userId?.batch && <span aria-hidden="true">•</span>}
             <span>
-              {formatDistanceToNow(new Date(post.createdAt), {
-                addSuffix: true,
-              })}
+              {formatDistanceToNow(new Date(post.createdAt), { addSuffix: true })}
             </span>
           </p>
         </div>
       </div>
 
-      <h3 className="mt-4 text-headline-md text-foreground">{post.title}</h3>
+      <h3 className="mt-4 line-clamp-2 break-words text-headline-md text-foreground">
+        {post.title}
+      </h3>
 
       {excerpt && (
-        <p className="mt-1.5 whitespace-pre-line text-body-md text-muted-foreground">
+        <p className="mt-1.5 line-clamp-2 whitespace-pre-line text-body-md text-muted-foreground">
           {excerpt}
         </p>
       )}
@@ -177,7 +171,7 @@ export const PostRow = ({ post, onTagClick, index = 0 }: PostRowProps) => {
             "flex items-center gap-2 rounded-full px-3 py-2 text-label-md transition-colors",
             liked
               ? "bg-primary-subtle text-primary"
-              : "text-muted-foreground hover:bg-muted hover:text-primary",
+              : "text-muted-foreground hover:bg-muted hover:text-primary"
           )}
         >
           {/* Keyed on `liked` so the icon re-mounts and springs each time the

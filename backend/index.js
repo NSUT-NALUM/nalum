@@ -36,7 +36,7 @@ const logStartupStep = (message) => {
 
 const listen = (port) =>
   new Promise((resolve, reject) => {
-    const host = process.env.HOST || "0.0.0.0";
+    const host = process.env.HOST;
     server.once("error", reject);
     server.listen(port, host, () => {
       server.off("error", reject);
@@ -56,11 +56,6 @@ app.use(
     origin: [
       "https://alumni.nsut.ac.in",
       "http://localhost:5173",
-      "http://127.0.0.1:5173",
-      "http://localhost:2478",
-      "http://127.0.0.1:2478",
-      "http://localhost:3000",
-      "http://127.0.0.1:3000",
       "http://localhost",
     ],
     credentials: true,
@@ -68,13 +63,10 @@ app.use(
     allowedHeaders: [
       "Content-Type",
       "Authorization",
-      "X-Requested-With",
-      "Accept",
       "ngrok-skip-browser-warning",
     ],
   }),
 );
-
 app.use(
   helmet({
     crossOriginResourcePolicy: { policy: "cross-origin" },
@@ -105,7 +97,6 @@ app.use("/api/mention", checkBanned, mentionRoutes);
 app.use("/api/admin", adminRoutes);
 
 // Serve static files for newsletter uploads
-app.use("/uploads", express.static("uploads"));
 app.use("/api/uploads", express.static("uploads"));
 
 // a sample api call to check if the backend is working
@@ -113,7 +104,7 @@ app.get("/api/health", (req, res) => {
   res.status(200).json({ status: "OK", message: "Backend is working!" });
 });
 
-const port = process.env.PORT || 2478;
+const port = process.env.PORT;
 
 async function startServer() {
   try {

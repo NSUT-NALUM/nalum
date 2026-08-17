@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { GraduationCap, Briefcase, Building2 } from "lucide-react";
+import { GraduationCap, Briefcase } from "lucide-react";
 import UserAvatar from "@/components/UserAvatar";
 import { ConnectionButton } from "@/components/ui/ConnectionButton";
 import type { AlumniProfile } from "@/hooks/useAlumniDirectory";
