@@ -1,6 +1,7 @@
 const Query = require('../models/query.model');
 const User = require('../models/user/user.model');
 const { notifyMentions } = require('../services/mentionHelper');
+const { cleanupFiles, assertDeletePermission } = require('../utils/deleteHelper');
 
 // Create a new query (Students & Alumni)
 exports.createQuery = async (req, res) => {
@@ -62,7 +63,8 @@ exports.getMyQueries = async (req, res) => {
   try {
     const { user_id } = req.user;
 
-    const queries = await Query.find({ userId: user_id })
+    // Exclude soft-deleted queries
+    const queries = await Query.find({ userId: user_id, isDeleted: { $ne: true } })
       .sort({ createdAt: -1 })
       .lean();
 
@@ -111,6 +113,9 @@ exports.getAllQueries = async (req, res) => {
     if (sortBy === 'status') {
       sortOptions = { status: 1, createdAt: -1 };
     }
+
+    // Exclude soft-deleted queries from admin view
+    queryObj.isDeleted = { $ne: true };
 
     const queries = await Query.find(queryObj)
       .sort(sortOptions)
@@ -197,6 +202,55 @@ exports.respondToQuery = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: error.message || 'Error responding to query',
+    });
+  }
+};
+
+// Delete a query — owner or admin (Task 3.2)
+exports.deleteQuery = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const requestUserId = req.user?.user_id || req.user?.id || req.admin?.id;
+    let userRole = req.user?.role || req.admin?.role;
+
+    if (!userRole && requestUserId) {
+      const user = await User.findById(requestUserId).select("role").lean();
+      if (user) userRole = user.role;
+    }
+
+    const query = await Query.findById(id);
+    if (!query || query.isDeleted) {
+      return res.status(404).json({
+        success: false,
+        message: 'Query not found',
+      });
+    }
+
+    assertDeletePermission({
+      ownerId: query.userId,
+      requestUserId: requestUserId,
+      userRole: userRole,
+    });
+
+    // Clean up associated image files from disk
+    if (query.images && query.images.length > 0) {
+      cleanupFiles(query.images, 'queries');
+    }
+
+    // Soft delete
+    query.isDeleted = true;
+    query.deletedAt = new Date();
+    await query.save();
+
+    return res.status(200).json({
+      success: true,
+      message: 'Query deleted successfully',
+    });
+  } catch (error) {
+    console.error('Error deleting query:', error);
+    return res.status(error.statusCode || 500).json({
+      success: false,
+      message: error.message || 'Error deleting query',
     });
   }
 };

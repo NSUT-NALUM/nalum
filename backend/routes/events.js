@@ -8,6 +8,7 @@ const { compressionPresets } = require("../middleware/imageCompression");
 const fs = require("fs");
 const path = require("path");
 const { notifyMentions } = require("../services/mentionHelper");
+const { assertDeletePermission, cleanupFile } = require("../utils/deleteHelper");
 
 // Check if event hosting is allowed
 router.get("/hosting-allowed", async (req, res) => {
@@ -345,21 +346,16 @@ router.delete("/delete/:eventId", protect, async (req, res) => {
       });
     }
 
-    // Only event creator can delete
-    if (event.created_by.toString() !== userId.toString()) {
-      return res.status(403).json({
-        success: false,
-        message: "You can only delete your own events",
-      });
-    }
+    // Task 2.4/2.2: Assert delete permission (owner or admin)
+    assertDeletePermission({
+      ownerId: event.created_by,
+      requestUserId: userId,
+      userRole: req.user.role,
+    });
 
     // Delete event image file if exists
     if (event.image_url) {
-      const fs = require('fs');
-      const imagePath = path.join(__dirname, "..", event.image_url);
-      if (fs.existsSync(imagePath)) {
-        fs.unlinkSync(imagePath);
-      }
+      cleanupFile(event.image_url, "..");
     }
 
     // Soft delete
@@ -372,9 +368,9 @@ router.delete("/delete/:eventId", protect, async (req, res) => {
     });
   } catch (error) {
     console.error("Error deleting event:", error);
-    res.status(500).json({
+    res.status(error.statusCode || 500).json({
       success: false,
-      message: "Failed to delete event",
+      message: error.message || "Failed to delete event",
     });
   }
 });

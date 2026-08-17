@@ -33,7 +33,7 @@ exports.create = async (email, user_id) => {
 };
 
 // Get existing session by email or create a new one if none exists
-exports.getOrCreate = async (email, user_id) => {
+exports.getOrCreate = async (email, user_id, remember_me = false) => {
 	if (!email || !user_id) {
 		return { error: true, message: "Credentials are required" };
 	}
@@ -42,6 +42,13 @@ exports.getOrCreate = async (email, user_id) => {
 		const existing = await Session.findOne({ email: lower });
 
 		if (existing) {
+			existing.remember_me = remember_me;
+			if (remember_me) {
+				existing.refresh_token_expires_at = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+			} else {
+				existing.refresh_token_expires_at = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+			}
+			await existing.save();
 			const raw = existing.toObject();
 			const accessToken = generateAccessToken({
 				user_id: user_id,
@@ -56,7 +63,9 @@ exports.getOrCreate = async (email, user_id) => {
 		const session = new Session({
 			email: lower,
 			user_id,
-            refresh_token
+            refresh_token,
+            remember_me,
+            refresh_token_expires_at: new Date(Date.now() + (remember_me ? 30 : 14) * 24 * 60 * 60 * 1000)
 		});
 		const data = await session.save();
 		const raw = data.toObject();
@@ -153,6 +162,7 @@ exports.updateAccessToken = async (incoming_refresh_token) => {
         session.previous_refresh_token = session.refresh_token;
         session.consumed_at = Date.now();
         session.refresh_token = new_refresh_token;
+        session.refresh_token_expires_at = new Date(Date.now() + (session.remember_me ? 30 : 14) * 24 * 60 * 60 * 1000);
 
         await session.save();
 

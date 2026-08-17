@@ -1,6 +1,7 @@
 const User = require("../../models/user/user.model");
 const Ban = require("../../models/admin/ban.model");
 const { logAdminActivity } = require("../../middleware/adminAuth");
+const { invalidateAlumniMapCache } = require("../../config/cacheKeys");
 
 // Calculate ban expiry date
 const calculateBanExpiry = (duration) => {
@@ -67,6 +68,10 @@ exports.banUser = async (req, res) => {
     user.ban_expires_at = banExpiresAt;
     user.ban_reason = reason;
     await user.save();
+
+    // Banned users must disappear from the public map immediately, not after
+    // the 1h cache TTL.
+    await invalidateAlumniMapCache();
 
     // Create ban record
     await Ban.create({
@@ -140,6 +145,9 @@ exports.unbanUser = async (req, res) => {
     user.ban_expires_at = null;
     user.ban_reason = null;
     await user.save();
+
+    // Unbanned users may now be eligible for the map again
+    await invalidateAlumniMapCache();
 
     // Update ban record
     await Ban.updateMany(
@@ -250,3 +258,61 @@ exports.getUserBanHistory = async (req, res) => {
     });
   }
 };
+
+// Deactivate / Delete user account by Admin (Task 3.6)
+exports.deactivateUser = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    if (user.isDeactivated) {
+      return res.status(400).json({
+        success: false,
+        message: "User is already deactivated",
+      });
+    }
+
+    // 1. Run cascade delete to clean up user posts, comments, events, givings, queries
+    const { cascadeDeleteUser } = require("../../utils/cascadeDelete");
+    await cascadeDeleteUser(userId);
+
+    // 2. Mark user deactivated
+    user.isDeactivated = true;
+    user.deactivatedAt = new Date();
+    user.verified_alumni = false;
+    await user.save();
+
+    // 3. Delete user sessions
+    const Session = require("../../models/auth/session.model");
+    await Session.deleteMany({ user_id: userId });
+
+    // 4. Log admin activity
+    await logAdminActivity(
+      req.admin.email,
+      "deactivate_user",
+      "user",
+      userId,
+      { user_name: user.name, user_email: user.email },
+      req.ip
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "User account has been deactivated successfully",
+    });
+  } catch (error) {
+    console.error("Error deactivating user:", error);
+    res.status(500).json({
+      success: false,
+      message: "An error occurred while deactivating user account",
+    });
+  }
+};
+

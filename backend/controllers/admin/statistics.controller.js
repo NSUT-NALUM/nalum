@@ -34,7 +34,7 @@ exports.getDashboardStats = async (req, res) => {
     const totalPostViews = totalPostViewsAggregate[0]?.total || 0;
 
     // Verification statistics
-    const pendingVerifications = await VerificationQueue.countDocuments();
+    const pendingVerifications = await VerificationQueue.countDocuments({status: "pending"});
     console.log('[Dashboard Stats] Pending verifications:', pendingVerifications);
 
     // Event statistics

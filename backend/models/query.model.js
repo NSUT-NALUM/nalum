@@ -37,6 +37,14 @@ const querySchema = new mongoose.Schema(
       type: String,
       default: null,
     },
+    isDeleted: {
+      type: Boolean,
+      default: false,
+    },
+    deletedAt: {
+      type: Date,
+      default: null,
+    },
   },
   { timestamps: true }
 );
@@ -46,5 +54,6 @@ querySchema.index({ status: 1 });
 querySchema.index({ userId: 1 });
 querySchema.index({ status: 1, createdAt: -1 });
 querySchema.index({ createdAt: -1 });
+querySchema.index({ userId: 1, isDeleted: 1 }); // for user's own queries excluding deleted
 
 module.exports = mongoose.model('Query', querySchema);

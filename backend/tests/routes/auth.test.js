@@ -275,6 +275,7 @@ describe("auth routes", () => {
       expect(sessions.getOrCreate).toHaveBeenCalledWith(
         "test@example.com",
         "user-123",
+        undefined,
       );
     });
 

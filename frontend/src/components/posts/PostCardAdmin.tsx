@@ -10,12 +10,12 @@ export interface Post {
   _id: string;
   title: string;
   content: string;
-  userId: {
-    _id: string;
-    name: string;
-    email: string;
+  userId?: {
+    _id?: string;
+    name?: string;
+    email?: string;
     profile_picture?: string;
-  };
+  } | null;
   images: string[];
   createdAt: string;
   updatedAt: string;
@@ -250,7 +250,7 @@ const PostCardAdmin = ({
         <div className="flex items-center gap-6 text-sm text-gray-600 pt-4 border-t border-gray-200">
           <div>
             <span className="font-medium text-gray-700">Author:</span>{" "}
-            {post.userId.name}
+            {post.userId?.name ?? "Unknown user"}
           </div>
           <div>
             <span className="font-medium text-gray-700">Created:</span>{" "}

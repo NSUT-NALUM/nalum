@@ -1,6 +1,7 @@
 const Event = require("../../models/admin/event.model");
 const User = require("../../models/user/user.model");
 const { logAdminActivity } = require("../../middleware/adminAuth");
+const { cleanupFile } = require("../../utils/deleteHelper");
 
 // Get all events (with filters)
 exports.getAllEvents = async (req, res) => {
@@ -373,6 +374,51 @@ exports.updateEvent = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "An error occurred while updating event",
+    });
+  }
+};
+
+// Task 2.4 (refactor) + Task 3.3 (admin event delete)
+exports.deleteEvent = async (req, res) => {
+  try {
+    const { eventId } = req.params;
+
+    const event = await Event.findById(eventId);
+    if (!event) {
+      return res.status(404).json({
+        success: false,
+        message: "Event not found",
+      });
+    }
+
+    // Clean up event image file from disk
+    // image_url is stored as "/uploads/event-images/filename.jpg"
+    if (event.image_url) {
+       cleanupFile(event.image_url, "..");
+    }
+
+    // Soft delete — preserves the record for audit purposes
+    event.is_active = false;
+    await event.save();
+
+    await logAdminActivity(
+      req.admin.email,
+      "delete_event",
+      "event",
+      eventId,
+      { event_title: event.title, created_by: event.created_by },
+      req.ip
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Event deleted successfully",
+    });
+  } catch (error) {
+    console.error("Error deleting event:", error);
+    res.status(500).json({
+      success: false,
+      message: "An error occurred while deleting event",
     });
   }
 };

@@ -1,6 +1,5 @@
 const mongoose = require("mongoose");
 
-// Simplified profile schema without complex duration tracking
 const profileSchema = new mongoose.Schema(
   {
     user: {
@@ -45,6 +44,13 @@ const profileSchema = new mongoose.Schema(
         type: Number,
         index: true,
       },
+    },
+
+    // Short first-person summary shown as "About" on the profile page.
+    bio: {
+      type: String,
+      trim: true,
+      maxlength: 500,
     },
 
     // Optional current employment
