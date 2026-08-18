@@ -2,6 +2,7 @@ import { useState } from "react";
 import { MessageCircle, Trash2 } from "lucide-react";
 import { BASE_URL } from "@/lib/constants";
 import { useAuth } from "@/context/AuthContext";
+import { checkIsOwner } from "@/lib/utils";
 
 interface Query {
   _id: string;
@@ -24,16 +25,10 @@ const QueryCard = ({ query, onDelete }: QueryCardProps) => {
   const { user } = useAuth();
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
-  const getUserIdString = (idOrObj: any): string => {
-    if (!idOrObj) return "";
-    if (typeof idOrObj === "string") return idOrObj;
-    if (idOrObj._id) return String(idOrObj._id);
-    return String(idOrObj);
-  };
-
-  const currentUserIdStr = getUserIdString(user?.user_id ?? user?.id);
-  const resourceUserIdStr = getUserIdString(query.userId);
-  const isOwner = Boolean(currentUserIdStr && resourceUserIdStr && currentUserIdStr === resourceUserIdStr);
+  const isOwner = checkIsOwner(
+    user?.id,
+    query.userId
+  );
   const canDelete = isOwner || user?.role === "admin";
 
   const formatDate = (dateString: string) => {
