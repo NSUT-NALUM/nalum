@@ -64,6 +64,9 @@ const renderWithRouter = (ui: React.ReactElement, route = "/") => {
 };
 
 beforeEach(() => {
+  vi.clearAllMocks();
+  (mockedApi.post as Mock).mockReset();
+  (mockedApi.get as Mock).mockReset();
   mockedUseAuth.mockReturnValue({
     accessToken: null,
     user: null,

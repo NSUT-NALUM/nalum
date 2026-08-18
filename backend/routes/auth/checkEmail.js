@@ -34,6 +34,7 @@ router.post("/", async (req, res) => {
     error: false,
     code: 200,
     exists,
+    email_verified,
     message: exists
       ? "An account with this email already exists. Please sign in."
       : "No account found with this email. Please sign up.",
