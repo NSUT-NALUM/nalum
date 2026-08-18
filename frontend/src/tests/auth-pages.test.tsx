@@ -70,6 +70,7 @@ beforeEach(() => {
     isLoading: false,
     isAuthenticated: false,
     isAdmin: false,
+    isVerifiedAlumni: null,
     setAuth: setAuthMock,
     logout: vi.fn(),
     refreshUser: vi.fn(),
@@ -126,6 +127,7 @@ describe("auth pages", () => {
         email: "student@nsut.ac.in",
         password: "password123",
         role: "student",
+        rememberMe: false,
       });
     });
     expect(setAuthMock).toHaveBeenCalledWith(

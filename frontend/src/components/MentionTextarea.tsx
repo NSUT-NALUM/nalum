@@ -28,6 +28,8 @@ interface MentionTextareaProps
   className?: string;
   /** Called once on mount with a resolver that replaces @Name → @[Name](userId) */
   onResolverReady?: (resolver: (text: string) => string) => void;
+  /** Dropdown placement preference (default: "auto") */
+  placement?: "auto" | "bottom" | "top";
 }
 
 // ─── Helper: auto-grow textarea ──────────────────────────────────────────────
@@ -41,7 +43,7 @@ function autoGrow(el: HTMLTextAreaElement | null) {
 // ─── Component ───────────────────────────────────────────────────────────────
 
 const MentionTextarea = forwardRef<HTMLTextAreaElement, MentionTextareaProps>(
-  ({ value, onChange, className, onResolverReady, ...rest }, forwardedRef) => {
+  ({ value, onChange, className, onResolverReady, placement = "auto", ...rest }, forwardedRef) => {
     const internalRef = useRef<HTMLTextAreaElement>(null);
     useImperativeHandle(forwardedRef, () => internalRef.current!);
 
@@ -71,7 +73,11 @@ const MentionTextarea = forwardRef<HTMLTextAreaElement, MentionTextareaProps>(
     const [activeIndex, setActiveIndex] = useState(0);
     const [query, setQuery] = useState("");
     const [mentionStart, setMentionStart] = useState<number | null>(null);
-    const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
+    const [dropdownPosition, setDropdownPosition] = useState<{
+      top?: number;
+      bottom?: number;
+      left: number;
+    }>({ left: 0 });
     const dropdownRef = useRef<HTMLDivElement>(null);
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -121,15 +127,29 @@ const MentionTextarea = forwardRef<HTMLTextAreaElement, MentionTextareaProps>(
 
       const caretRect = marker.getBoundingClientRect();
       const dropdownWidth = dropdownRef.current?.offsetWidth ?? 288;
+      const dropdownHeight = 224; // max-h-56 = 14rem = 224px
 
       document.body.removeChild(mirror);
 
       // compute position relative to the wrapper so the dropdown (absolute)
       // placed inside it is positioned correctly and not clipped
-      const extraOffset = 8; // px below the caret
+      const extraOffset = 8; // px below or above the caret
       const wrapperRect = wrapper.getBoundingClientRect();
 
-      const relativeTop = caretRect.bottom - wrapperRect.top + extraOffset;
+      // Check available vertical space below the caret in viewport
+      const spaceBelow = window.innerHeight - caretRect.bottom;
+      const spaceAbove = caretRect.top;
+
+      let shouldPlaceAbove = false;
+      if (placement === "top") {
+        shouldPlaceAbove = true;
+      } else if (placement === "bottom") {
+        shouldPlaceAbove = false;
+      } else {
+        // "auto": only flip upward if cramped near the very bottom of the screen (e.g. bottom chat bar)
+        shouldPlaceAbove = spaceBelow < 120 && spaceAbove > 200;
+      }
+
       // center dropdown horizontally under the caret
       const caretCenter = (caretRect.left + caretRect.right) / 2;
       const relativeLeftUnclamped = caretCenter - wrapperRect.left - dropdownWidth / 2;
@@ -137,21 +157,29 @@ const MentionTextarea = forwardRef<HTMLTextAreaElement, MentionTextareaProps>(
       const maxLeft = Math.max(wrapperRect.width - dropdownWidth, 0);
       const nextLeft = Math.max(Math.min(relativeLeftUnclamped, maxLeft), 0);
 
-      setDropdownPosition({
-        top: Math.max(relativeTop, 0),
-        left: nextLeft,
-      });
-    }, []);
+      if (shouldPlaceAbove) {
+        setDropdownPosition({
+          top: undefined,
+          bottom: wrapperRect.bottom - caretRect.top + extraOffset,
+          left: nextLeft,
+        });
+      } else {
+        setDropdownPosition({
+          top: Math.max(caretRect.bottom - wrapperRect.top + extraOffset, 0),
+          bottom: undefined,
+          left: nextLeft,
+        });
+      }
+    }, [placement]);
 
     // ── fetch suggestions ──
     const fetchSuggestions = useCallback(async (q: string) => {
-      if (!q) {
-        setSuggestions([]);
-        setShowDropdown(false);
-        return;
-      }
+      const cleanQuery = q.trim();
       try {
-        const { data } = await api.get(`/mention?q=${encodeURIComponent(q)}`);
+        const url = cleanQuery
+          ? `/mention?q=${encodeURIComponent(cleanQuery)}`
+          : `/mention`;
+        const { data } = await api.get(url);
         setSuggestions(data.users || []);
         setShowDropdown((data.users || []).length > 0);
         setActiveIndex(0);
@@ -166,9 +194,9 @@ const MentionTextarea = forwardRef<HTMLTextAreaElement, MentionTextareaProps>(
       const newValue = e.target.value;
       const cursor = e.target.selectionStart ?? newValue.length;
 
-      // Find the last word before cursor
+      // Find mention trigger before cursor (support up to 30 chars of multi-word names)
       const textBeforeCursor = newValue.slice(0, cursor);
-      const match = textBeforeCursor.match(/@(\w*)$/);
+      const match = textBeforeCursor.match(/@([A-Za-z0-9_.' -]{0,30})$/);
 
       if (match) {
         const q = match[1];
@@ -225,25 +253,47 @@ const MentionTextarea = forwardRef<HTMLTextAreaElement, MentionTextareaProps>(
     // ── keyboard navigation ──
     const handleKeyDown = useCallback(
       (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-        if (!showDropdown) return;
-
-        if (e.key === "ArrowDown") {
-          e.preventDefault();
-          setActiveIndex((i) => Math.min(i + 1, suggestions.length - 1));
-        } else if (e.key === "ArrowUp") {
-          e.preventDefault();
-          setActiveIndex((i) => Math.max(i - 1, 0));
-        } else if (e.key === "Enter" || e.key === "Tab") {
-          if (suggestions[activeIndex]) {
+        if (showDropdown && suggestions.length > 0) {
+          if (e.key === "ArrowDown") {
             e.preventDefault();
-            insertMention(suggestions[activeIndex]);
+            setActiveIndex((i) => Math.min(i + 1, suggestions.length - 1));
+            return;
           }
-        } else if (e.key === "Escape") {
-          setShowDropdown(false);
+          if (e.key === "ArrowUp") {
+            e.preventDefault();
+            setActiveIndex((i) => Math.max(i - 1, 0));
+            return;
+          }
+          if (e.key === "Enter" || e.key === "Tab") {
+            if (suggestions[activeIndex]) {
+              e.preventDefault();
+              e.stopPropagation();
+              insertMention(suggestions[activeIndex]);
+              return;
+            }
+          }
+          if (e.key === "Escape") {
+            e.preventDefault();
+            setShowDropdown(false);
+            return;
+          }
         }
+
+        // Forward to external onKeyDown when dropdown is not consuming the key
+        rest.onKeyDown?.(e);
       },
-      [showDropdown, suggestions, activeIndex, insertMention]
+      [showDropdown, suggestions, activeIndex, insertMention, rest]
     );
+
+    // ── scroll active suggestion into view on keyboard navigation ──
+    useEffect(() => {
+      if (!showDropdown || !dropdownRef.current) return;
+      const container = dropdownRef.current;
+      const activeButton = container.children[activeIndex] as HTMLElement | undefined;
+      if (activeButton && typeof activeButton.scrollIntoView === "function") {
+        activeButton.scrollIntoView({ block: "nearest" });
+      }
+    }, [activeIndex, showDropdown]);
 
     // ── close dropdown on outside click ──
     useEffect(() => {
@@ -266,6 +316,8 @@ const MentionTextarea = forwardRef<HTMLTextAreaElement, MentionTextareaProps>(
       autoGrow(internalRef.current);
     }, [value]);
 
+    const { onKeyDown: _discardedOnKeyDown, ...textareaProps } = rest;
+
     return (
       <div className="relative w-full">
         <textarea
@@ -274,18 +326,26 @@ const MentionTextarea = forwardRef<HTMLTextAreaElement, MentionTextareaProps>(
           onChange={handleChange}
           onKeyDown={handleKeyDown}
           className={cn(
-            "w-full bg-white/5 border border-white/10 text-white placeholder:text-gray-500 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500/20 rounded-md p-3 text-sm leading-relaxed overflow-hidden",
+            // Mirrors components/ui/textarea.tsx so a MentionTextarea sits in a
+            // form indistinguishably from a plain <Textarea>.
+            "w-full min-w-0 resize-none overflow-x-hidden overflow-y-auto rounded-md border border-input bg-background px-3 py-2 text-sm leading-relaxed text-foreground ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 [overflow-wrap:anywhere]",
             className
           )}
-          {...rest}
+          {...textareaProps}
         />
 
         {/* Mention suggestions dropdown */}
         {showDropdown && suggestions.length > 0 && (
           <div
             ref={dropdownRef}
-            style={{ top: dropdownPosition.top, left: dropdownPosition.left }}
-            className="absolute z-50 w-full sm:w-72 max-h-56 overflow-y-auto bg-slate-900 border border-white/10 rounded-md shadow-2xl backdrop-blur-md"
+            // Positioned inline from the caret mirror, so no `left-0`/`mt-1`
+            // here — a Tailwind `left` would fight the computed one.
+            style={{
+              top: dropdownPosition.top !== undefined ? `${dropdownPosition.top}px` : undefined,
+              bottom: dropdownPosition.bottom !== undefined ? `${dropdownPosition.bottom}px` : undefined,
+              left: `${dropdownPosition.left}px`,
+            }}
+            className="absolute z-50 w-full sm:w-72 max-h-56 overflow-y-auto bg-popover text-popover-foreground border border-border rounded-xl shadow-overlay"
           >
             {suggestions.map((user, i) => (
               <button
@@ -298,12 +358,12 @@ const MentionTextarea = forwardRef<HTMLTextAreaElement, MentionTextareaProps>(
                 className={cn(
                   "flex items-center gap-3 w-full px-4 py-2.5 text-left transition-colors text-sm",
                   i === activeIndex
-                    ? "bg-blue-600/20 text-white"
-                    : "text-gray-300 hover:bg-white/5"
+                    ? "bg-accent text-accent-foreground"
+                    : "text-foreground hover:bg-muted"
                 )}
               >
                 {/* Avatar */}
-                <div className="h-8 w-8 rounded-full overflow-hidden flex-shrink-0 bg-white/10 border border-white/10 flex items-center justify-center">
+                <div className="h-8 w-8 rounded-full overflow-hidden flex-shrink-0 bg-muted border border-border flex items-center justify-center">
                   {user.profile_picture ? (
                     <img
                       src={`${BASE_URL}/uploads/profile/${user.profile_picture}`}
@@ -311,7 +371,7 @@ const MentionTextarea = forwardRef<HTMLTextAreaElement, MentionTextareaProps>(
                       className="h-full w-full object-cover"
                     />
                   ) : (
-                    <span className="text-xs font-semibold text-gray-300">
+                    <span className="text-xs font-semibold text-muted-foreground">
                       {user.name.charAt(0).toUpperCase()}
                     </span>
                   )}
@@ -320,11 +380,11 @@ const MentionTextarea = forwardRef<HTMLTextAreaElement, MentionTextareaProps>(
                 {/* Name + role */}
                 <div className="flex-1 min-w-0">
                   <p className="font-medium truncate">{user.name}</p>
-                  <p className="text-xs text-gray-500 capitalize">{user.role}</p>
+                  <p className="text-xs text-muted-foreground capitalize">{user.role}</p>
                 </div>
 
                 {/* @hint */}
-                <span className="text-xs text-blue-400 flex-shrink-0">@mention</span>
+                <span className="text-xs text-primary flex-shrink-0">@mention</span>
               </button>
             ))}
           </div>

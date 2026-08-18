@@ -1,24 +1,52 @@
 const axios = require("axios");
 const { getRedisClient } = require("../config/redis.config");
 const Profile = require("../models/user/profile.model");
+const {
+  GEOCODING_QUEUE_KEY: QUEUE_KEY,
+  GEOCODING_PROCESSING_KEY: PROCESSING_KEY,
+  GEOCODING_ERROR_COUNT_KEY: ERROR_COUNT_KEY,
+  GEOCODING_IN_PROGRESS_KEY: IN_PROGRESS_KEY,
+  GEOCODING_WORKER_LOCK_KEY: WORKER_LOCK_KEY,
+  invalidateAlumniMapCache,
+} = require("../config/cacheKeys");
+const { getCanonicalLocation } = require("../config/canonicalCities");
 
-const QUEUE_KEY = "geocoding:queue";
-const PROCESSING_KEY = "geocoding:processing";
-const ERROR_COUNT_KEY = "geocoding:error_count";
 const NOMINATIM_URL = "https://nominatim.openstreetmap.org/search";
 
-// Rate limiting: 1 request per second
+// Nominatim's usage policy is ~1 request/second, aggregate, for the whole app.
+// The pacing loop is a self-scheduling setTimeout chain, NOT a setInterval:
+// the next request is only scheduled after the previous one has completed, so
+// the gap between request starts is always >= RATE_LIMIT_MS even when a
+// response is slower than 1s. (A setInterval with an async callback would fire
+// overlapping requests whenever a response outlives the tick.)
 const RATE_LIMIT_MS = 1000;
 
-// Exponential backoff delays
+// Max attempts per queue item before it is dropped (dead-lettered) to avoid
+// infinite retry loops on permanent failures (e.g. ungeocodable city names).
+const MAX_RETRIES = 5;
+
+// Exponential backoff delays after rate-limit responses
 const BACKOFF_DELAYS = {
   1: 5 * 60 * 1000, // 5 minutes
   2: 15 * 60 * 1000, // 15 minutes
   3: 60 * 60 * 1000, // 1 hour
 };
 
+// Distributed worker lock: only one backend instance may run the pacing loop,
+// so the aggregate request rate stays at 1/sec even if the app is scaled to
+// multiple replicas. lMove already prevents double-processing; this prevents
+// double request rate. A crashed worker's lock expires via the TTL.
+//
+// Assumption: a single tick (one geocode + one Mongo write + Redis ops) never
+// outlives LOCK_TTL_SECONDS. If it ever could, the per-tick renewal (plain SET
+// EX) and stopProcessing's unconditional DEL could clobber a new owner's lock
+// after TTL expiry — the renewal would need an ownership check instead.
+const LOCK_TTL_SECONDS = 60;
+const WORKER_ID = `${process.pid}-${Date.now()}`;
+
 let isProcessing = false;
-let processingInterval = null;
+let processingTimeout = null;
+let pausedUntil = 0; // ms timestamp; 0 = not in a backoff pause
 
 // Add a user to the geocoding queue
 async function addToQueue(userId, city, country) {
@@ -45,9 +73,17 @@ async function addToQueue(userId, city, country) {
   }
 }
 
-// Geocode a city/country using OpenStreetMap Nominatim API
+// Geocode a city/country using OpenStreetMap Nominatim API with canonical validation
 async function geocodeLocation(city, country) {
   try {
+    const canonical = getCanonicalLocation(city, country);
+    if (canonical.isCanonical) {
+      console.log(
+        `✓ Using canonical coordinates for ${city}, ${country}: lat=${canonical.lat}, lng=${canonical.lng}`
+      );
+      return [canonical.lat, canonical.lng];
+    }
+
     const query = `${city}, ${country}`;
     const response = await axios.get(NOMINATIM_URL, {
       params: {
@@ -62,7 +98,13 @@ async function geocodeLocation(city, country) {
 
     if (response.data && response.data.length > 0) {
       const result = response.data[0];
-      return [parseFloat(result.lat), parseFloat(result.lon)];
+      const geocodedLat = parseFloat(result.lat);
+      const geocodedLng = parseFloat(result.lon);
+
+      // Guard against malformed responses persisting NaN coordinates in Mongo
+      if (Number.isFinite(geocodedLat) && Number.isFinite(geocodedLng)) {
+        return [geocodedLat, geocodedLng];
+      }
     }
 
     console.warn(`No geocoding results for: ${query}`);
@@ -77,53 +119,169 @@ async function geocodeLocation(city, country) {
   }
 }
 
+function safeParse(json) {
+  try {
+    return JSON.parse(json);
+  } catch {
+    return null;
+  }
+}
+
+// Requeue items left in the in-progress list by a previously crashed worker.
+// Idempotent — a duplicate geocode is harmless (it just re-sets lat/lng).
+async function recoverInProgressItems() {
+  try {
+    const redis = getRedisClient();
+    while ((await redis.lLen(IN_PROGRESS_KEY)) > 0) {
+      const stuck = await redis.rPop(IN_PROGRESS_KEY);
+      if (!stuck) break;
+      await redis.lPush(QUEUE_KEY, stuck);
+      console.warn(
+        "[geocoding] Requeued in-progress item from previous run:",
+        stuck,
+      );
+    }
+  } catch (error) {
+    console.error(
+      "[geocoding] Failed to recover in-progress items:",
+      error.message,
+    );
+  }
+}
+
 // Process one item from the queue
 async function processNextItem() {
-  const redis = getRedisClient();
+  let redis;
+  let item = null;
 
   try {
-    // Get next item from queue
-    const item = await redis.lPop(QUEUE_KEY);
+    redis = getRedisClient();
+
+    // Atomically claim an item so concurrent workers never process the same
+    // one (lMove works across instances; lPop does not).
+    item = await redis.lMove(QUEUE_KEY, IN_PROGRESS_KEY, "LEFT", "RIGHT");
     if (!item) {
       console.log("Geocoding queue is empty");
       stopProcessing();
+      // Close the race where an item is enqueued between the empty lMove and
+      // this worker stopping: isProcessing is already false here, so either we
+      // detect the new item and restart, or a concurrent addToQueue starts a
+      // fresh worker. Either way no item is stranded.
+      try {
+        if ((await redis.lLen(QUEUE_KEY)) > 0) {
+          startProcessing();
+        }
+      } catch (err) {
+        console.error(
+          "[geocoding] Failed to re-check queue length:",
+          err && err.message ? err.message : err,
+        );
+      }
       return;
     }
 
-    const { userId, city, country } = JSON.parse(item);
+    const parsed = safeParse(item);
+    if (!parsed) {
+      // Corrupt item — drop it so it can't block the queue forever.
+      console.error("[geocoding] Dropping corrupt queue item:", item);
+      await redis.lRem(IN_PROGRESS_KEY, 1, item);
+      await redis.del(PROCESSING_KEY);
+      return;
+    }
+
+    const { userId, city, country } = parsed;
     console.log(`Processing geocoding for user ${userId}: ${city}, ${country}`);
 
-    // Mark as processing
+    // Mark as processing (observability only; concurrency is handled by lMove)
     await redis.set(PROCESSING_KEY, userId, { EX: 60 });
 
     // Geocode the location
     const result = await geocodeLocation(city, country);
 
-    if (result) {
-      const [lat, lng] = result;
-      // Update user profile with lat/lng
-      await Profile.findOneAndUpdate(
-        { user: userId },
-        {
-          "location.lat": lat,
-          "location.lng": lng,
-        },
-      );
-      console.log(`✓ Geocoded user ${userId}: lat=${lat}, lng=${lng}`);
-
-      // Reset error count on success
-      await redis.set(ERROR_COUNT_KEY, 0);
-    } else {
-      console.warn(`Failed to geocode location for user ${userId}`);
+    // A missing or non-finite result is a retryable failure: it goes through
+    // the same retry/dead-letter path as network errors below, so the failure
+    // is observable instead of being dropped silently with no trace.
+    if (!result || !Number.isFinite(result[0]) || !Number.isFinite(result[1])) {
+      throw new Error("NO_USABLE_RESULT");
     }
 
-    // Clear processing flag
+    const [lat, lng] = result;
+
+    // Update user profile with lat/lng
+    await Profile.findOneAndUpdate(
+      { user: userId },
+      {
+        "location.lat": lat,
+        "location.lng": lng,
+      },
+    );
+    console.log(`✓ Geocoded user ${userId}: lat=${lat}, lng=${lng}`);
+
+    // Reset error count (rolling 1h window so it can't grow unbounded)
+    await redis.set(ERROR_COUNT_KEY, 0, { EX: 3600 });
+
+    // Invalidate alumni-map cache so the new pin shows up immediately
+    await invalidateAlumniMapCache();
+
+    // Clear processing flag and remove item from the in-progress list
     await redis.del(PROCESSING_KEY);
+    await redis.lRem(IN_PROGRESS_KEY, 1, item);
   } catch (error) {
     console.error("Error processing queue item:", error.message);
 
+    // Release the claimed item from the in-progress list
+    if (item) {
+      try {
+        await redis.lRem(IN_PROGRESS_KEY, 1, item);
+      } catch (remErr) {
+        console.error(
+          "[geocoding] Failed to remove item from in-progress list:",
+          remErr.message,
+        );
+      }
+    }
+
     if (error.message === "RATE_LIMIT") {
+      // Re-queue so the item is NOT lost — retried after the backoff window.
+      // Rate-limit retries do not count toward MAX_RETRIES (backoff throttles
+      // them instead).
+      if (item) {
+        const parsed = safeParse(item);
+        if (parsed) {
+          await redis.rPush(QUEUE_KEY, JSON.stringify(parsed));
+          console.warn(
+            `[geocoding] Re-queued item for user ${parsed.userId} after rate limit`,
+          );
+        }
+      }
       await handleRateLimit(redis);
+      await redis.del(PROCESSING_KEY);
+      return;
+    }
+
+    const isNoResult = error.message === "NO_USABLE_RESULT";
+
+    // Non-rate-limit failure: retry up to MAX_RETRIES, then dead-letter so a
+    // permanently failing item can't spin forever.
+    if (item) {
+      const parsed = safeParse(item);
+      if (parsed) {
+        parsed.retries = (parsed.retries || 0) + 1;
+        if (parsed.retries <= MAX_RETRIES) {
+          await redis.rPush(QUEUE_KEY, JSON.stringify(parsed));
+          console.warn(
+            `[geocoding] Re-queued item for user ${parsed.userId} after ${
+              isNoResult ? "no usable geocode result" : "error"
+            } (retry ${parsed.retries}/${MAX_RETRIES})`,
+          );
+        } else {
+          console.error(
+            `[geocoding] Dead-lettering item for user ${parsed.userId} after ${MAX_RETRIES} failed attempts (${parsed.city}, ${parsed.country})${
+              isNoResult ? " — no usable geocode result" : ""
+            }. Manual intervention required.`,
+          );
+        }
+      }
     }
 
     await redis.del(PROCESSING_KEY);
@@ -133,6 +291,9 @@ async function processNextItem() {
 // Handle rate limit error with exponential backoff
 async function handleRateLimit(redis) {
   const errorCount = await redis.incr(ERROR_COUNT_KEY);
+  // Rolling 1-hour window so a slow trickle of 429s can't accumulate forever
+  await redis.expire(ERROR_COUNT_KEY, 3600);
+
   const delay = BACKOFF_DELAYS[errorCount] || BACKOFF_DELAYS[3];
 
   console.error(
@@ -140,41 +301,140 @@ async function handleRateLimit(redis) {
   );
 
   if (errorCount >= 3) {
+    // Keep backing off at the max delay — never stop permanently. Log loudly
+    // so humans can review Nominatim usage.
     console.error(
-      "🛑 Maximum retries reached. Stopping queue processor. Manual intervention required.",
+      "🛑 Multiple consecutive rate-limit errors. Processing paused with max backoff (1h). Verify Nominatim usage and consider a self-hosted geocoder.",
     );
-    stopProcessing();
     // TODO: Send alert to admins
-    return;
   }
 
-  // Stop processing and restart after delay
+  // Record the pause so startProcessing() (e.g. from a new addToQueue) does not
+  // immediately resume hammering Nominatim during the backoff window.
+  pausedUntil = Date.now() + delay;
+
+  // Stop processing and restart after delay (items are safe in the queue)
   stopProcessing();
   setTimeout(() => {
+    pausedUntil = 0;
     console.log("Resuming geocoding queue processing after backoff period");
     startProcessing();
   }, delay);
 }
 
-// Start the queue processor
+// Start the queue processor. The pacing loop is a self-scheduling setTimeout
+// chain: the next tick is scheduled only after the current one finishes, so
+// consecutive Nominatim requests are always >= RATE_LIMIT_MS apart, even when
+// responses are slow. Also acquires a distributed lock so only one backend
+// instance runs the loop when the app is scaled horizontally.
 function startProcessing() {
   if (isProcessing) return;
 
-  isProcessing = true;
-  console.log("Started geocoding queue processor (1 req/sec)");
+  // Respect an active backoff pause — don't restart early.
+  if (pausedUntil && Date.now() < pausedUntil) {
+    setTimeout(() => {
+      if (!isProcessing) startProcessing();
+    }, pausedUntil - Date.now());
+    return;
+  }
+  pausedUntil = 0;
 
-  processingInterval = setInterval(async () => {
+  // The lock acquisition is async; do it in a fire-and-forget wrapper so call
+  // sites (addToQueue, index.js startup) don't have to await startProcessing.
+  (async () => {
+    try {
+      const redis = getRedisClient();
+      const acquired = await redis.set(WORKER_LOCK_KEY, WORKER_ID, {
+        NX: true,
+        EX: LOCK_TTL_SECONDS,
+      });
+      if (!acquired) {
+        // Another instance owns the loop; retry after the lock TTL so we take
+        // over if that instance crashes while items are still queued.
+        console.log(
+          "[geocoding] Another instance holds the worker lock; standing by",
+        );
+        setTimeout(() => startProcessing(), LOCK_TTL_SECONDS * 1000);
+        return;
+      }
+    } catch (err) {
+      console.error(
+        "[geocoding] Failed to acquire worker lock:",
+        err && err.message ? err.message : err,
+      );
+      return;
+    }
+
+    if (isProcessing) {
+      // Defensive: if another path started the loop while we were acquiring
+      // the lock, release the lock we just won so it doesn't linger for the
+      // full TTL. (Not reachable today — only the lock winner can set
+      // isProcessing — but cheap insurance against future refactors.)
+      try {
+        await redis.del(WORKER_LOCK_KEY);
+      } catch (err) {
+        // Lock will expire via TTL
+      }
+      return;
+    }
+
+    isProcessing = true;
+    console.log("Started geocoding queue processor (1 req/sec)");
+
+    // Recover items left in-progress by a crashed worker (idempotent)
+    recoverInProgressItems();
+
+    processingTimeout = setTimeout(tick, RATE_LIMIT_MS);
+  })();
+}
+
+async function tick() {
+  try {
     await processNextItem();
-  }, RATE_LIMIT_MS);
+  } catch (err) {
+    // Defensive: never let a rejected promise escape the tick
+    console.error(
+      "[geocoding] Unhandled error in queue tick:",
+      err && err.message ? err.message : err,
+    );
+  } finally {
+    // Only renew the lock / schedule the next tick if this tick's own
+    // processing did not already stop the loop (empty queue or rate-limit
+    // pause call stopProcessing, which releases the lock). Renewing the lock
+    // after a release would block other instances for the full TTL.
+    if (isProcessing) {
+      try {
+        const redis = getRedisClient();
+        await redis.set(WORKER_LOCK_KEY, WORKER_ID, { EX: LOCK_TTL_SECONDS });
+      } catch (err) {
+        // Best-effort: a failed renew just means the lock TTL will let another
+        // instance take over after LOCK_TTL_SECONDS.
+        console.error(
+          "[geocoding] Failed to renew worker lock:",
+          err && err.message ? err.message : err,
+        );
+      }
+      processingTimeout = setTimeout(tick, RATE_LIMIT_MS);
+    }
+  }
 }
 
 // Stop the queue processor
 function stopProcessing() {
-  if (processingInterval) {
-    clearInterval(processingInterval);
-    processingInterval = null;
+  if (processingTimeout) {
+    clearTimeout(processingTimeout);
+    processingTimeout = null;
   }
-  isProcessing = false;
+  if (isProcessing) {
+    isProcessing = false;
+    // Best-effort release of the distributed lock (only relevant with multiple
+    // instances; a crash leaves it to expire via the TTL).
+    try {
+      getRedisClient().del(WORKER_LOCK_KEY).catch(() => {});
+    } catch (err) {
+      // Redis unavailable — the lock will expire via TTL
+    }
+  }
   console.log("Stopped geocoding queue processor");
 }
 
@@ -183,13 +443,16 @@ async function getQueueStatus() {
   try {
     const redis = getRedisClient();
     const queueLength = await redis.lLen(QUEUE_KEY);
+    const inProgressLength = await redis.lLen(IN_PROGRESS_KEY);
     const errorCount = (await redis.get(ERROR_COUNT_KEY)) || 0;
     const currentlyProcessing = await redis.get(PROCESSING_KEY);
 
     return {
       queueLength,
+      inProgressLength,
       errorCount: parseInt(errorCount),
       isProcessing,
+      pausedUntil: pausedUntil || null,
       currentlyProcessing,
     };
   } catch (error) {
@@ -203,4 +466,6 @@ module.exports = {
   startProcessing,
   stopProcessing,
   getQueueStatus,
+  // Exported for tests / observability
+  _internal: { QUEUE_KEY, IN_PROGRESS_KEY, ERROR_COUNT_KEY, MAX_RETRIES, processNextItem },
 };

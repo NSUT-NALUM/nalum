@@ -4,6 +4,8 @@ const Event = require("../../models/admin/event.model");
 const Newsletter = require("../../models/admin/newsletter.model");
 const VerificationQueue = require("../../models/verificationQueue.model");
 const AdminActivity = require("../../models/admin/adminActivity.model");
+const Post = require("../../models/posts/post.model");
+const PageVisit = require("../../models/pageVisit.model");
 
 // Get dashboard statistics
 exports.getDashboardStats = async (req, res) => {
@@ -18,6 +20,18 @@ exports.getDashboardStats = async (req, res) => {
     const bannedUsers = await User.countDocuments({ banned: true });
 
     console.log('[Dashboard Stats] User stats:', { totalUsers, totalStudents, totalAlumni, verifiedAlumni, bannedUsers });
+
+    // Website Visit statistics (Pre-login vs Post-login)
+    const preLoginVisits = await PageVisit.countDocuments({ is_authenticated: false });
+    const postLoginVisits = await PageVisit.countDocuments({ is_authenticated: true });
+    const totalVisits = preLoginVisits + postLoginVisits;
+
+    // Post View statistics
+    const totalPosts = await Post.countDocuments();
+    const totalPostViewsAggregate = await Post.aggregate([
+      { $group: { _id: null, total: { $sum: "$view_count" } } },
+    ]);
+    const totalPostViews = totalPostViewsAggregate[0]?.total || 0;
 
     // Verification statistics
     const pendingVerifications = await VerificationQueue.countDocuments({status: "pending"});
@@ -96,6 +110,15 @@ exports.getDashboardStats = async (req, res) => {
       bans: {
         active: activeBans,
         total: bannedUsers,
+      },
+      website_visits: {
+        total: totalVisits,
+        pre_login: preLoginVisits,
+        post_login: postLoginVisits,
+      },
+      posts: {
+        total: totalPosts,
+        total_views: totalPostViews,
       },
     };
 

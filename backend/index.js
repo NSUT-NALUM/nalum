@@ -20,11 +20,13 @@ const reportsRoutes = require("./routes/reports.js");
 const queriesRoutes = require("./routes/queries.js");
 const givingRoutes = require("./routes/givings.js");
 const notificationRoutes = require("./routes/notifications.js");
+const analyticsRoutes = require("./routes/analytics.js");
 const alumniMapRoutes = require("./routes/alumniMap.js");
 const geocodeRoutes = require("./routes/geocode.js");
 const mentionRoutes = require("./routes/mention.js");
 const { startProcessing } = require("./services/geocodingQueue");
 const { checkBanned } = require("./middleware/checkBanned.js");
+const { emailWorker } = require("./queues/emailQueue");
 const morgan = require("morgan");
 const redisConfig = require("./config/redis.config.js");
 const { initializeSocket } = require("./sockets/chatSocket.js");
@@ -89,6 +91,7 @@ app.use("/api/reports", checkBanned, reportsRoutes);
 app.use("/api/queries", checkBanned, queriesRoutes);
 app.use("/api/givings", checkBanned, givingRoutes);
 app.use("/api/notifications", checkBanned, notificationRoutes);
+app.use("/api/analytics", analyticsRoutes);
 app.use("/api/alumni-map", alumniMapRoutes);
 app.use("/api/geocode", checkBanned, geocodeRoutes);
 app.use("/api/mention", checkBanned, mentionRoutes);
@@ -128,6 +131,10 @@ async function startServer() {
     logStartupStep("Starting geocoding queue worker...");
     startProcessing();
     logStartupStep("Geocoding queue worker started");
+
+    logStartupStep("Starting email queue worker...");
+    // Email worker is already initialized by requiring it
+    logStartupStep("Email queue worker started");
 
     logStartupStep("Initializing Socket.io...");
     const io = await initializeSocket(server);

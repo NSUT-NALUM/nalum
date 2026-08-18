@@ -1,9 +1,12 @@
 import React, { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import api from "@/lib/api";
+import { Flag } from "lucide-react";
 
 interface ReportDialogProps {
   postId: string;
@@ -68,47 +71,40 @@ const ReportDialog: React.FC<ReportDialogProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[500px] bg-slate-950 border-white/10 text-white">
+      <DialogContent className="bg-card border-border text-foreground sm:max-w-[500px] rounded-card">
         <DialogHeader>
-          <DialogTitle className="text-xl font-semibold">
+          <DialogTitle className="flex items-center gap-2 text-headline-md text-foreground">
+            <Flag className="h-5 w-5 text-destructive" />
             Report Post
           </DialogTitle>
+          <DialogDescription className="text-muted-foreground">
+            Let us know what's wrong with this post. Reports are reviewed by moderators.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-2">
-          <div>
-            <label
-              htmlFor="reason"
-              className="block text-sm font-medium text-gray-300 mb-2"
-            >
+          <div className="space-y-2">
+            <Label htmlFor="reason" className="text-foreground">
               Reason
-            </label>
-            <select
-              id="reason"
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-              required
-              disabled={isSubmitting}
-              className="w-full px-3 py-2 bg-white/5 border border-white/10 text-white placeholder:text-gray-500 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500/50 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <option value="" className="bg-slate-900">
-                Select a reason
-              </option>
-              {REPORT_REASONS.map((r) => (
-                <option key={r} value={r} className="bg-slate-900">
-                  {r}
-                </option>
-              ))}
-            </select>
+            </Label>
+            <Select value={reason} onValueChange={setReason} disabled={isSubmitting}>
+              <SelectTrigger id="reason" className="bg-background border-input text-foreground">
+                <SelectValue placeholder="Select a reason" />
+              </SelectTrigger>
+              <SelectContent>
+                {REPORT_REASONS.map((r) => (
+                  <SelectItem key={r} value={r}>
+                    {r}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
-          <div>
-            <label
-              htmlFor="description"
-              className="block text-sm font-medium text-gray-300 mb-2"
-            >
+          <div className="space-y-2">
+            <Label htmlFor="description" className="text-foreground">
               Description
-            </label>
+            </Label>
             <Textarea
               id="description"
               value={description}
@@ -117,7 +113,7 @@ const ReportDialog: React.FC<ReportDialogProps> = ({
               required
               disabled={isSubmitting}
               placeholder="Please provide detailed information about why you're reporting this post..."
-              className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 resize-none focus-visible:ring-blue-500/50"
+              className="bg-background border-input text-foreground placeholder:text-muted-foreground resize-none focus-visible:ring-ring"
             />
           </div>
         </div>
@@ -127,14 +123,14 @@ const ReportDialog: React.FC<ReportDialogProps> = ({
             variant="ghost"
             onClick={handleClose}
             disabled={isSubmitting}
-            className="text-gray-400 hover:text-white hover:bg-white/10"
+            className="text-muted-foreground hover:text-foreground hover:bg-accent"
           >
             Cancel
           </Button>
           <Button
             onClick={handleSubmit}
             disabled={isSubmitting || !reason.trim() || !description.trim()}
-            className="bg-red-600 hover:bg-red-700 text-white"
+            className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
           >
             {isSubmitting ? "Reporting..." : "Report"}
           </Button>

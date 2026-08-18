@@ -4,6 +4,7 @@ const Profile = require("../../models/user/profile.model");
 const User = require("../../models/user/user.model");
 const { protect } = require("../../middleware/auth");
 const { addToQueue } = require("../../services/geocodingQueue");
+const { invalidateAlumniMapCache } = require("../../config/cacheKeys");
 
 // PUT /profile/update - Update existing profile
 router.put("/", protect, async (req, res) => {
@@ -21,6 +22,7 @@ router.put("/", protect, async (req, res) => {
       batch,
       branch,
       campus,
+      bio,
       current_company,
       current_role,
       location,
@@ -66,6 +68,7 @@ router.put("/", protect, async (req, res) => {
     if (batch !== undefined) profile.batch = batch;
     if (branch !== undefined) profile.branch = branch;
     if (campus !== undefined) profile.campus = campus;
+    if (bio !== undefined) profile.bio = bio;
     if (current_company !== undefined) profile.current_company = current_company;
     if (current_role !== undefined) profile.current_role = current_role;
     if (social_media !== undefined) profile.social_media = { ...profile.social_media, ...social_media };
@@ -74,30 +77,53 @@ router.put("/", protect, async (req, res) => {
     if (location !== undefined) {
       const user = await User.findById(userId).select("role");
       if (user && user.role === "alumni") {
-        profile.location = location;
+        if (location && location.city && location.country) {
+          const { normalizeCityAndCountry, getCanonicalLocation } = require("../../config/canonicalCities");
+          const norm = normalizeCityAndCountry(location.city, location.country);
+          const canonical = getCanonicalLocation(location.city, location.country);
+
+          profile.location = {
+            city: norm.displayCity.toLowerCase(),
+            country: norm.displayCountry.toLowerCase(),
+            // Use != null (not falsy) so a real coordinate of 0 (equator /
+            // prime meridian) is preserved instead of being dropped; null and
+            // undefined both fall through to "no coordinates yet".
+            lat: canonical.isCanonical ? canonical.lat : (location.lat != null ? location.lat : undefined),
+            lng: canonical.isCanonical ? canonical.lng : (location.lng != null ? location.lng : undefined),
+          };
+        } else {
+          profile.location = location;
+        }
       }
     }
 
     await profile.save();
 
-    // Invalidate alumni-map cache if location was updated
-    if (location && (location.city || location.country)) {
-      try {
-        const redis = getRedisClient();
-        await redis.del("alumni-map:locations");
-      } catch (cacheError) {
-        console.error("Failed to invalidate cache:", cacheError);
-      }
+    // Invalidate alumni-map cache whenever the location is provided at all —
+    // even when it is cleared to {} — so removed pins disappear immediately
+    // instead of lingering for up to the 1h cache TTL.
+    if (location !== undefined) {
+      await invalidateAlumniMapCache();
     }
 
-    // Queue for geocoding if location updated but no coordinates
+    // Queue for geocoding if location updated but no coordinates (lat/lng of 0
+    // are valid coordinates, so only null/undefined mean "not yet geocoded").
     if (
       location &&
       location.city &&
       location.country &&
-      (!location.lat || !location.lng)
+      (location.lat == null || location.lng == null)
     ) {
-      await addToQueue(userId, location.city, location.country);
+      try {
+        await addToQueue(userId, location.city, location.country);
+      } catch (queueError) {
+        // Geocoding is a background task — a Redis blip must NOT fail a profile
+        // update that already succeeded, nor return a misleading 500.
+        console.error(
+          "Failed to enqueue geocoding job; coordinates will be filled later:",
+          queueError,
+        );
+      }
     }
 
     res.status(200).json({ message: "Profile updated successfully.", profile });

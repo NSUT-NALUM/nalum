@@ -24,6 +24,7 @@ export const MessageInput = ({
   const { socket } = useChatContext();
   const { emitTyping } = useTypingIndicator(socket, conversationId);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const resolverRef = useRef<(text: string) => string>((t) => t);
 
   const handleInputChange = (value: string) => {
     setMessage(value);
@@ -52,7 +53,8 @@ export const MessageInput = ({
 
   const handleSend = () => {
     if (message.trim() && !disabled) {
-      onSendMessage(message.trim());
+      const resolvedContent = resolverRef.current(message.trim());
+      onSendMessage(resolvedContent);
       setMessage("");
       emitTyping(false, receiverId);
       if (typingTimeoutRef.current) {
@@ -82,23 +84,24 @@ export const MessageInput = ({
   };
 
   return (
-    <div className="p-3 border-t border-white/10 bg-black/20 backdrop-blur-md">
-      <div className="flex gap-2 items-end">
+    <div className="p-3 border-t border-border bg-card">
+      <div className="flex gap-2 items-center min-w-0">
         <MentionTextarea
           value={message}
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
           onFocus={handleFocus}
+          onResolverReady={(fn) => { resolverRef.current = fn; }}
           placeholder="Type a message... (@mention)"
-          className="flex-1 min-h-[44px] resize-none bg-white/5 border-white/10 focus:bg-white/10 backdrop-blur-sm rounded-lg transition-all shadow-sm text-sm text-white placeholder:text-gray-400 pr-2"
+          className="flex-1 min-w-0 min-h-[44px] resize-none bg-background border-input focus:border-primary focus:ring-ring/20 rounded-lg transition-all shadow-sm text-sm text-foreground placeholder:text-muted-foreground pr-2"
           disabled={disabled}
-          style={{ maxHeight: "120px", overflowY: "auto" }}
+          style={{ maxHeight: "84px", overflowY: "auto" }}
         />
         <Button
           onClick={handleSend}
           disabled={!message.trim() || disabled}
           size="icon"
-          className="h-[44px] w-[44px] rounded-lg shadow-sm transition-all hover:scale-105 shrink-0 bg-indigo-600 hover:bg-indigo-700 text-white border border-white/10 mb-0"
+          className="h-[44px] w-[44px] rounded-full shadow-sm transition-all hover:scale-105 shrink-0 bg-primary hover:bg-primary-hover text-primary-foreground mb-0"
         >
           <Send className="h-4 w-4" />
         </Button>

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { LucideIcon, ChevronLeft, ChevronRight, X, AlertCircle, AlertTriangle } from "lucide-react";
+import { LucideIcon, ChevronLeft, ChevronRight, X, AlertCircle, AlertTriangle, Eye } from "lucide-react";
 import { BASE_URL } from "@/lib/constants";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -22,6 +22,7 @@ export interface Post {
   status: string;
   rejection_reason?: string;
   report_count?: number;
+  view_count?: number;
 }
 
 interface PostCardAdminProps {
@@ -254,6 +255,11 @@ const PostCardAdmin = ({
           <div>
             <span className="font-medium text-gray-700">Created:</span>{" "}
             {new Date(post.createdAt).toLocaleDateString()}
+          </div>
+          <div className="flex items-center gap-1.5">
+            <Eye className="w-4 h-4 text-blue-500" />
+            <span className="font-medium text-gray-700">Views:</span>{" "}
+            <span className="font-semibold text-blue-600">{post.view_count || 0}</span>
           </div>
           <div className="flex items-center gap-1.5">
             <AlertTriangle className="w-4 h-4 text-gray-500" />
