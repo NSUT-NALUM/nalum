@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,12 +10,22 @@ import nsutCampusHero from "@/assets/hero.webp";
 import apiClient from "@/lib/api";
 import axios from "axios";
 
+
 const ForgotPassword = () => {
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [cooldown, setCooldown] = useState(0);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (cooldown <= 0) return;  // Do nothing if timer isn't active
+    const interval = setInterval(() => {
+      setCooldown((prev) => (prev > 0 ? prev - 1 : 0));
+    }, 1000);  // Runs every 1000ms = 1 second
+    return () => clearInterval(interval);  // Cleanup when component unmounts or cooldown changes
+  }, [cooldown]);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -35,7 +45,7 @@ const ForgotPassword = () => {
     setIsLoading(true);
     try {
       await apiClient.post("/auth/forget-password", { email });
-      
+
       setEmailSent(true);
       toast.success("Reset Link Sent!", {
         description: "Check your email for the password reset link.",
@@ -52,7 +62,7 @@ const ForgotPassword = () => {
       });
     } catch (error) {
       console.error("Forgot password error:", error);
-      
+
       // Always show success message to prevent email enumeration
       setEmailSent(true);
       toast.success("Reset Link Sent!", {
@@ -149,7 +159,7 @@ const ForgotPassword = () => {
               >
                 Back to Sign In
               </Button>
-              
+
               <Button
                 onClick={() => setEmailSent(false)}
                 variant="outline"
