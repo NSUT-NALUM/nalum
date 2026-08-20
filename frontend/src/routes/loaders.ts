@@ -51,6 +51,7 @@ export const loadViewPost = () => import("@/pages/dashboard/ViewPost");
 export const loadQueries = () => import("@/pages/dashboard/Queries");
 export const loadGiving = () => import("@/pages/dashboard/Giving");
 export const loadMobileNotifications = () => import("@/pages/dashboard/MobileNotifications");
+export const loadChangePassword = () => import("@/pages/dashboard/ChangePassword");
 
 // Admin pages
 export const loadAdminProtectedRoute = () => import("@/components/admin/AdminProtectedRoute");
