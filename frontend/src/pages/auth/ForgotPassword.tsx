@@ -38,8 +38,9 @@ const ForgotPassword = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent | React.MouseEvent) => {
     e.preventDefault();
+    if (cooldown > 0) return;
     if (!validateForm()) return;
 
     setIsLoading(true);
@@ -80,6 +81,7 @@ const ForgotPassword = () => {
       });
     } finally {
       setIsLoading(false);
+      setCooldown(60);
     }
   };
 
@@ -161,22 +163,27 @@ const ForgotPassword = () => {
               </Button>
 
               <Button
-                onClick={() => setEmailSent(false)}
+                onClick={handleSubmit}
                 variant="outline"
                 className="w-full h-12 border-nsut-maroon text-nsut-maroon hover:bg-nsut-maroon/10 font-semibold text-lg"
+                disabled={cooldown > 0 || isLoading}
+              >
+                {cooldown > 0
+                  ? `Resend link in ${cooldown}s`
+                  : "Resend Reset Link"}
+              </Button>
+
+              <Button
+                onClick={() => setEmailSent(false)}
+                variant="ghost"
+                className="w-full h-12 text-nsut-maroon hover:bg-nsut-maroon/10 font-semibold text-lg"
               >
                 Try Different Email
               </Button>
             </div>
 
             <div className="text-center text-sm text-gray-600">
-              Didn't receive the email? Check your spam folder or{" "}
-              <button
-                onClick={() => setEmailSent(false)}
-                className="font-medium text-nsut-maroon hover:text-nsut-maroon/80"
-              >
-                try again
-              </button>
+              Didn't receive the email? Check your spam folder.
             </div>
           </div>
         </div>
