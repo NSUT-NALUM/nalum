@@ -1,6 +1,8 @@
 const VerificationQueue = require("../../models/verificationQueue.model");
 const User = require("../../models/user/user.model");
 const { logAdminActivity } = require("../../middleware/adminAuth");
+const { sendEmail } = require("../../mail/notificationMailer");
+const { invalidateAlumniMapCache } = require("../../config/cacheKeys");
 
 // Get all pending verifications
 exports.getVerificationQueue = async (req, res) => {
@@ -73,6 +75,10 @@ exports.approveVerification = async (req, res) => {
     user.verified_alumni = true;
     await user.save();
 
+    // Newly verified alumni are eligible for the map — invalidate so they show
+    // up without waiting for the 1h cache TTL.
+    await invalidateAlumniMapCache();
+
     // Remove from queue
     await VerificationQueue.findByIdAndDelete(verificationRequest._id);
 
@@ -89,6 +95,24 @@ exports.approveVerification = async (req, res) => {
       },
       req.ip
     );
+
+    // Notify the alumnus that they've been verified
+    const emailSent = await sendEmail({
+      to: user.email,
+      subject: "Your Alumni Account Has Been Verified",
+      template: "notification",
+      data: {
+        title: "Alumni Verification Approved",
+        name: user.name,
+        message:
+          "Great news! Your alumni account has been verified by our team. You now have full access to the NSUT Alumni Network.",
+        actionUrl: process.env.FRONTEND_URL || "",
+      },
+    });
+
+    if (!emailSent) {
+      console.error("Failed to send verification approval email to:", user.email);
+    }
 
     res.status(200).json({
       success: true,

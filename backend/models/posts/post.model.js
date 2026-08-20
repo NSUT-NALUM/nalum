@@ -26,6 +26,18 @@ const postSchema = new mongoose.Schema(
         message: "You can upload a maximum of 2 images.",
       },
     },
+    // Free-form topic labels chosen by the author. Capped so the chip row on a
+    // post card stays a single line; normalisation lives in the controller.
+    tags: {
+      type: [String],
+      default: [],
+      validate: {
+        validator: function (v) {
+          return v.length <= 5;
+        },
+        message: "You can add a maximum of 5 tags.",
+      },
+    },
     status: {
       type: String,
       enum: ["pending", "approved", "rejected"],
@@ -47,6 +59,14 @@ const postSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    view_count: {
+      type: Number,
+      default: 0,
+    },
+    likes: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    }],
   },
   { timestamps: true }
 );
@@ -55,5 +75,7 @@ const postSchema = new mongoose.Schema(
 postSchema.index({ status: 1 });
 postSchema.index({ userId: 1 });
 postSchema.index({ status: 1, createdAt: -1 });
+postSchema.index({ likes: -1 });
+postSchema.index({ tags: 1, status: 1, createdAt: -1 });
 
 module.exports = mongoose.model("Post", postSchema);

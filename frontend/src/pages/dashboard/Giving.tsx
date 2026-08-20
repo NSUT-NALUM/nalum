@@ -1,36 +1,52 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import api from "@/lib/api";
-import GivingCard from "@/components/GivingCard";
-import { Loader2, Heart, Send, Image as ImageIcon, X, AlertCircle } from "lucide-react";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import GivingRow, { GivingRecord } from "@/components/giving/GivingRow";
+import { AlertCircle, Heart, ImagePlus, Loader2, Send, X } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { trackFormSubmit, trackEvent } from "@/lib/analytics";
 import { DeleteConfirmDialog } from "@/components/ui/DeleteConfirmDialog";
 import { useDelete } from "@/hooks/useDelete";
 
-interface Giving {
-  _id: string;
-  title: string;
-  content: string;
-  userId: string;
-  images: string[];
-  status: "pending" | "viewed" | "responded";
-  answer?: string;
-  createdAt: string;
-  updatedAt: string;
-}
+const TITLE_LIMIT = 50;
+const CONTENT_LIMIT = 500;
+const MAX_IMAGES = 2;
+
+const GivingRowSkeleton = () => (
+  <div className="space-y-3 rounded-card border border-border bg-card p-6 shadow-card">
+    <Skeleton className="h-5 w-32 rounded-full" />
+    <Skeleton className="h-6 w-2/3" />
+    <Skeleton className="h-4 w-full" />
+    <Skeleton className="h-4 w-5/6" />
+  </div>
+);
+
+const PageHeader = () => (
+  <div className="mb-8 border-b border-border pb-6">
+    <h1 className="mb-2 text-headline-lg-mobile text-primary md:text-headline-xl">
+      Giving
+    </h1>
+    <p className="text-body-lg text-muted-foreground">
+      Support the next generation of NSUT alumni — sponsor equipment, fund
+      education, or offer opportunities.
+    </p>
+  </div>
+);
 
 const Giving = () => {
   const { user } = useAuth();
-  const [givings, setGivings] = useState<Giving[]>([]);
+  const [givings, setGivings] = useState<GivingRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [givingToDelete, setGivingToDelete] = useState<Giving | null>(null);
+  const [givingToDelete, setGivingToDelete] = useState<GivingRecord | null>(null);
 
   const { isDeleting, confirmOpen, setConfirmOpen, confirmDelete } = useDelete({
     endpoint: givingToDelete ? `/givings/${givingToDelete._id}` : "",
@@ -42,7 +58,6 @@ const Giving = () => {
     errorMessage: "Failed to delete giving submission",
   });
 
-  // Form state
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
@@ -72,14 +87,13 @@ const Giving = () => {
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    if (selectedImages.length + files.length > 2) {
-      toast.error("Maximum 2 images allowed");
+    if (selectedImages.length + files.length > MAX_IMAGES) {
+      toast.error(`Maximum ${MAX_IMAGES} images allowed`);
       return;
     }
 
     setSelectedImages([...selectedImages, ...files]);
 
-    // Create previews
     files.forEach((file) => {
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -87,6 +101,8 @@ const Giving = () => {
       };
       reader.readAsDataURL(file);
     });
+
+    e.target.value = "";
   };
 
   const removeImage = (index: number) => {
@@ -102,13 +118,13 @@ const Giving = () => {
       return;
     }
 
-    if (title.length > 50) {
-      toast.error("Title must be 50 characters or less");
+    if (title.length > TITLE_LIMIT) {
+      toast.error(`Title must be ${TITLE_LIMIT} characters or less`);
       return;
     }
 
-    if (content.length > 500) {
-      toast.error("Content must be 500 characters or less");
+    if (content.length > CONTENT_LIMIT) {
+      toast.error(`Content must be ${CONTENT_LIMIT} characters or less`);
       return;
     }
 
@@ -123,13 +139,11 @@ const Giving = () => {
       });
 
       await api.post("/givings", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
+        headers: { "Content-Type": "multipart/form-data" },
       });
 
       toast.success("Giving submitted successfully");
-      trackFormSubmit('giving_form');
+      trackFormSubmit("giving_form");
       setTitle("");
       setContent("");
       setSelectedImages([]);
@@ -137,221 +151,204 @@ const Giving = () => {
       fetchMyGiving();
     } catch (err: any) {
       console.error("Error submitting giving:", err);
-      trackEvent('giving_submit_error');
+      trackEvent("giving_submit_error");
       toast.error(err.response?.data?.message || "Failed to submit giving");
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Show message for students
   if (user?.role === "student") {
     return (
-      <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Heart className="h-8 w-8 text-pink-400" />
-            <h1 className="text-3xl font-bold text-white">Giving</h1>
-          </div>
-        </div>
-
-        <Alert className="bg-blue-900/20 border-blue-900/50">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Alumni Only</AlertTitle>
-          <AlertDescription>
-            The Giving feature is exclusively available for verified alumni.
-            You'll have access once you graduate and verify your alumni status.
-          </AlertDescription>
-        </Alert>
-      </div>
-    );
-  }
-
-  if (isLoading) {
-    return (
-      <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-        <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold text-white">Giving</h1>
-        </div>
-
-        <div className="flex flex-col gap-4">
-          {[1, 2].map((i) => (
-            <div
-              key={i}
-              className="bg-white/5 border border-white/10 rounded-xl p-6 h-64 animate-pulse"
-            />
-          ))}
+      <div className="animate-in fade-in slide-in-from-bottom-4 text-foreground duration-500">
+        <div className="mx-auto max-w-7xl pb-12">
+          <PageHeader />
+          <EmptyState
+            icon={<Heart className="mx-auto h-14 w-14 text-muted-foreground/50" />}
+            title="Alumni Only"
+            description="The Giving feature is exclusively available for verified alumni. You'll have access once you graduate and verify your alumni status."
+          />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Heart className="h-8 w-8 text-pink-400" />
-          <h1 className="text-3xl font-bold text-white">Giving</h1>
-        </div>
-      </div>
+    <div className="animate-in fade-in slide-in-from-bottom-4 text-foreground duration-500">
+      <div className="mx-auto max-w-7xl pb-12">
+        <PageHeader />
 
-      <Alert className="bg-yellow-500/10 border-yellow-500/20 text-yellow-100">
-        <AlertCircle className="h-5 w-5 text-yellow-400" />
-        <AlertDescription className="ml-2 text-lg font-medium text-yellow-200">
-          We are currently not accepting direct monetary donations. However, if
-          you wish to contribute by sponsoring building equipment, funding
-          student education, or offering internship opportunities, please let us
-          know using the form below.
-        </AlertDescription>
-      </Alert>
+        <Alert className="mb-6 border-warning/30 bg-warning-subtle">
+          <AlertCircle className="h-4 w-4 text-warning" />
+          <AlertDescription className="text-body-md text-foreground">
+            We are currently not accepting direct monetary donations. However,
+            if you wish to contribute by sponsoring building equipment,
+            funding student education, or offering internship opportunities,
+            please let us know using the form below.
+          </AlertDescription>
+        </Alert>
 
-      {/* Submit Giving Form */}
-      <div className="bg-white/5 border border-white/10 backdrop-blur-md rounded-2xl p-6">
-        <h2 className="text-xl font-semibold text-white mb-4">Submit Giving</h2>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="text-sm font-medium text-gray-300">
-                Title <span className="text-red-400">*</span>
-              </label>
-              <span className="text-xs text-gray-400">{title.length}/50</span>
-            </div>
-            <Input
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Brief title for your giving"
-              maxLength={50}
-              required
-              className="bg-white/5 border-white/10 text-white placeholder:text-gray-500"
-            />
-          </div>
+        {/* Submit Giving Form */}
+        <section className="rounded-card border border-border bg-card p-6 shadow-card">
+          <h2 className="mb-5 border-b border-border pb-3 text-headline-md text-foreground">
+            Pledge Your Support
+          </h2>
 
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="text-sm font-medium text-gray-300">
-                Content <span className="text-red-400">*</span>
-              </label>
-              <span className="text-xs text-gray-400">
-                {content.length}/500
-              </span>
-            </div>
-            <Textarea
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              placeholder="Describe your contribution or donation..."
-              maxLength={500}
-              rows={4}
-              required
-              className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 resize-none"
-            />
-          </div>
-
-          {/* Image Upload */}
-          <div>
-            <label className="text-sm font-medium text-gray-300 mb-2 block">
-              Images (Optional, Max 2)
-            </label>
-            {selectedImages.length < 2 && (
-              <div className="relative">
-                <input
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={handleImageSelect}
-                  className="hidden"
-                  id="giving-images"
-                />
-                <label
-                  htmlFor="giving-images"
-                  className="flex items-center justify-center gap-2 p-4 border-2 border-dashed border-white/20 rounded-lg cursor-pointer hover:border-white/40 transition-colors"
-                >
-                  <ImageIcon className="h-5 w-5 text-gray-400" />
-                  <span className="text-sm text-gray-400">
-                    Click to upload images
-                  </span>
-                </label>
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div>
+              <div className="mb-2 flex items-center justify-between">
+                <Label htmlFor="giving-title">
+                  Title <span className="text-primary">*</span>
+                </Label>
+                <span className="text-label-sm text-muted-foreground">
+                  {title.length}/{TITLE_LIMIT}
+                </span>
               </div>
-            )}
+              <Input
+                id="giving-title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Brief title for your contribution"
+                maxLength={TITLE_LIMIT}
+                required
+              />
+            </div>
 
-            {/* Image Previews */}
-            {imagePreviews.length > 0 && (
-              <div className="grid grid-cols-2 gap-4 mt-4">
+            <div>
+              <div className="mb-2 flex items-center justify-between">
+                <Label htmlFor="giving-content">
+                  Details <span className="text-primary">*</span>
+                </Label>
+                <span className="text-label-sm text-muted-foreground">
+                  {content.length}/{CONTENT_LIMIT}
+                </span>
+              </div>
+              <Textarea
+                id="giving-content"
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                placeholder="Describe what you'd like to contribute..."
+                maxLength={CONTENT_LIMIT}
+                rows={4}
+                required
+                className="resize-none"
+              />
+            </div>
+
+            <div>
+              <Label>
+                Attach Photos{" "}
+                <span className="font-normal text-muted-foreground">
+                  (optional, up to {MAX_IMAGES})
+                </span>
+              </Label>
+              <div className="mt-2 flex flex-wrap gap-3">
                 {imagePreviews.map((preview, index) => (
-                  <div key={index} className="relative group">
+                  <div
+                    key={index}
+                    className="group relative h-24 w-24 overflow-hidden rounded-lg border border-border"
+                  >
                     <img
                       src={preview}
                       alt={`Preview ${index + 1}`}
-                      className="w-full h-32 object-cover rounded-lg"
+                      className="h-full w-full object-cover"
                     />
                     <button
                       type="button"
                       onClick={() => removeImage(index)}
-                      className="absolute top-2 right-2 p-1 bg-red-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                      aria-label="Remove image"
+                      className="absolute right-1 top-1 rounded-full bg-black/60 p-1 text-white opacity-0 transition-opacity group-hover:opacity-100"
                     >
-                      <X className="h-4 w-4 text-white" />
+                      <X className="h-3.5 w-3.5" />
                     </button>
                   </div>
                 ))}
+
+                {selectedImages.length < MAX_IMAGES && (
+                  <label
+                    htmlFor="giving-images"
+                    className="flex h-24 w-24 cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-primary/30 bg-muted text-center transition-colors hover:border-primary/60 hover:bg-accent"
+                  >
+                    <ImagePlus className="h-5 w-5 text-primary" />
+                    <span className="text-label-sm text-muted-foreground">
+                      Add photo
+                    </span>
+                  </label>
+                )}
               </div>
-            )}
-          </div>
-
-          <Button
-            type="submit"
-            disabled={isSubmitting}
-            className="w-full bg-pink-600 hover:bg-pink-700"
-          >
-            {isSubmitting ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Submitting...
-              </>
-            ) : (
-              <>
-                <Send className="mr-2 h-4 w-4" />
-                Submit Giving
-              </>
-            )}
-          </Button>
-        </form>
-      </div>
-
-      {/* User's Givings */}
-      <div>
-        <h2 className="text-xl font-semibold text-white mb-4">
-          My Givings ({givings.length})
-        </h2>
-
-        {error && (
-          <Alert variant="destructive" className="bg-red-900/20 border-red-900/50 mb-4">
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
-
-        {givings.length === 0 ? (
-          <div className="bg-white/5 border border-white/10 backdrop-blur-md rounded-2xl p-12 text-center">
-            <Heart className="h-12 w-12 text-gray-600 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-white mb-2">
-              No givings yet
-            </h3>
-            <p className="text-gray-400">
-              Submit your first giving using the form above
-            </p>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-4">
-            {givings.map((giving) => (
-              <GivingCard
-                key={giving._id}
-                giving={giving}
-                onDelete={(id) => {
-                  setGivingToDelete(giving);
-                  setConfirmOpen(true);
-                }}
+              <input
+                id="giving-images"
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handleImageSelect}
+                className="sr-only"
               />
-            ))}
-          </div>
-        )}
+            </div>
+
+            <div className="flex justify-end">
+              <Button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full gap-2 rounded-full bg-primary px-6 text-label-md text-primary-foreground hover:bg-primary-hover sm:w-auto"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Submitting...
+                  </>
+                ) : (
+                  <>
+                    <Send className="h-4 w-4" />
+                    Submit Giving
+                  </>
+                )}
+              </Button>
+            </div>
+          </form>
+        </section>
+
+        {/* User's Givings */}
+        <div className="mt-10">
+          <h2 className="mb-4 text-headline-md text-foreground">
+            My Contributions{" "}
+            {givings.length > 0 && (
+              <span className="text-muted-foreground">({givings.length})</span>
+            )}
+          </h2>
+
+          {error && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
+          {isLoading ? (
+            <div className="space-y-4">
+              <GivingRowSkeleton />
+              <GivingRowSkeleton />
+            </div>
+          ) : givings.length === 0 ? (
+            <EmptyState
+              icon={<Heart className="mx-auto h-14 w-14 text-muted-foreground/50" />}
+              title="No contributions yet"
+              description="Submit your first giving using the form above — we'll show the response here once it's ready."
+            />
+          ) : (
+            <div className="flex flex-col gap-4">
+              {givings.map((giving) => (
+                <GivingRow
+                  key={giving._id}
+                  giving={giving}
+                  onDelete={(target) => {
+                    setGivingToDelete(target);
+                    setConfirmOpen(true);
+                  }}
+                />
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       <DeleteConfirmDialog

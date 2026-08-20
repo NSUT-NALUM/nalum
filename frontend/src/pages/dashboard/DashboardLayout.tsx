@@ -1,32 +1,31 @@
 import { Outlet, useLocation } from "react-router-dom";
+import { MotionConfig } from "framer-motion";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
 import { ProfileProvider, useProfile } from "@/context/ProfileContext";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
-import { Home, Users, Calendar } from "lucide-react";
-import UserAvatar from "@/components/UserAvatar";
-import ProfileMenu from "@/components/ProfileMenu";
+import { Home, Users, Calendar, MessageSquare, FileText } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/api";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect } from "react";
 
 import { useChatContext } from "@/context/ChatContext";
+import { useConversations } from "@/hooks/useConversations";
 import { useLocationGuard } from "@/hooks/useLocationGuard";
 import { PreloadLink } from "@/components/PreloadLink";
 
 const DashboardContent = () => {
   const location = useLocation();
-  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
 
   const isChatPage = location.pathname.startsWith("/dashboard/chat");
-  const isConnectionsPage = location.pathname.startsWith("/dashboard/connections");
   const isNotificationsPage = location.pathname.startsWith("/dashboard/notifications");
-  const { profile } = useProfile();
   const { user } = useAuth();
   const { socket } = useChatContext();
   const queryClient = useQueryClient();
+  const { conversations } = useConversations();
+  const unreadMessageCount = conversations.reduce((acc: number, conv: any) => acc + (conv.unreadCount || 0), 0);
 
   // Enforce profile completion and location
   useLocationGuard();
@@ -53,102 +52,84 @@ const DashboardContent = () => {
   const hasPendingRequests = pendingRequests.length > 0;
 
   return (
-    <div className="flex h-[100dvh] w-full overflow-hidden bg-slate-950 text-slate-100 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-black">
-      {/* ... (background glow) ... */}
-      <div className="fixed top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-indigo-500/10 blur-[120px]" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-blue-600/10 blur-[120px]" />
-      </div>
-
-      {/* Mobile Bottom Navigation Bar */}
-      {!isChatPage && !isNotificationsPage && (
-        <div className="fixed bottom-0 left-0 right-0 z-40 bg-slate-900/90 backdrop-blur-lg border-t border-white/10 flex items-center justify-around px-2 py-2 shadow-2xl md:hidden h-16">
+    <div className="flex h-[100dvh] w-full overflow-hidden bg-background text-foreground">
+      {/* Mobile Bottom Navigation Bar — stays visible on the chat page too, so
+          Messages doesn't strand mobile users without a way back to the rest
+          of the app; the chat panel gets bottom padding below to compensate. */}
+      {!isNotificationsPage && (
+        <div className="fixed bottom-0 left-0 right-0 z-40 bg-card/95 backdrop-blur-lg border-t border-border flex items-center justify-around px-2 py-2 shadow-overlay md:hidden h-16">
           <PreloadLink
             to="/dashboard"
             className={cn(
               "flex flex-col items-center gap-1 p-2 rounded-xl transition-all duration-300",
               location.pathname === "/dashboard"
-                ? "bg-blue-600/20 text-blue-400"
-                : "text-gray-400 hover:text-white"
+                ? "text-primary"
+                : "text-muted-foreground hover:text-foreground"
             )}
           >
             <Home className="h-5 w-5" />
-            <span className="text-[10px] font-medium">Home</span>
+            <span className="text-[10px] font-medium">Overview</span>
           </PreloadLink>
 
           <PreloadLink
-            to="/dashboard/connections"
+            to="/dashboard/alumni"
             className={cn(
               "flex flex-col items-center gap-1 p-2 rounded-xl transition-all duration-300 relative",
-              location.pathname === "/dashboard/connections"
-                ? "bg-blue-600/20 text-blue-400"
-                : "text-gray-400 hover:text-white"
+              location.pathname === "/dashboard/alumni" || location.pathname.startsWith("/dashboard/alumni/")
+                ? "text-primary"
+                : "text-muted-foreground hover:text-foreground"
             )}
           >
             <Users className="h-5 w-5" />
-            <span className="text-[10px] font-medium">Network</span>
+            <span className="text-[10px] font-medium">Directory</span>
             {hasPendingRequests && (
-              <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-blue-500 ring-2 ring-slate-950" />
+              <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-primary ring-2 ring-card" />
             )}
           </PreloadLink>
 
           <PreloadLink
-            to="/dashboard/posts"
+            to="/dashboard/chat"
             className={cn(
-              "flex flex-col items-center gap-1 p-2 rounded-xl transition-all duration-300",
-              location.pathname === "/dashboard/posts"
-                ? "bg-blue-600/20 text-blue-400"
-                : "text-gray-400 hover:text-white"
+              "flex flex-col items-center gap-1 p-2 rounded-xl transition-all duration-300 relative",
+              isChatPage
+                ? "text-primary"
+                : "text-muted-foreground hover:text-foreground"
             )}
           >
-            <div className="w-6 h-6 border-2 border-current rounded-md flex items-center justify-center">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 4v16m8-8H4" />
-              </svg>
-            </div>
-            <span className="text-[10px] font-medium">Post</span>
+            <MessageSquare className="h-5 w-5" />
+            <span className="text-[10px] font-medium">Messages</span>
+            {unreadMessageCount > 0 && (
+              <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-primary ring-2 ring-card" />
+            )}
           </PreloadLink>
 
           <PreloadLink
             to="/dashboard/events"
             className={cn(
               "flex flex-col items-center gap-1 p-2 rounded-xl transition-all duration-300",
-              location.pathname === "/dashboard/events"
-                ? "bg-blue-600/20 text-blue-400"
-                : "text-gray-400 hover:text-white"
+              location.pathname.startsWith("/dashboard/events")
+                ? "text-primary"
+                : "text-muted-foreground hover:text-foreground"
             )}
           >
             <Calendar className="h-5 w-5" />
             <span className="text-[10px] font-medium">Events</span>
           </PreloadLink>
 
-          <button
-            onClick={() => setIsProfileMenuOpen(true)}
-            className="flex flex-col items-center gap-1 transition-all"
+          <PreloadLink
+            to="/dashboard/posts"
+            className={cn(
+              "flex flex-col items-center gap-1 p-2 rounded-xl transition-all duration-300",
+              location.pathname.startsWith("/dashboard/posts")
+                ? "text-primary"
+                : "text-muted-foreground hover:text-foreground"
+            )}
           >
-            <UserAvatar
-              src={profile?.profile_picture}
-              name={profile?.user?.name || "User"}
-              size="sm"
-              className={cn(
-                "h-7 w-7 ring-2",
-                isProfileMenuOpen
-                  ? "ring-blue-500"
-                  : "ring-transparent"
-              )}
-            />
-            <span className={cn(
-              "text-[10px] font-medium",
-              isProfileMenuOpen
-                ? "text-blue-400"
-                : "text-gray-400"
-            )}>Profile</span>
-          </button>
+            <FileText className="h-5 w-5" />
+            <span className="text-[10px] font-medium">Posts</span>
+          </PreloadLink>
         </div>
       )}
-
-      {/* Profile Menu */}
-      <ProfileMenu isOpen={isProfileMenuOpen} onClose={() => setIsProfileMenuOpen(false)} />
 
       {/* Desktop Sidebar */}
       <div className="hidden md:block">
@@ -167,19 +148,23 @@ const DashboardContent = () => {
         {!isNotificationsPage && <Header />}
         <div
           className={cn(
-            "relative mx-auto transition-all duration-300 min-h-full flex flex-col",
+            // `w-full` is load-bearing: `main` is a column flex container, and a
+            // flex item with auto cross-axis margins (mx-auto) opts out of
+            // `align-self: stretch`. Without it this div is shrink-to-fit, so its
+            // width — and therefore the page's left/right gap — tracks whatever
+            // the current content happens to measure (e.g. a full alumni grid vs.
+            // a single search result vs. an empty state), causing it to jump.
+            "relative w-full mx-auto transition-all duration-300 min-h-full flex flex-col",
             isChatPage
-              ? "pt-0 pb-0 px-0 max-w-full h-full"
+              ? "pt-0 pb-16 md:pb-0 px-0 max-w-full flex-1 min-h-0"
               : isNotificationsPage
-                ? "pt-0 pb-0 px-0 max-w-full h-full"
-                : isConnectionsPage
-                  ? "pb-0 px-0 max-w-full"
-                  : "px-4 pt-4 pb-20 md:p-8 max-w-7xl"
+                ? "pt-0 pb-0 px-0 max-w-full flex-1 min-h-0"
+                : "px-4 pt-4 pb-20 md:p-8 max-w-7xl"
           )}
         >
           <Suspense
             fallback={
-              <div className="p-8 text-slate-400">
+              <div className="p-8 text-muted-foreground">
                 Loading page...
               </div>
             }
@@ -194,10 +179,15 @@ const DashboardContent = () => {
 
 const DashboardLayout = () => {
   return (
-    <ProfileProvider>
-      <DashboardContent />
-      <PWAInstallPrompt />
-    </ProfileProvider>
+    // `reducedMotion="user"` is the single opt-out for every animation under
+    // /dashboard: when the OS asks for reduced motion, framer drops transforms
+    // and keeps opacity, so nothing individual components do needs to check.
+    <MotionConfig reducedMotion="user">
+      <ProfileProvider>
+        <DashboardContent />
+        <PWAInstallPrompt />
+      </ProfileProvider>
+    </MotionConfig>
   );
 };
 

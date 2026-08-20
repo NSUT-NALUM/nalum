@@ -2,8 +2,6 @@ import { useLocation } from "react-router-dom";
 import { PreloadLink } from "@/components/PreloadLink";
 import { LayoutGrid, Users, LogOut, MessageSquare, Calendar, FileText, HelpCircle, Heart } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import { useProfile } from "@/context/ProfileContext";
-import UserAvatar from "@/components/UserAvatar";
 import nsutLogo from "@/assets/nsut-logo.svg";
 import { useConversations } from "@/hooks/useConversations";
 import { cn } from "@/lib/utils";
@@ -22,7 +20,6 @@ interface NavItem {
 const Sidebar = ({ onNavigate }: SidebarProps) => {
   const { logout, user } = useAuth();
   const location = useLocation();
-  const { profile } = useProfile();
   const { conversations } = useConversations();
 
   const unreadCount = conversations.reduce((acc: number, conv: any) => acc + (conv.unreadCount || 0), 0);
@@ -39,7 +36,7 @@ const Sidebar = ({ onNavigate }: SidebarProps) => {
     { to: "/dashboard/alumni", label: "Directory", icon: Users },
     { to: "/dashboard/chat", label: "Messages", icon: MessageSquare, badge: unreadCount },
     { to: "/dashboard/events", label: "Events", icon: Calendar },
-    ...(isAlumni ? [{ to: "/dashboard/my-posts", label: "Posts", icon: FileText }] : []),
+    { to: "/dashboard/posts", label: "Posts", icon: FileText },
     { to: "/dashboard/queries", label: "Queries", icon: HelpCircle },
   ];
 
@@ -70,7 +67,7 @@ const Sidebar = ({ onNavigate }: SidebarProps) => {
               className={cn(
                 "relative flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors duration-200",
                 active
-                  ? "bg-primary-subtle text-primary before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-6 before:w-1 before:rounded-full before:bg-primary before:content-['']"
+                  ? "text-primary before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-6 before:w-1 before:rounded-full before:bg-primary before:content-['']"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground"
               )}
             >
@@ -88,37 +85,20 @@ const Sidebar = ({ onNavigate }: SidebarProps) => {
 
       {/* Footer */}
       <div className="p-4 border-t border-border space-y-3">
-        {profile && (
+        {isAlumni && (
           <PreloadLink
-            to="/dashboard/profile"
+            to="/dashboard/giving"
             onClick={onNavigate}
-            className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-muted transition-colors"
+            className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary-hover transition-colors"
           >
-            <UserAvatar
-              src={profile.profile_picture}
-              name={profile.user.name}
-              size="sm"
-              className="flex-shrink-0"
-            />
-            <div className="flex flex-col min-w-0">
-              <span className="text-sm font-medium text-foreground truncate">{profile.user.name}</span>
-              <span className="text-xs text-muted-foreground truncate">View Profile</span>
-            </div>
+            <Heart className="h-4 w-4" />
+            <span>Give</span>
           </PreloadLink>
         )}
 
-        <PreloadLink
-          to="/dashboard/giving"
-          onClick={onNavigate}
-          className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary-hover transition-colors"
-        >
-          <Heart className="h-4 w-4" />
-          <span>Give</span>
-        </PreloadLink>
-
         <button
           onClick={logout}
-          className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
+          className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
         >
           <LogOut className="h-5 w-5" />
           <span className="font-medium">Logout</span>

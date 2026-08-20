@@ -247,7 +247,6 @@ exports.deletePost = async (req, res) => {
       });
     }
 
-    // Task 2.1: cascade — deletes child Comments + image files
     await cascadeDeletePost(post);
     await Post.findByIdAndDelete(postId);
 

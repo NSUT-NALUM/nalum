@@ -12,6 +12,11 @@ const {
   deletePost,
   searchPosts,
   getMyPosts,
+  recordView,
+  recordViewsBatch,
+  toggleLikePost,
+  getPopularTags,
+  getSimilarPosts,
 } = require("../controllers/posts.controller");
 
 // Routes
@@ -19,8 +24,13 @@ router.post("/", protect, uploadPostImage.array("images", 2), compressionPresets
 router.get("/", protect, getPosts);
 router.get("/my/all", protect, getMyPosts);
 router.get("/search", protect, searchPosts);
+router.get("/tags", protect, getPopularTags);
 router.use("/:postId/comments", commentsRoutes);
+router.post("/views-batch", protect, recordViewsBatch);
+router.post("/:id/view", protect, recordView);
+router.get("/:id/similar", protect, getSimilarPosts);
 router.get("/:id", protect, getPostById);
+router.post("/:id/like", protect, toggleLikePost);
 router.put("/:id", protect, uploadPostImage.array("images", 2), compressionPresets.postImage, updatePost);
 router.delete("/:id", protect, deletePost);
 

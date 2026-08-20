@@ -13,8 +13,7 @@ import { useMergedChats } from "@/hooks/useMergedChats";
  * ChatPageContent Component
  * 
  * Main layout for the chat dashboard.
- * Implements a responsive glassmorphism design with a dark translucent theme.
- * 
+ *
  * Structure:
  * - Left Sidebar: Tabs for ChatList, ConnectionRequests, and UserSearch.
  * - Right Area: ChatWindow (active conversation) or placeholder.
@@ -45,13 +44,13 @@ const ChatPageContent = () => {
 
 
   return (
-    <div className="h-full md:h-full p-0 md:p-4 bg-transparent">
+    <div className="h-full md:h-full p-0 md:p-6 lg:p-8 bg-background">
       <div className="h-full max-w-7xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-0 md:gap-4 h-full">
-          {/* Left Sidebar - Glass Panel */}
+          {/* Left Sidebar */}
           {/* Hidden on mobile when a conversation is selected to show the chat window */}
           <div className={`${selectedConversation ? "hidden md:block" : "block"} md:col-span-1 h-full min-h-0`}>
-            <div className="h-full flex flex-col bg-black/40 backdrop-blur-xl md:border border-white/10 shadow-2xl md:rounded-xl overflow-hidden">
+            <div className="h-full flex flex-col bg-card md:border border-border shadow-card md:rounded-card overflow-hidden">
               <div className="h-full flex flex-col">
                 <div className="flex-1 mt-0 overflow-hidden min-h-0">
                   <ChatList
@@ -64,9 +63,9 @@ const ChatPageContent = () => {
             </div>
           </div>
 
-          {/* Right Area - Chat Window Glass Panel */}
+          {/* Right Area - Chat Window */}
           <div className={`${selectedConversation ? "block" : "hidden md:block"} md:col-span-2 h-full min-h-0`}>
-            <div className="h-full flex flex-col bg-black/40 backdrop-blur-xl md:border border-white/10 shadow-2xl md:rounded-xl overflow-hidden relative">
+            <div className="h-full flex flex-col bg-card md:border border-border shadow-card md:rounded-card overflow-hidden relative">
               {selectedConversation ? (
                 <ChatWindow
                   conversation={selectedConversation}
@@ -74,12 +73,12 @@ const ChatPageContent = () => {
                 />
               ) : (
                 <div className="h-full flex items-center justify-center">
-                  <div className="text-center text-gray-400 p-8">
-                    <div className="h-20 w-20 mx-auto mb-6 bg-white/5 rounded-full flex items-center justify-center border border-white/10">
-                      <MessageSquare className="h-10 w-10 opacity-50" />
+                  <div className="text-center text-muted-foreground p-8">
+                    <div className="h-20 w-20 mx-auto mb-6 bg-muted rounded-full flex items-center justify-center border border-border">
+                      <MessageSquare className="h-10 w-10 text-primary/30" />
                     </div>
-                    <p className="text-xl font-medium mb-2 text-gray-200">Select a conversation</p>
-                    <p className="text-sm opacity-70">Choose a conversation from the list to start chatting</p>
+                    <p className="text-xl font-medium mb-2 text-foreground">Select a conversation</p>
+                    <p className="text-sm text-muted-foreground">Choose a conversation from the list to start chatting</p>
                   </div>
                 </div>
               )}

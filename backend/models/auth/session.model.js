@@ -30,6 +30,10 @@ const sessionSchema = new mongoose.Schema(
 			default: () => new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // 14 days
 			expires: 0, // auto-delete when expired
 		},
+		remember_me: {
+			type: Boolean,
+			default: false,
+		},
 		previous_refresh_token: {
 			type: String,
 		},
