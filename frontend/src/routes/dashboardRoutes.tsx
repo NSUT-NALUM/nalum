@@ -23,6 +23,7 @@ import {
   loadQueries,
   loadGiving,
   loadMobileNotifications,
+  loadChangePassword,
 } from "./loaders";
 
 const DashboardLayout = lazy(loadDashboardLayout);
@@ -43,7 +44,7 @@ const ViewPost = lazy(loadViewPost);
 const Queries = lazy(loadQueries);
 const Giving = lazy(loadGiving);
 const MobileNotifications = lazy(loadMobileNotifications);
-const ChangePassword = lazy(() => import("@/pages/dashboard/ChangePassword"));
+const ChangePassword = lazy(loadChangePassword);
 
 export function DashboardRoutes() {
   return (
