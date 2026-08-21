@@ -1,10 +1,10 @@
 const express = require("express");
 const router = express.Router();
-const jwt = require("jsonwebtoken");
 const users = require("../../controllers/user.controller.js");
 const mailService = require("../../mail/mailService.js");
 const JWT_SECRET = require("../../config/jwt.config.js").JWT_SECRET;
 const redis = require("../../config/redis.js");
+const verificationToken = require("../../controllers/verificationToken.controller.js");
 
 router.post("/", async (req, res) => {
   try {
@@ -49,15 +49,20 @@ router.post("/", async (req, res) => {
     });
   }
 
-  // Generate JWT (expires in 5 min)
-  const token = jwt.sign(
-    { email: sanitizedEmail },
-    JWT_SECRET,
-    { expiresIn: "5m" }
+  // Generate a single-use password reset token (expires in 5 minutes)
+  const tokenResponse = await verificationToken.create(
+    sanitizedEmail,
+    "password_reset",
+    1000 * 60 * 5
   );
 
+  if (tokenResponse.error) {
+    throw new Error(tokenResponse.message);
+  }
+
+  const token = tokenResponse.data.token;
   const frontendUrl = process.env.FRONTEND_URL || "https://alumni.nsut.ac.in";
-  const resetLink = `${frontendUrl}/reset-password?token=${token}`;
+  const resetLink = `${frontendUrl}/reset-password?email=${encodeURIComponent(sanitizedEmail)}&token=${token}`;
 
   // Log password reset link for testing (always log when DEBUG_MAIL is enabled)
   const shouldLogLink = process.env.NODE_ENV === "development" || process.env.DEBUG_MAIL === "true";
@@ -99,8 +104,9 @@ router.post("/", async (req, res) => {
     error: false,
     message: "If this email exists, a reset link has been sent.",
   });
-  } catch (error) {
-    console.error("[forgetPassword] Error:", error.message);
+  } 
+  catch (error) {
+    console.error("[forgetPassword] Error:", error?.message ?? error ?? "Unknown error");
     // Don't expose internal errors to client  
     return res.json({
       error: false,

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import AdminLayout from "../../components/admin/AdminLayout";
 import { getPendingEvents, approveEvent, rejectEvent, Event } from "../../lib/adminApi";
-import { CheckCircle, XCircle, Calendar as CalendarIcon, Plus, RefreshCw, MapPin, Users, Link as LinkIcon, Mail, Phone, Globe } from "lucide-react";
+import { CheckCircle, XCircle, Calendar as CalendarIcon, Plus, RefreshCw, MapPin, Users, Link as LinkIcon, Mail, Phone, Globe, Clock } from "lucide-react";
 import api from "../../lib/api";
 import { BASE_URL } from "../../lib/constants";
 
@@ -282,9 +282,17 @@ const EventApprovals = () => {
                     <div className="flex justify-between items-start mb-3">
                       <div>
                         <h3 className="text-2xl font-semibold text-gray-900 mb-1">{event.title}</h3>
-                        <span className="inline-block px-3 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full capitalize">
-                          {event.event_type}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="inline-block px-3 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full capitalize">
+                            {event.event_type}
+                          </span>
+                          {new Date(event.event_date) < new Date(new Date().setHours(0,0,0,0)) && (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-amber-100 text-amber-800 border border-amber-300 text-xs font-semibold rounded-full">
+                              <Clock size={12} />
+                              Expired / Due Date Passed
+                            </span>
+                          )}
+                        </div>
                       </div>
                       <div className="flex flex-col gap-2">
                         <button

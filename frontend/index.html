@@ -50,8 +50,11 @@
       .z-10{z-index:10}
       /* Prevent layout shift from fonts */
       body{font-display:swap}
-      /* Reserve space for header */
-      header{contain:layout;min-height:120px}
+      /* Reserve space for the public site's nav bar. Scoped to that one
+         element on purpose: as a bare `header` selector this also silently
+         forced a 120px floor onto the dashboard header, the admin header and
+         every card header in the app. */
+      #site-header{contain:layout;min-height:120px}
       /* Optimize text rendering */
       h1,h2,h3,h4,h5,h6{font-display:swap}
       /* Critical animations */

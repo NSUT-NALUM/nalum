@@ -188,6 +188,8 @@ async function getPostCommentThread({ postId, page = 1, limit = 20 }) {
 
   const skip = (page - 1) * limit;
 
+  // Deleted comments stay in the thread — normalizeComment nulls their content
+  // and flags them so the client can render a tombstone in their place.
   const topLevelComments = await Comment.find({
     postId,
     parentCommentId: null,
@@ -322,7 +324,8 @@ async function deleteComment({ commentId, userId }) {
 
   await comment.save();
 
-  // Task 2.3: fix replyCount drift — decrement atomically on root comment
+  // Deleting a reply leaves its root's replyCount one too high. A deleted root
+  // keeps its own count — its replies survive underneath the tombstone.
   if (comment.parentCommentId) {
     await Comment.findByIdAndUpdate(comment.rootCommentId, {
       $inc: { replyCount: -1 },

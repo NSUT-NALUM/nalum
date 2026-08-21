@@ -38,18 +38,20 @@ export const loadShowProfile = () => import("@/pages/dashboard/showProfile");
 export const loadUpdateProfile = () => import("@/pages/dashboard/updateProfile");
 export const loadAlumniDirectory = () => import("@/pages/dashboard/alumniDirectory");
 export const loadViewProfile = () => import("@/pages/dashboard/viewProfile");
-export const loadConnectionsPage = () => import("@/pages/dashboard/ConnectionsPage");
 export const loadVerifyAlumni = () => import("@/pages/dashboard/verifyAlumni");
 export const loadChatPage = () =>
   import("@/pages/dashboard/chat/ChatPage").then((module) => ({ default: module.ChatPage }));
 export const loadEvents = () => import("@/pages/dashboard/Events");
+export const loadEventDetails = () => import("@/pages/dashboard/EventDetails");
+export const loadEditEvent = () => import("@/pages/dashboard/EditEvent");
 export const loadHostEvent = () => import("@/pages/dashboard/HostEvent");
-export const loadMyPosts = () => import("@/pages/dashboard/MyPosts");
-export const loadCreatePost = () => import("@/pages/dashboard/CreatePost");
+export const loadPosts = () => import("@/pages/dashboard/Posts");
+export const loadPostEditor = () => import("@/pages/dashboard/PostEditor");
 export const loadViewPost = () => import("@/pages/dashboard/ViewPost");
 export const loadQueries = () => import("@/pages/dashboard/Queries");
 export const loadGiving = () => import("@/pages/dashboard/Giving");
 export const loadMobileNotifications = () => import("@/pages/dashboard/MobileNotifications");
+export const loadChangePassword = () => import("@/pages/dashboard/ChangePassword");
 
 // Admin pages
 export const loadAdminProtectedRoute = () => import("@/components/admin/AdminProtectedRoute");

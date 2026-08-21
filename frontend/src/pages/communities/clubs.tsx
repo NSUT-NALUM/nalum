@@ -4,7 +4,7 @@ import { Search, ChevronLeft, ChevronRight } from 'lucide-react';
 interface Society {
   name: string;
   description: string;
-  category: 'technical' | 'cultural' | 'social' | 'sports' | 'entrepreneurship' | 'literary';
+  category: 'technical' | 'cultural' | 'social' | 'sports' | 'entrepreneurship' | 'literary' | 'automotive';
   image?: string;
 }
 
@@ -19,7 +19,7 @@ const societies: Society[] = [
     name: "NSUT IIF",
     description: "Innovation and Incubation Foundation established in October 2016, supporting innovation and entrepreneurship by incubating startups founded by NSUT students, alumni, and faculty with mentorship and seed funding.",
     category: "entrepreneurship",
-    image: "/Communities/Clubs/NSUT-IIF.webp"
+    image: "/Communities/Clubs/NSUTIIF.jpeg"
   },
   {
     name: "ENACTUS",
@@ -132,7 +132,7 @@ const societies: Society[] = [
   {
     name: "TDR",
     description: "Team Daedalus Racing focuses on automotive design, engineering, and competitive motorsports, building race cars and participating in engineering challenges and automotive events.",
-    category: "technical",
+    category: "automotive",
     image: "/Communities/Clubs/TDR.jpg"
   },
   {
@@ -174,7 +174,8 @@ const societies: Society[] = [
   {
     name: "ASME NSUT",
     description: "Student chapter of American Society of Mechanical Engineers building strong community through workshops, competitions, technical events, and creative engineering challenges.",
-    category: "technical"
+    category: "technical",
+    image: "/Communities/Clubs/ASME.jpg"
   },
   {
     name: "AXIOM",
@@ -185,7 +186,8 @@ const societies: Society[] = [
   {
     name: "GDG NSUT",
     description: "Google Developer Group bringing together student developers for collaborative learning in web development, mobile apps, machine learning, cloud technologies, and UI/UX design.",
-    category: "technical"
+    category: "technical",
+    image: "/Communities/Clubs/GDG.jpg"
   },
   {
     name: "FINSOC",
@@ -202,7 +204,8 @@ const societies: Society[] = [
   {
     name: "SPIC MACAY",
     description: "Society for Promotion of Indian Classical Music and Culture creating awareness of India's rich heritage through classical music, dance, folk arts, yoga, and traditional performances.",
-    category: "cultural"
+    category: "cultural",
+    image: "/Communities/Clubs/SPICMACAY.jpeg"
   },
   {
     name: "TDS",
@@ -233,6 +236,72 @@ const societies: Society[] = [
     description: "Astronomy and Mathematics Society offering academic initiatives, astronomy events, workshops, talks, and competitions while highlighting achievements and contributions of its members.",
     category: "technical",
     image: "/Communities/Clubs/NAKSHATRA.jpg"
+  },
+  {
+    name: "NCC",
+    description: "The NCC Unit is a premier youth development organization governed by the Ministry of Defence. Operating under the motto Unity and Discipline, its fundamental goal is to develop character, comradeship, secular outlook, the spirit of adventure, and ideals of selfless service among students, while creating a trained resource pool for national defense.",
+    category: "social",
+    image: "/Communities/Clubs/NCC.jpg"
+  },
+  {
+    name: "CRESCENDO",
+    description: "Crescendo is the official music society of NSUT, serving as the premier campus hub for vocalists, instrumentalists, and music producers. The group performs diverse genres—from classical to rock.",
+    category: "cultural",
+    image: "/Communities/Clubs/CRESCENDO.jpg"
+  },
+  {
+    name: "CAPELLA",
+    description: "Capella is the official choreography society of NSUT, specializing in high-energy, storytelling-based group dance productions. The team combines deep, thematic concepts with synchronized movements.",
+    category: "cultural",
+    image: "/Communities/Clubs/CAPELLA.jpg"
+  },
+  {
+    name: "NSUTQC",
+    description: "The Quiz Club (QC) is a premier, student-run organization dedicated to fostering an intellectually vibrant culture centered around curiosity, trivia, and lateral thinking.",
+    category: "literary",
+    image: "/Communities/Clubs/NSUTQC.jpeg"
+  },
+  {
+    name: "ARES ROBOTICS",
+    description: "ARES Robotics is an elite student engineering team that designs and builds functional Mars Rovers. Composed of technical and business departments, they develop advanced autonomous system.",
+    category: "technical",
+    image: "/Communities/Clubs/ARESROBOTICS.jpg"
+  },
+  {
+    name: "PRAYAS",
+    description: "Prayas is a student-run social welfare group that provides free education and mentorship to underprivileged children through daily evening classes on campus. They also organize healthcare camps.",
+    category: "literary",
+    image: "/Communities/Clubs/PRAYAS.jpg"
+  },
+  {
+    name: "ASN",
+    description: "ASN (Algorithm Society of NSUT) is a student-run technical society dedicated to Competitive Programming (CP) and Data Structures & Algorithms (DSA) and the community hosts weekly lectures.",
+    category: "technical",
+    image: "/Communities/Clubs/ASN.jpg"
+  },
+  {
+    name: "CSI",
+    description: "CSI NSUT is an official technical society focusing on software development, coding, and IT. The club hosts workshops, hackathons, and placement prep to build industry-ready engineering skills.",
+    category: "technical",
+    image: "/Communities/Clubs/CSI.jpg"
+  },
+  {
+    name: "NSUT.AI",
+    description: "NSUT.AI is an official research-focused society dedicated to Artificial Intelligence, Machine Learning, and Data Science. Backed by a strong global alumni network.",
+    category: "technical",
+    image: "/Communities/Clubs/NSUTAI.jpg"
+  },
+  {
+    name: "WASD",
+    description: "WASD is the official Game Development society at Netaji Subhas University of Technology (NSUT). Its core mission is to create a collaborative hub for students passionate about gaming and building interactive entertainment.",
+    category: "sports",
+    image: "/Communities/Clubs/WASD.jpg"
+  },
+  {
+    name: "BULLETHAWK RACING",
+    description: "BulletHawk Racing (BHR) is the official Formula Student combustion and electric engineering team at Netaji Subhas University of Technology (NSUT).",
+    category: "automotive",
+    image: "/Communities/Clubs/BULLETHAWK.jpg"
   }
 ];
 societies.sort((a, b) => a.name.localeCompare(b.name));
@@ -245,6 +314,7 @@ const categories = [
   { value: 'literary', label: 'Literary', color: 'bg-amber-50 text-amber-700 hover:bg-amber-100' },
   { value: 'social', label: 'Social', color: 'bg-rose-50 text-rose-700 hover:bg-rose-100' },
   { value: 'sports', label: 'Sports', color: 'bg-cyan-50 text-cyan-700 hover:bg-cyan-100' },
+  { value: 'automotive', label: 'Automotive', color: 'bg-blue-50 text-blue-700 hover:bg-blue-100' },
 ];
 
 const ITEMS_PER_PAGE = 9;
