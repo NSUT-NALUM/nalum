@@ -9,6 +9,7 @@ import {
   loadCurrentEvents,
   loadPostsApproval,
   loadCurrentPosts,
+  loadAdminPostEditor,
   loadNewsletters,
   loadBannedUsers,
   loadCodeManagement,
@@ -27,6 +28,7 @@ const EventApprovals = lazy(loadEventApprovals);
 const CurrentEvents = lazy(loadCurrentEvents);
 const PostsApproval = lazy(loadPostsApproval);
 const CurrentPosts = lazy(loadCurrentPosts);
+const AdminPostEditor = lazy(loadAdminPostEditor);
 const Newsletters = lazy(loadNewsletters);
 const BannedUsers = lazy(loadBannedUsers);
 const CodeManagement = lazy(loadCodeManagement);
@@ -47,6 +49,14 @@ export function AdminRoutes() {
         <Route path="/admin-panel/current-events" element={<CurrentEvents />} />
         <Route path="/admin-panel/posts-approval" element={<PostsApproval />} />
         <Route path="/admin-panel/current-posts" element={<CurrentPosts />} />
+        <Route
+          path="/admin-panel/current-posts/new"
+          element={<AdminPostEditor mode="create" />}
+        />
+        <Route
+          path="/admin-panel/current-posts/:postId/edit"
+          element={<AdminPostEditor mode="edit" />}
+        />
         <Route path="/admin-panel/newsletters" element={<Newsletters />} />
         <Route path="/admin-panel/banned" element={<BannedUsers />} />
         <Route path="/admin-panel/codes" element={<CodeManagement />} />

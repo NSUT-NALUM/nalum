@@ -12,7 +12,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { EmptyState } from "@/components/ui/EmptyState";
-import MyPostRow from "@/components/posts/MyPostRow";
+import PostCard from "@/components/posts/PostCard";
 import api from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { SPRING, chipEntrance, popVariants } from "@/lib/motion";
@@ -257,8 +257,9 @@ export const MyPostsPanel = ({ embedded, action }: MyPostsPanelProps) => {
         <div key={filter} className="space-y-4">
           <AnimatePresence>
             {visible.map((post, index) => (
-              <MyPostRow
+              <PostCard
                 key={post._id}
+                context="my-posts"
                 post={post}
                 index={index}
                 onDelete={setDeleteTarget}
