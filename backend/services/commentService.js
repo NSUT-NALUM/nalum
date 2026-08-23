@@ -242,6 +242,7 @@ function buildCommentTree(topLevelComments, threadComments) {
   });
 
   orderedComments.forEach((comment) => {
+    if (comment.status === "deleted") return; // no children possible (1-level cap), safe to drop entirely
     const node = nodes.get(comment._id.toString());
     const parentId = comment.parentCommentId ? comment.parentCommentId.toString() : null;
 
