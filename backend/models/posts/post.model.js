@@ -67,6 +67,19 @@ const postSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
     }],
+
+    
+    // Soft-delete flags. Set by cascadeDeleteUser when the author's account
+    // is deleted/deactivated so posts survive without an owner instead of
+    // being hard-deleted. Backend queries must filter isDeleted: { $ne: true }.
+    isDeleted: {
+      type: Boolean,
+      default: false,
+    },
+    deletedAt: {
+      type: Date,
+      default: null,
+    },
   },
   { timestamps: true }
 );
@@ -77,5 +90,6 @@ postSchema.index({ userId: 1 });
 postSchema.index({ status: 1, createdAt: -1 });
 postSchema.index({ likes: -1 });
 postSchema.index({ tags: 1, status: 1, createdAt: -1 });
+postSchema.index({ isDeleted: 1, status: 1, createdAt: -1 });
 
 module.exports = mongoose.model("Post", postSchema);

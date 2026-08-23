@@ -5,6 +5,7 @@ const { notifyMentions } = require("../../services/mentionHelper");
 const { cascadeDeletePost } = require("../../utils/cascadeDelete");
 const fs = require("fs");
 const path = require("path");
+const { safeAuthor } = require("../../utils/safeAuthor");
 
 // Get all posts (with filters)
 exports.getAllPosts = async (req, res) => {
@@ -21,11 +22,13 @@ exports.getAllPosts = async (req, res) => {
       .skip((page - 1) * limit)
       .limit(parseInt(limit));
 
+    const safePosts = safeAuthor(posts);
+
     const total = await Post.countDocuments(query);
 
     res.status(200).json({
       success: true,
-      data: posts,
+      data: safePosts,
       pagination: {
         total,
         page: parseInt(page),
@@ -53,11 +56,13 @@ exports.getPendingPosts = async (req, res) => {
       .skip((page - 1) * limit)
       .limit(parseInt(limit));
 
+    const safePosts = safeAuthor(posts);
+
     const total = await Post.countDocuments({ status: "pending" });
 
     res.status(200).json({
       success: true,
-      data: posts,
+      data: safePosts,
       pagination: {
         total,
         page: parseInt(page),
@@ -221,9 +226,11 @@ exports.getPostById = async (req, res) => {
       });
     }
 
+    const safePost = safeAuthor(post);
+
     res.status(200).json({
       success: true,
-      data: post,
+      data: safePost,
     });
   } catch (error) {
     console.error("Error fetching post:", error);

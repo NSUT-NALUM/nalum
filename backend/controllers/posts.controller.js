@@ -8,6 +8,7 @@ const { queueAdminPostBroadcast } = require("../queues/emailQueue");
 const notificationService = require("../services/notificationService");
 const { assertDeletePermission } = require("../utils/deleteHelper");
 const { cascadeDeletePost } = require("../utils/cascadeDelete");
+const { safeAuthor } = require("../utils/safeAuthor");
 
 const MAX_TAGS = 5;
 const MAX_TAG_LENGTH = 24;
@@ -206,8 +207,7 @@ exports.getPosts = async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 5;
     const skip = (page - 1) * limit;
-
-    const filter = { status: "approved" };
+    const filter = { status: "approved", isDeleted: { $ne: true } };
     if (req.query.tag) {
       filter.tags = new RegExp(`^${escapeRegex(req.query.tag)}$`, "i");
     }
@@ -219,14 +219,15 @@ exports.getPosts = async (req, res) => {
       .populate("userId", "name email role")
       .lean();
 
-    await attachPostMeta(posts);
+    const safePosts = safeAuthor(posts);
+    await attachPostMeta(safePosts);
 
     const total = await Post.countDocuments(filter);
 
     return res.status(200).json({
       success: true,
       data: {
-        posts,
+        posts: safePosts,
         pagination: {
           current: page,
           pages: Math.ceil(total / limit),
@@ -264,6 +265,7 @@ exports.searchPosts = async (req, res) => {
     // Find posts matching title, tag, or userId in the found users
     const posts = await Post.find({
       status: "approved",
+      isDeleted: { $ne: true },
       $or: [
         { title: { $regex: query, $options: "i" } },
         { tags: { $regex: query, $options: "i" } },
@@ -274,13 +276,16 @@ exports.searchPosts = async (req, res) => {
       .populate("userId", "name email role")
       .lean();
 
-    await attachPostMeta(posts);
+    const safePosts = safeAuthor(posts);
+
+    await attachPostMeta(safePosts);
 
     return res.status(200).json({
       success: true,
-      data: posts,
+      data: safePosts,
       message: "Posts found successfully",
     });
+
   } catch (error) {
     return res.status(500).json({
       success: false,
@@ -290,52 +295,52 @@ exports.searchPosts = async (req, res) => {
 };
 
 exports.getPostById = async (req, res) => {
-  try {
-    const post = await Post.findById(req.params.id)
-      .populate("userId", "name email role")
-      .lean();
+    try {
+      const post = await Post.findById(req.params.id)
+        .populate("userId", "name email role")
+        .lean();
 
-    if (!post) {
-      return res.status(404).json({
-        success: false,
-        message: "Post not found",
+      if (!post) {
+        return res.status(404).json({ success: false, message: "Post not found" });
+      }
+
+      if (post.isDeleted) {
+        return res.status(404).json({ success: false, message: "Post not found" });
+      }
+
+      const safePost = safeAuthor(post);
+
+      // Check if user is post owner, admin, or if post is approved
+      const { user_id } = req.user;
+      const isOwner = safePost.userId._id
+        ? safePost.userId._id.toString() === user_id.toString()
+        : false;
+      const isAdmin = req.user.role === "admin";
+      if (!isOwner && !isAdmin && safePost.status !== "approved") {
+        return res.status(403).json({ success: false, message: "Post not found" });
+      }
+
+      const profile = await Profile.findOne({ user: safePost.userId._id })
+        .select("profile_picture batch branch current_role current_company bio")
+        .lean();
+
+      safePost.userId.profile_picture = profile?.profile_picture || null;
+      safePost.userId.batch = profile?.batch || null;
+      safePost.userId.branch = profile?.branch || null;
+      safePost.userId.current_role = profile?.current_role || null;
+      safePost.userId.current_company = profile?.current_company || null;
+      safePost.userId.bio = profile?.bio || null;
+
+      return res.status(200).json({
+        success: true,
+        data: safePost,
+        message: "Post fetched successfully",
       });
-    }
-
-    // Check if user is post owner, admin, or if post is approved
-    const { user_id } = req.user;
-    const isOwner = post.userId._id.toString() === user_id.toString();
-    const isAdmin = req.user.role === "admin";
-    if (!isOwner && !isAdmin && post.status !== "approved") {
-      return res.status(403).json({
+    } catch (error) {
+      return res.status(500).json({
         success: false,
-        message: "Post not found",
+        message: error.message || "Error fetching post",
       });
-    }
-
-    // The detail page renders an "About the author" card, so it needs more of
-    // the author's profile than the list endpoints do.
-    const profile = await Profile.findOne({ user: post.userId._id })
-      .select("profile_picture batch branch current_role current_company bio")
-      .lean();
-
-    post.userId.profile_picture = profile?.profile_picture || null;
-    post.userId.batch = profile?.batch || null;
-    post.userId.branch = profile?.branch || null;
-    post.userId.current_role = profile?.current_role || null;
-    post.userId.current_company = profile?.current_company || null;
-    post.userId.bio = profile?.bio || null;
-
-    return res.status(200).json({
-      success: true,
-      data: post,
-      message: "Post fetched successfully",
-    });
-  } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: error.message || "Error fetching post",
-    });
   }
 };
 
@@ -483,14 +488,15 @@ exports.getMyPosts = async (req, res) => {
       .populate("userId", "name email role")
       .lean();
 
-    await attachPostMeta(posts);
+    const safePosts = safeAuthor(posts);
+    await attachPostMeta(safePosts);
 
     const total = await Post.countDocuments({ userId: user_id });
 
     return res.status(200).json({
       success: true,
       data: {
-        posts,
+        posts: safePosts,
         pagination: {
           current: page,
           pages: Math.ceil(total / limit),
@@ -619,12 +625,13 @@ exports.getSimilarPosts = async (req, res) => {
 
       similar = [...similar, ...fill];
     }
-
-    await attachPostMeta(similar);
+        
+    const safeSimilar = safeAuthor(similar);
+    await attachPostMeta(safeSimilar);
 
     return res.status(200).json({
       success: true,
-      data: similar,
+      data: safeSimilar,
       message: "Similar posts fetched successfully",
     });
   } catch (error) {

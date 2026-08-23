@@ -8,6 +8,7 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 const readline = require('readline');
 const User = require('../models/user/user.model');
+const { cascadeDeleteUser } = require('../utils/cascadeDelete');
 
 // Create readline interface for user input
 const rl = readline.createInterface({
@@ -162,6 +163,9 @@ const deleteAdmin = async () => {
       console.log('❌ Deletion cancelled\n');
       return;
     }
+
+    console.log('⏳ Cleaning up posts, comments, and other content...');
+    await cascadeDeleteUser(admin._id);
 
     await User.deleteOne({ _id: admin._id });
     console.log('✅ Admin user deleted successfully\n');
