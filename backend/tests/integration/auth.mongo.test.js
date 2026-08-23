@@ -358,9 +358,13 @@ describe("auth Mongo integration", () => {
 
     const resetLink = mailer.send.mock.calls[0][0].data.resetLink;
     const token = resetLink.match(/token=([^ \n]+)/)[1];
-    expect(jwt.verify(token, process.env.JWT_SECRET)).toMatchObject({
+    
+    const storedToken = await VerificationToken.findOne({
       email: user.email,
+      purpose: "password_reset",
     });
+    expect(storedToken).not.toBeNull();
+    expect(storedToken.token).toBe(token);
 
     const resetResponse = await request(app)
       .post("/api/auth/reset-password")
@@ -371,6 +375,12 @@ describe("auth Mongo integration", () => {
       error: false,
       message: "Password reset successfully",
     });
+
+    const usedToken = await VerificationToken.findOne({
+      email: user.email,
+      purpose: "password_reset",
+    });
+    expect(usedToken).toBeNull();
 
     const changedUser = await User.findById(user._id);
     await expect(
