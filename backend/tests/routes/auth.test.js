@@ -31,6 +31,10 @@ jest.mock("../../controllers/verificationToken.controller.js", () => ({
   remove: jest.fn(),
 }));
 
+jest.mock("../../models/auth/session.model.js", () => ({
+  deleteMany: jest.fn().mockResolvedValue({ acknowledged: true, deletedCount: 1 }),
+}));
+
 jest.mock("../../controllers/otp.controller.js", () => ({
   create: jest.fn(),
   find: jest.fn(),
@@ -526,7 +530,10 @@ describe("auth routes", () => {
       });
       verificationTokens.create.mockResolvedValue({
         error: false,
-        data: { token: "reset-token-123" }
+        data: {
+          token: "reset-token-123",
+          expires_at: new Date(Date.now() + 1000 * 60 * 5),
+        },
       });
       mailer.send.mockResolvedValue({ error: false });
 
@@ -539,7 +546,7 @@ describe("auth routes", () => {
       expect(verificationTokens.create).toHaveBeenCalledWith(
         "test@example.com",
         "password_reset",
-        300000
+        1000 * 60 * 5,
       );
       expect(mailer.send).toHaveBeenCalledWith({
         to: "test@example.com",
@@ -583,11 +590,9 @@ describe("auth routes", () => {
     it("resets a password with a valid token", async () => {
       verificationTokens.findByToken.mockResolvedValue({
         error: false,
-        data: { email: "test@example.com" },
+        data: { email: "test@example.com", token: "reset-token-123" },
       });
-      verificationTokens.remove.mockResolvedValue({
-        error: false,
-      });
+      verificationTokens.remove.mockResolvedValue({ error: false });
       bcrypt.hash.mockResolvedValue("new-hashed-password");
       users.update.mockResolvedValue({
         error: false,
@@ -600,12 +605,19 @@ describe("auth routes", () => {
       });
 
       expect(response.status).toBe(200);
-      expect(verificationTokens.findByToken).toHaveBeenCalledWith("reset-token-123", "password_reset");
+      expect(verificationTokens.findByToken).toHaveBeenCalledWith(
+        "reset-token-123",
+        "password_reset",
+      );
       expect(bcrypt.hash).toHaveBeenCalledWith("newPassword123", 10);
       expect(users.update).toHaveBeenCalledWith("test@example.com", {
         password: "new-hashed-password",
       });
-      expect(verificationTokens.remove).toHaveBeenCalledWith("test@example.com", "reset-token-123", "password_reset");
+      expect(verificationTokens.remove).toHaveBeenCalledWith(
+        "test@example.com",
+        "reset-token-123",
+        "password_reset",
+      );
       expect(response.body).toEqual({
         error: false,
         message: "Password reset successfully",
@@ -645,7 +657,7 @@ describe("auth routes", () => {
     it("rejects reset-password with a short password", async () => {
       verificationTokens.findByToken.mockResolvedValue({
         error: false,
-        data: { email: "test@example.com" },
+        data: { email: "test@example.com", token: "reset-token-123" },
       });
 
       const response = await request(app).post("/api/auth/reset-password").send({
@@ -683,7 +695,10 @@ describe("auth routes", () => {
 
       expect(response.status).toBe(200);
       expect(users.findOne).toHaveBeenCalledWith("test@example.com");
-      expect(verificationTokens.create).toHaveBeenCalledWith("test@example.com", "email_verification");
+      expect(verificationTokens.create).toHaveBeenCalledWith(
+        "test@example.com",
+        "email_verification",
+      );
       expect(mailer.send).toHaveBeenCalledWith({
         to: "test@example.com",
         subject: "Verify Your Account - NSUT AlumniNet",
@@ -805,7 +820,7 @@ describe("auth routes", () => {
       expect(verificationTokens.find).toHaveBeenCalledWith(
         "test@example.com",
         "verify-token-123",
-        "email_verification"
+        "email_verification",
       );
       expect(users.update).toHaveBeenCalledWith("test@example.com", {
         email_verified: true,
@@ -813,7 +828,7 @@ describe("auth routes", () => {
       expect(verificationTokens.remove).toHaveBeenCalledWith(
         "test@example.com",
         "verify-token-123",
-        "email_verification"
+        "email_verification",
       );
       expect(response.body).toEqual({
         error: false,

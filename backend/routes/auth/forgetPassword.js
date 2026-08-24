@@ -3,6 +3,7 @@ const router = express.Router();
 const users = require("../../controllers/user.controller.js");
 const mailService = require("../../mail/mailService.js");
 const verificationToken = require("../../controllers/verificationToken.controller.js");
+const redis = require("../../config/redis.js");
 
 router.post("/", async (req, res) => {
   try {
@@ -20,6 +21,19 @@ router.post("/", async (req, res) => {
 
   // Sanitize email
   const sanitizedEmail = email.toLowerCase().trim();
+
+  // Cooldown check (60 seconds) - prevent spam/abuse
+  const cooldownKey = `pwd_reset_cooldown:${sanitizedEmail}`;
+  if (redis && redis.isOpen) {
+    const inCooldown = await redis.get(cooldownKey);
+    if (inCooldown) {
+      // Return standard success message to avoid enumeration, but SKIP sending email
+      return res.json({
+        error: false,
+        message: "If this email exists, a reset link has been sent.",
+      });
+    }
+  }
 
   const data = await users.findOne(sanitizedEmail);
 
@@ -62,7 +76,11 @@ router.post("/", async (req, res) => {
 
   // Skip sending email in debug mode to save email quota
   if (shouldLogLink) {
-    console.log(`[DEBUG] Email sending SKIPPED for ${sanitizedEmail} (DEBUG_MAIL=true)`);;
+    console.log(`[DEBUG] Email sending SKIPPED for ${sanitizedEmail} (DEBUG_MAIL=true)`);
+    // Set cooldown even in debug mode
+    if (redis && redis.isOpen) {
+      await redis.set(cooldownKey, "1", { EX: 60 });
+    }
     return res.json({
       error: false,
       message: "If this email exists, a reset link has been sent.",
@@ -75,6 +93,11 @@ router.post("/", async (req, res) => {
     template: "password-reset",
     data: { resetLink },
   });
+
+  // Set cooldown after successfully sending email
+  if (redis && redis.isOpen) {
+    await redis.set(cooldownKey, "1", { EX: 60 });
+  }
 
   return res.json({
     error: false,
