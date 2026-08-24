@@ -10,7 +10,6 @@ import nsutCampusHero from "@/assets/hero.webp";
 import apiClient from "@/lib/api";
 import axios from "axios";
 
-
 const ForgotPassword = () => {
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -19,12 +18,15 @@ const ForgotPassword = () => {
   const [cooldown, setCooldown] = useState(0);
   const navigate = useNavigate();
 
+  // Countdown timer effect
   useEffect(() => {
-    if (cooldown <= 0) return;  // Do nothing if timer isn't active
+    if (cooldown <= 0) return;
+
     const interval = setInterval(() => {
       setCooldown((prev) => (prev > 0 ? prev - 1 : 0));
-    }, 1000);  // Runs every 1000ms = 1 second
-    return () => clearInterval(interval);  // Cleanup when component unmounts or cooldown changes
+    }, 1000);
+
+    return () => clearInterval(interval);
   }, [cooldown]);
 
   const validateForm = () => {
@@ -38,15 +40,20 @@ const ForgotPassword = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e: React.FormEvent | React.MouseEvent) => {
-    e.preventDefault();
-    if (cooldown > 0) return;
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     if (!validateForm()) return;
+
+    if (cooldown > 0) {
+      toast.error(`Please wait ${cooldown}s before requesting another reset link.`);
+      return;
+    }
 
     setIsLoading(true);
     try {
       await apiClient.post("/auth/forget-password", { email });
 
+      setCooldown(60);
       setEmailSent(true);
       toast.success("Reset Link Sent!", {
         description: "Check your email for the password reset link.",
@@ -65,6 +72,7 @@ const ForgotPassword = () => {
       console.error("Forgot password error:", error);
 
       // Always show success message to prevent email enumeration
+      setCooldown(60);
       setEmailSent(true);
       toast.success("Reset Link Sent!", {
         description: "If this email exists in our system, you'll receive a reset link.",
@@ -81,7 +89,6 @@ const ForgotPassword = () => {
       });
     } finally {
       setIsLoading(false);
-      setCooldown(60);
     }
   };
 
@@ -163,20 +170,18 @@ const ForgotPassword = () => {
               </Button>
 
               <Button
-                onClick={handleSubmit}
-                variant="outline"
-                className="w-full h-12 border-nsut-maroon text-nsut-maroon hover:bg-nsut-maroon/10 font-semibold text-lg"
+                onClick={() => handleSubmit()}
                 disabled={cooldown > 0 || isLoading}
+                variant="outline"
+                className="w-full h-12 border-nsut-maroon text-nsut-maroon hover:bg-nsut-maroon/10 font-semibold text-lg disabled:opacity-50"
               >
-                {cooldown > 0
-                  ? `Resend link in ${cooldown}s`
-                  : "Resend Reset Link"}
+                {cooldown > 0 ? `Resend link in ${cooldown}s` : "Resend Reset Link"}
               </Button>
 
               <Button
                 onClick={() => setEmailSent(false)}
                 variant="ghost"
-                className="w-full h-12 text-nsut-maroon hover:bg-nsut-maroon/10 font-semibold text-lg"
+                className="w-full text-gray-600 hover:text-gray-900"
               >
                 Try Different Email
               </Button>

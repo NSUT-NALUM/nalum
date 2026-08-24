@@ -2,9 +2,8 @@ const express = require("express");
 const router = express.Router();
 const users = require("../../controllers/user.controller.js");
 const mailService = require("../../mail/mailService.js");
-const JWT_SECRET = require("../../config/jwt.config.js").JWT_SECRET;
-const redis = require("../../config/redis.js");
 const verificationToken = require("../../controllers/verificationToken.controller.js");
+const redis = require("../../config/redis.js");
 
 router.post("/", async (req, res) => {
   try {
@@ -77,7 +76,7 @@ router.post("/", async (req, res) => {
 
   // Skip sending email in debug mode to save email quota
   if (shouldLogLink) {
-    console.log(`[DEBUG] Email sending SKIPPED for ${sanitizedEmail} (DEBUG_MAIL=true)`);;
+    console.log(`[DEBUG] Email sending SKIPPED for ${sanitizedEmail} (DEBUG_MAIL=true)`);
     // Set cooldown even in debug mode
     if (redis && redis.isOpen) {
       await redis.set(cooldownKey, "1", { EX: 60 });
