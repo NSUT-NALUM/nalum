@@ -3,7 +3,7 @@ const router = express.Router();
 const users = require("../../controllers/user.controller.js");
 const mailService = require("../../mail/mailService.js");
 const verificationToken = require("../../controllers/verificationToken.controller.js");
-const redis = require("../../config/redis.js");
+const { getRedisClient } = require("../../config/redis.config.js");
 
 router.post("/", async (req, res) => {
   try {
@@ -24,6 +24,14 @@ router.post("/", async (req, res) => {
 
   // Cooldown check (60 seconds) - prevent spam/abuse
   const cooldownKey = `pwd_reset_cooldown:${sanitizedEmail}`;
+
+  let redis = null;
+  try {
+    redis = getRedisClient();
+  } catch (err) {
+    // Non-blocking if Redis is down or unavailable
+  }
+
   if (redis && redis.isOpen) {
     const inCooldown = await redis.get(cooldownKey);
     if (inCooldown) {
@@ -41,6 +49,12 @@ router.post("/", async (req, res) => {
   if (data.error || !data.data) {
     if (process.env.DEBUG_MAIL === "true") {
       console.log(`[DEBUG] User not found for email: ${sanitizedEmail} - Email not sent`);
+    }
+    // Set cooldown even for non-existent emails to:
+    // 1. Prevent MongoDB spam from repeated requests with fake emails
+    // 2. Eliminate timing differences between existing/non-existing emails
+    if (redis && redis.isOpen) {
+      await redis.set(cooldownKey, "1", { EX: 60 });
     }
     return res.json({
       error: false,
