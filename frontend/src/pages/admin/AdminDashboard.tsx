@@ -226,6 +226,10 @@ const AdminDashboard = () => {
   const eventsCount = stats?.events.pending || 0;
   const queriesCount = pendingQueriesCount !== null ? pendingQueriesCount : 0;
   const givingsCount = pendingGivingsCount !== null ? pendingGivingsCount : 0;
+  const maxWebsiteVisitors = Math.max(
+    stats?.website_visits?.pre_login || 0,
+    stats?.website_visits?.post_login || 0
+  );
 
   const students = stats?.users.students || 0;
   const totalAlumni = stats?.users.alumni || 0;
@@ -395,7 +399,7 @@ const AdminDashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-gray-900">
-                {stats?.website_visits?.total || 0}
+                {maxWebsiteVisitors}
               </div>
               <p className="text-xs text-gray-500 mt-2 flex justify-between">
                 <span>Pre-login: <strong className="text-indigo-600">{stats?.website_visits?.pre_login || 0}</strong></span>
@@ -474,7 +478,7 @@ const AdminDashboard = () => {
                   <CardDescription>Visitor distribution before and after signing in</CardDescription>
                 </div>
                 <span className="text-xs bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-full font-semibold">
-                  Total: {stats?.website_visits?.total || 0} visits
+                  Visits: {maxWebsiteVisitors}
                 </span>
               </div>
             </CardHeader>
@@ -538,6 +542,7 @@ const AdminDashboard = () => {
                     <p className="text-2xl font-bold text-emerald-900">{stats?.website_visits?.post_login || 0}</p>
                   </div>
                 </div>
+                <CardDescription>Total Visits are counted since 17 August 2026</CardDescription>
               </div>
             </CardContent>
           </Card>
