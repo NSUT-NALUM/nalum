@@ -509,7 +509,7 @@ export default function ViewPost() {
                 </p>
                 {author.batch && (
                   <p className="mt-1 text-label-sm text-primary">
-                    Class of {author.batch}
+                    {author.batch}
                   </p>
                 )}
                 {author.bio && (
@@ -556,7 +556,7 @@ export default function ViewPost() {
                         </p>
                         <p className="mt-1 text-body-sm text-muted-foreground">
                           {item.userId?.name ?? "Unknown user"}
-                          {item.userId?.batch && `, Class of ${item.userId.batch}`}
+                          {item.userId?.batch && `, ${item.userId.batch}`}
                         </p>
                       </Link>
                     </li>
