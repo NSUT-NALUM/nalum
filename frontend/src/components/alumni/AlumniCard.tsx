@@ -1,9 +1,10 @@
 import { motion } from "framer-motion";
-import { GraduationCap, Briefcase, Building2 } from "lucide-react";
+import { GraduationCap, Briefcase } from "lucide-react";
 import UserAvatar from "@/components/UserAvatar";
 import { ConnectionButton } from "@/components/ui/ConnectionButton";
 import type { AlumniProfile } from "@/hooks/useAlumniDirectory";
 import { CARD_HOVER, CARD_TAP, SPRING, blockEntrance } from "@/lib/motion";
+import { BRANCH_ABBREVIATIONS } from "@/constants/branches";
 
 interface AlumniCardProps {
   alumni: AlumniProfile;
@@ -53,7 +54,7 @@ export const AlumniCard = ({
           </h3>
           {classLabel && (
             <p className="text-body-sm text-muted-foreground truncate">
-              {classLabel}
+              {alumni.batch}
             </p>
           )}
         </div>
@@ -65,8 +66,12 @@ export const AlumniCard = ({
         {alumni.branch && (
           <div className="flex items-start gap-3 w-full min-w-0">
             <GraduationCap className="w-[18px] h-[18px] text-primary/70 shrink-0 mt-0.5" />
-            <p className="text-body-md text-foreground flex-1 min-w-0 truncate">
-              {alumni.branch}
+            <p 
+              className="text-sm text-foreground flex-1 min-w-0 truncate"
+              title={alumni.branch}
+            >
+              <span className="hidden sm:inline">{alumni.branch}</span>
+              <span className="sm:hidden">{BRANCH_ABBREVIATIONS[alumni.branch] || alumni.branch}</span>
             </p>
           </div>
         )}
@@ -87,16 +92,6 @@ export const AlumniCard = ({
                 </p>
               )}
             </div>
-          </div>
-        )}
-
-        {/* Campus Block (stands in for location) */}
-        {alumni.campus && (
-          <div className="flex items-start gap-3 w-full min-w-0">
-            <Building2 className="w-[18px] h-[18px] text-primary/70 shrink-0 mt-0.5" />
-            <p className="text-body-md text-muted-foreground flex-1 min-w-0 truncate">
-              {alumni.campus}
-            </p>
           </div>
         )}
       </div>

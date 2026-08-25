@@ -3,6 +3,7 @@ const { nanoid } = require("nanoid");
 const VerificationCode = require("../models/verificationCode.model.js");
 const User = require("../models/user/user.model.js");
 const VerificationQueue = require("../models/verificationQueue.model.js");
+const { invalidateAlumniMapCache } = require("../config/cacheKeys");
 exports.getVerificationStatus = async (req, res) => {
   try {
     const { user_id } = req.user;
@@ -105,6 +106,9 @@ exports.verifyCode = async (req, res) => {
       // Verify using special code - no database code needed
       user.verified_alumni = true;
       await user.save();
+
+      // Newly verified alumni become eligible for the public map
+      await invalidateAlumniMapCache();
       
       // Log for audit trail
       console.log(`[ALUMNI2025] User ${user_id} verified using special event code at ${now.toISOString()}`);
@@ -146,6 +150,9 @@ exports.verifyCode = async (req, res) => {
     // Update user's alumni verification status
     user.verified_alumni = true;
     await user.save();
+
+    // Newly verified alumni become eligible for the public map
+    await invalidateAlumniMapCache();
 
     // Send success response
     return res.status(200).json({
@@ -236,6 +243,9 @@ exports.confirmManualMatch = async (req, res) => {
     user.verified_alumni = true;
     await user.save();
 
+    // Newly verified alumni become eligible for the public map
+    await invalidateAlumniMapCache();
+
     return res.status(200).json({
       success: true,
       message: "User successfully verified.",
@@ -284,6 +294,9 @@ exports.approveFromQueue = async (req, res) => {
 
     user.verified_alumni = true;
     await user.save();
+
+    // Newly verified alumni become eligible for the public map
+    await invalidateAlumniMapCache();
 
     // Remove from queue
     await VerificationQueue.deleteOne({ user: userId });

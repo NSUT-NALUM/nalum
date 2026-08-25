@@ -9,7 +9,7 @@ import UserAvatar from "@/components/UserAvatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import api from "@/lib/api";
 import { rowEntrance } from "@/lib/motion";
-import { PostRecord, likeIds, toPlainText } from "@/lib/posts";
+import { PostRecord, getPostImageUrl, likeIds, toPlainText } from "@/lib/posts";
 
 const LIMIT = 5;
 
@@ -77,6 +77,9 @@ export const RecentPostsCard = () => {
         <ul className="divide-y divide-border">
           {posts.map((post, index) => {
             const excerpt = toPlainText(post.content);
+            const coverImage =
+              post.images && post.images.length > 0 ? post.images[0] : null;
+
             return (
               <motion.li key={post._id} {...rowEntrance(index)}>
                 <article
@@ -92,13 +95,13 @@ export const RecentPostsCard = () => {
                   {/* Byline */}
                   <div className="flex items-center gap-3">
                     <UserAvatar
-                      src={post.userId.profile_picture || undefined}
-                      name={post.userId.name}
+                      src={post.userId?.profile_picture || undefined}
+                      name={post.userId?.name ?? "Unknown user"}
                       size="md"
                     />
                     <div className="min-w-0">
                       <p className="truncate text-label-md text-foreground">
-                        {post.userId.name}
+                        {post.userId?.name ?? "Unknown user"}
                       </p>
                       <p className="text-body-sm text-muted-foreground">
                         {formatDistanceToNow(new Date(post.createdAt), {
@@ -113,9 +116,20 @@ export const RecentPostsCard = () => {
                   </h3>
 
                   {excerpt && (
-                    <p className="mt-1 line-clamp-2 text-body-md text-muted-foreground">
+                    <p className="mt-1 line-clamp-2 whitespace-pre-line text-body-md text-muted-foreground">
                       {excerpt}
                     </p>
+                  )}
+
+                  {/* Render Cover Image if present */}
+                  {coverImage && (
+                    <div className="mt-3 overflow-hidden rounded-lg border border-border">
+                      <img
+                        src={getPostImageUrl(coverImage)}
+                        alt={post.title}
+                        className="max-h-64 w-full object-cover"
+                      />
+                    </div>
                   )}
 
                   <div className="mt-2.5 flex items-center gap-5 text-muted-foreground">

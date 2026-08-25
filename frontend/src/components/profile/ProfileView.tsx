@@ -244,11 +244,11 @@ const ProfileView = ({
                 className="h-24 w-24 md:h-28 md:w-28 text-3xl border-0 ring-4 ring-primary/10 shadow-card shrink-0"
               />
               <div className="text-center md:text-left min-w-0">
-                <h2 className="text-headline-lg-mobile md:text-headline-lg text-foreground">
+                <h2 className="[overflow-wrap:anywhere] text-headline-lg-mobile md:text-headline-lg text-foreground">
                   {profile.user.name}
                 </h2>
                 {headline && (
-                  <p className="text-body-lg text-muted-foreground mt-1">
+                  <p className="[overflow-wrap:anywhere] text-body-lg text-muted-foreground mt-1">
                     {headline}
                   </p>
                 )}
@@ -292,7 +292,7 @@ const ProfileView = ({
           <div className="md:col-span-8 space-y-6 min-w-0">
             {profile.bio ? (
               <SectionCard title="About">
-                <p className="text-body-md text-muted-foreground leading-relaxed whitespace-pre-line">
+                <p className="break-words text-body-md text-muted-foreground leading-relaxed whitespace-pre-line">
                   {profile.bio}
                 </p>
               </SectionCard>
@@ -306,7 +306,7 @@ const ProfileView = ({
                   {skills.map((skill) => (
                     <span
                       key={skill}
-                      className="px-3 py-1 rounded-full border border-primary/20 bg-primary/[0.07] text-primary text-label-md"
+                      className="max-w-full break-words px-3 py-1 rounded-full border border-primary/20 bg-primary/[0.07] text-primary text-label-md"
                     >
                       {skill}
                     </span>
@@ -332,12 +332,12 @@ const ProfileView = ({
                             Current
                           </span>
                           {profile.current_role && (
-                            <h4 className="text-headline-md text-foreground mt-1">
+                            <h4 className="[overflow-wrap:anywhere] text-headline-md text-foreground mt-1">
                               {profile.current_role}
                             </h4>
                           )}
                           {profile.current_company && (
-                            <p className="text-body-md font-medium text-primary">
+                            <p className="[overflow-wrap:anywhere] text-body-md font-medium text-primary">
                               {profile.current_company}
                             </p>
                           )}
@@ -378,7 +378,7 @@ const ProfileView = ({
                             )}
                           />
                           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-1 sm:gap-4 mb-1">
-                            <h4 className="text-body-lg font-semibold text-foreground min-w-0">
+                            <h4 className="text-body-lg font-semibold text-foreground min-w-0 [overflow-wrap:anywhere]">
                               {exp.role || "—"}
                             </h4>
                             {exp.duration && (
@@ -390,7 +390,7 @@ const ProfileView = ({
                           {exp.company && (
                             <p
                               className={cn(
-                                "text-body-md font-medium",
+                                "break-words text-body-md font-medium",
                                 !hasCurrentPosition && index === 0
                                   ? "text-primary"
                                   : "text-muted-foreground",

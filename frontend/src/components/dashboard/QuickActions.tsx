@@ -1,6 +1,5 @@
 import {
   CalendarPlus,
-  HandCoins,
   HelpCircle,
   LucideIcon,
   PenSquare,
@@ -18,17 +17,16 @@ interface QuickAction {
   icon: LucideIcon;
 }
 
-// Two of the four tiles are capability-dependent: only alumni may host events,
+// Two of the three tiles are capability-dependent: only alumni may host events,
 // and only alumni/admins may publish posts. Rather than leave gaps — or send
 // students to a page that turns them away — the grid substitutes an action
-// they can actually take, so it is always four tiles wide.
+// they can actually take, so it is always three tiles wide.
 const actionsFor = (role?: string): QuickAction[] => {
   const canHost = role === "alumni";
   const canPost = role === "alumni" || role === "admin";
 
   return [
     { to: "/dashboard/update-profile", label: "Update Profile", icon: UserPen },
-    { to: "/dashboard/giving", label: "Make a Donation", icon: HandCoins },
     canHost
       ? { to: "/dashboard/host-event", label: "Host an Event", icon: CalendarPlus }
       : { to: "/dashboard/alumni", label: "Browse Directory", icon: Users },
@@ -49,7 +47,7 @@ export const QuickActions = () => {
       {/* The tiles are the most-clicked thing on the page, so they get the only
           real hover choreography on it: the card lifts, and the icon disc grows
           to meet the cursor. `whileHover="hover"` drives both from one gesture. */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         {actions.map(({ to, label, icon: Icon }) => (
           <motion.div
             key={to}

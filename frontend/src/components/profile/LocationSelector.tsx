@@ -36,7 +36,7 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
   const [countryInput, setCountryInput] = useState(country || "");
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleUseMyLocation = async () => {
+  const handleUseMyLocation = () => {
     setIsLoading(true);
     if (!navigator.geolocation) {
       toast.error("Geolocation is not supported by your browser");
@@ -45,32 +45,17 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
     }
 
     navigator.geolocation.getCurrentPosition(
-      async (position) => {
+      (position) => {
         const { latitude, longitude } = position.coords;
-        try {
-          const response = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`,
-            { headers: { "User-Agent": "NSUT-Alumni-Network/1.0" } },
-          );
-          const data = await response.json();
-          const detectedCity =
-            data.address.city ||
-            data.address.town ||
-            data.address.village ||
-            "";
-          const detectedCountry = data.address.country || "";
-          setCityInput(detectedCity.toLowerCase());
-          setCountryInput(detectedCountry.toLowerCase());
-          onLocationChange(
-            detectedCity.toLowerCase(),
-            detectedCountry.toLowerCase(),
-            latitude,
-            longitude,
-          );
-        } catch (error) {
-          console.error("Error fetching location:", error);
-          toast.error("Failed to detect location. Please type manually.");
-        }
+        // Pass GPS coordinates directly to profile form state. City/Country
+        // will be resolved asynchronously by the server-side queue if missing.
+        onLocationChange(
+          cityInput.toLowerCase(),
+          countryInput.toLowerCase(),
+          latitude,
+          longitude,
+        );
+        toast.success("Current GPS coordinates captured!");
         setIsLoading(false);
       },
       (error) => {
@@ -81,7 +66,7 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
     );
   };
 
-  const handleManualUpdate = async (overrideCity?: string, overrideCountry?: string) => {
+  const handleManualUpdate = (overrideCity?: string, overrideCountry?: string) => {
     const effectiveCity = overrideCity !== undefined ? overrideCity : cityInput;
     const effectiveCountry = overrideCountry !== undefined ? overrideCountry : countryInput;
 
@@ -99,29 +84,9 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
         return;
       }
 
-      try {
-        const query = `${effectiveCity}, ${effectiveCountry}`;
-        const response = await fetch(
-          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`,
-          { headers: { "User-Agent": "NSUT-Alumni-Network/1.0" } },
-        );
-        const data = await response.json();
-        if (data && data.length > 0) {
-          const lat = parseFloat(data[0].lat);
-          const lng = parseFloat(data[0].lon);
-          onLocationChange(
-            effectiveCity.toLowerCase(),
-            effectiveCountry.toLowerCase(),
-            lat,
-            lng,
-          );
-        } else {
-          onLocationChange(effectiveCity.toLowerCase(), effectiveCountry.toLowerCase());
-        }
-      } catch (error) {
-        console.error("Failed to geocode:", error);
-        onLocationChange(effectiveCity.toLowerCase(), effectiveCountry.toLowerCase());
-      }
+      // Pass city and country to profile form state. The server-side
+      // geocoding queue will resolve lat/lng asynchronously at 1 req/sec.
+      onLocationChange(effectiveCity.toLowerCase(), effectiveCountry.toLowerCase());
     }
   };
 

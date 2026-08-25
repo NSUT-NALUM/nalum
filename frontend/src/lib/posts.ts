@@ -56,22 +56,24 @@ export const bodyWithoutTitle = (content: string, title: string) => {
   return content;
 };
 
-// Strips the markdown scaffolding so a body can be used as a plain-text
-// preview line or fed to a word count.
-export const toPlainText = (markdown: string) =>
-  markdown
+// Strips markdown scaffolding while preserving explicit line breaks (\n).
+export const toPlainText = (markdown: string) => {
+  if (!markdown) return "";
+  return markdown
     .replace(/```[\s\S]*?```/g, " ")
     .replace(/!\[[^\]]*\]\([^)]*\)/g, " ")
     .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
     .replace(/<\/?[^>]+>/g, " ")
-    .replace(/^[>#\-*+\s]+/gm, " ")
     .replace(/[*_~`]/g, "")
-    .replace(/\s+/g, " ")
+    .split(/\r?\n/)
+    .map((line) => line.replace(/^[>#\-*+\s]+/, "").trim())
+    .join("\n")
     .trim();
+};
 
 export const wordCount = (markdown: string) => {
   const text = toPlainText(markdown);
-  return text ? text.split(" ").length : 0;
+  return text ? text.split(/\s+/).length : 0;
 };
 
 // 200 wpm is the usual reading-speed assumption for prose of this kind.

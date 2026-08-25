@@ -17,7 +17,13 @@ import {
   SPRING,
   blockEntrance,
 } from "@/lib/motion";
-import { PostRecord, PostStatus, likeIds, toPlainText } from "@/lib/posts";
+import {
+  PostRecord,
+  PostStatus,
+  getPostImageUrl,
+  likeIds,
+  toPlainText,
+} from "@/lib/posts";
 import { cn } from "@/lib/utils";
 
 const STATUS_PILL: Record<
@@ -58,6 +64,8 @@ export const MyPostRow = ({ post, onDelete, index = 0 }: MyPostRowProps) => {
   const PillIcon = pill.icon;
   const rejected = status === "rejected";
   const excerpt = toPlainText(post.content);
+  const coverImage =
+    post.images && post.images.length > 0 ? post.images[0] : null;
 
   return (
     // The row isn't itself clickable — the lift is a hover affordance for the
@@ -100,11 +108,24 @@ export const MyPostRow = ({ post, onDelete, index = 0 }: MyPostRowProps) => {
 
       <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div className="min-w-0 flex-1">
-          <h3 className="text-headline-md text-foreground">{post.title}</h3>
+          <h3 className="line-clamp-2 [overflow-wrap:anywhere] text-headline-md text-foreground">
+            {post.title}
+          </h3>
           {excerpt && (
-            <p className="mt-1.5 line-clamp-2 text-body-md text-muted-foreground">
+            <p className="mt-1.5 line-clamp-2 whitespace-pre-line text-body-md text-muted-foreground">
               {excerpt}
             </p>
+          )}
+
+          {/* Render Cover Image Preview */}
+          {coverImage && (
+            <div className="mt-3 overflow-hidden rounded-lg border border-border max-w-md">
+              <img
+                src={getPostImageUrl(coverImage)}
+                alt={post.title}
+                className="max-h-60 w-full object-cover"
+              />
+            </div>
           )}
 
           {status === "approved" && (

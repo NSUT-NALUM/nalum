@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { formatDistanceToNow } from "date-fns";
-import { MessageSquare, Share2, ThumbsUp } from "lucide-react";
+import { Info, MessageSquare, Share2, ThumbsUp } from "lucide-react";
 import { toast } from "sonner";
 import UserAvatar from "@/components/UserAvatar";
 import api from "@/lib/api";
@@ -14,7 +14,7 @@ import {
   SPRING_POP,
   blockEntrance,
 } from "@/lib/motion";
-import { PostRecord, likeIds, toPlainText } from "@/lib/posts";
+import { PostRecord, getPostImageUrl, likeIds, toPlainText } from "@/lib/posts";
 import { cn } from "@/lib/utils";
 
 interface PostRowProps {
@@ -32,10 +32,14 @@ export const PostRow = ({ post, onTagClick, index = 0 }: PostRowProps) => {
 
   const [likes, setLikes] = useState<string[]>(likeIds(post));
   const [pending, setPending] = useState(false);
+  const [showAdminQueryMessage, setShowAdminQueryMessage] = useState(false);
 
+  const isAdminPost = post.userId?.role === "admin";
   const liked = !!user?.id && likes.includes(user.id);
   const excerpt = toPlainText(post.content);
   const comments = post.commentCount ?? 0;
+  const coverImage =
+    post.images && post.images.length > 0 ? post.images[0] : null;
 
   const toggleLike = async (event: React.MouseEvent) => {
     event.stopPropagation();
@@ -94,19 +98,41 @@ export const PostRow = ({ post, onTagClick, index = 0 }: PostRowProps) => {
       className="cursor-pointer rounded-card border border-border bg-card p-5 shadow-card transition-colors hover:border-primary/25 sm:p-6"
     >
       {/* Byline */}
-      <div className="flex items-center gap-3">
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={(event) => {
+          event.stopPropagation();
+          if (isAdminPost) {
+            setShowAdminQueryMessage((prev) => !prev);
+          } else if (post.userId?._id) {
+            navigate(`/dashboard/alumni/${post.userId._id}`);
+          }
+        }}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.stopPropagation();
+            if (isAdminPost) {
+              setShowAdminQueryMessage((prev) => !prev);
+            } else if (post.userId?._id) {
+              navigate(`/dashboard/alumni/${post.userId._id}`);
+            }
+          }
+        }}
+        className="group/author flex w-fit items-center gap-3 cursor-pointer"
+      >
         <UserAvatar
-          src={post.userId.profile_picture || undefined}
-          name={post.userId.name}
+          src={post.userId?.profile_picture || undefined}
+          name={post.userId?.name ?? "Unknown user"}
           size="md"
         />
         <div className="min-w-0">
-          <p className="truncate text-label-md text-foreground">
-            {post.userId.name}
+          <p className="truncate text-label-md text-foreground group-hover/author:text-primary transition-colors">
+            {post.userId?.name ?? "Unknown user"}
           </p>
           <p className="flex flex-wrap items-center gap-x-2 text-body-sm text-muted-foreground">
-            {post.userId.batch && <span>Class of {post.userId.batch}</span>}
-            {post.userId.batch && <span aria-hidden="true">•</span>}
+            {post.userId?.batch && <span>Class of {post.userId.batch}</span>}
+            {post.userId?.batch && <span aria-hidden="true">•</span>}
             <span>
               {formatDistanceToNow(new Date(post.createdAt), { addSuffix: true })}
             </span>
@@ -114,12 +140,45 @@ export const PostRow = ({ post, onTagClick, index = 0 }: PostRowProps) => {
         </div>
       </div>
 
-      <h3 className="mt-4 text-headline-md text-foreground">{post.title}</h3>
+      {/* Admin Query Message if toggled */}
+      {isAdminPost && showAdminQueryMessage && (
+        <div
+          className="mt-3 flex flex-col gap-2 rounded-lg border border-warning/40 bg-warning-subtle p-3 text-body-sm text-foreground sm:flex-row sm:items-center sm:justify-between"
+          onClick={(event) => event.stopPropagation()}
+        >
+          <div className="flex items-center gap-2">
+            <Info className="h-4 w-4 shrink-0 text-warning" />
+            <span>Got any queries for the admin? Use the Queries page.</span>
+          </div>
+          <Link
+            to="/dashboard/queries"
+            onClick={(event) => event.stopPropagation()}
+            className="inline-flex shrink-0 items-center gap-1 text-label-sm font-semibold text-primary hover:underline"
+          >
+            Ask a Query →
+          </Link>
+        </div>
+      )}
+
+      <h3 className="mt-4 line-clamp-2 break-words text-headline-md text-foreground">
+        {post.title}
+      </h3>
 
       {excerpt && (
-        <p className="mt-1.5 line-clamp-2 text-body-md text-muted-foreground">
+        <p className="mt-1.5 line-clamp-2 whitespace-pre-line text-body-md text-muted-foreground">
           {excerpt}
         </p>
+      )}
+
+      {/* Render Cover Image Preview */}
+      {coverImage && (
+        <div className="mt-3 overflow-hidden rounded-lg border border-border max-w-md">
+          <img
+            src={getPostImageUrl(coverImage)}
+            alt={post.title}
+            className="max-h-60 w-full object-cover"
+          />
+        </div>
       )}
 
       {(post.tags || []).length > 0 && (

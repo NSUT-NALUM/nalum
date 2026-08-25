@@ -4,6 +4,7 @@ const User = require("../models/user/user.model");
 const Profile = require("../models/user/profile.model");
 const Settings = require("../models/admin/settings.model");
 const { notifyMentions } = require("../services/mentionHelper");
+const { queueAdminPostBroadcast } = require("../queues/emailQueue");
 const notificationService = require("../services/notificationService");
 const { assertDeletePermission } = require("../utils/deleteHelper");
 const { cascadeDeletePost } = require("../utils/cascadeDelete");
@@ -174,6 +175,17 @@ exports.createPost = async (req, res) => {
         actionUrl: `/dashboard/posts/${post._id}`,
         entityId: post._id.toString(),
       });
+
+      // If post is created by an admin and auto-approved, queue email broadcast
+      if (user.role === "admin") {
+        try {
+          await queueAdminPostBroadcast(post, user);
+          console.log(`[Post Create] Queued email broadcast for admin post ${post._id}`);
+        } catch (error) {
+          console.error(`[Post Create] Failed to queue email broadcast:`, error);
+          // Don't fail the request if email queueing fails
+        }
+      }
     }
 
     return res.status(201).json({
@@ -435,14 +447,12 @@ exports.deletePost = async (req, res) => {
       });
     }
 
-    // Task 2.2: allow owner OR admin to delete
     assertDeletePermission({
       ownerId: post.userId,
       requestUserId: user_id,
       userRole: req.user.role,
     });
 
-    // Task 2.1: cascade — deletes child Comments + image files
     await cascadeDeletePost(post);
     await Post.findByIdAndDelete(post._id);
 
@@ -497,8 +507,29 @@ exports.getMyPosts = async (req, res) => {
   }
 };
 
-// Powers the filter chips above the community feed. Tags are free-form, so the
-// chip row is whatever the network is actually talking about right now.
+exports.recordView = async (req, res) => {
+  try {
+    const postId = req.params.id;
+
+    // Increment view count by 1
+    const post = await Post.findByIdAndUpdate(
+      postId,
+      { $inc: { view_count: 1 } },
+      { new: true }
+    ).select("view_count");
+
+    return res.status(200).json({
+      success: true,
+      view_count: post?.view_count || 0,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Error recording view",
+    });
+  }
+};
+
 exports.getPopularTags = async (req, res) => {
   try {
     const limit = Math.min(parseInt(req.query.limit) || 8, 20);
@@ -520,6 +551,29 @@ exports.getPopularTags = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: error.message || "Error fetching tags",
+    });
+  }
+};
+
+exports.recordViewsBatch = async (req, res) => {
+  try {
+    const { postIds } = req.body;
+
+    if (Array.isArray(postIds) && postIds.length > 0) {
+      await Post.updateMany(
+        { _id: { $in: postIds } },
+        { $inc: { view_count: 1 } }
+      );
+    }
+
+    return res.status(200).json({
+      success: true,
+      count: postIds?.length || 0,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Error recording batch views",
     });
   }
 };

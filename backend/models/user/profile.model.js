@@ -1,6 +1,5 @@
 const mongoose = require("mongoose");
 
-// Simplified profile schema without complex duration tracking
 const profileSchema = new mongoose.Schema(
   {
     user: {
