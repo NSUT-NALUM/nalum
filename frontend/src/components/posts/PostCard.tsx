@@ -1,432 +1,463 @@
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { AnimatePresence, motion } from "framer-motion";
 import { formatDistanceToNow } from "date-fns";
-import { Clock, Edit, Trash2, AlertCircle, ChevronLeft, ChevronRight, X, Flag } from "lucide-react";
+import {
+  AlertTriangle,
+  CheckCircle2,
+  Clock,
+  Eye,
+  Flag,
+  GraduationCap,
+  Globe,
+  Heart,
+  LucideIcon,
+  MessageSquare,
+  Pencil,
+  Share2,
+  ThumbsUp,
+  Trash2,
+  Users,
+} from "lucide-react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import PostImages from "@/components/posts/PostImages";
+import PostMarkdown from "@/components/posts/PostMarkdown";
 import UserAvatar from "@/components/UserAvatar";
 import api from "@/lib/api";
-import { BASE_URL } from "@/lib/constants";
-import { useProfile } from "@/context/ProfileContext";
-import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import ReportDialog from "@/components/reports/ReportDialog";
-import { parseFormattedText } from "@/lib/textFormatting";
+import { useAuth } from "@/context/AuthContext";
+import {
+  CARD_HOVER,
+  CARD_TAP,
+  EXIT_BLOCK,
+  SPRING,
+  SPRING_POP,
+  blockEntrance,
+} from "@/lib/motion";
+import {
+  PostRecord,
+  PostStatus,
+  PostVisibility,
+  VISIBILITY_LABELS,
+  getPostImageUrl,
+  isPostPinned,
+  likeIds,
+} from "@/lib/posts";
+import { cn } from "@/lib/utils";
 
-interface Post {
-  _id: string;
-  title: string;
-  content: string;
-  userId: {
-    _id: string;
-    name: string;
-    email: string;
-    role: string;
-    profile_picture?: string;
-  };
-  images: string[];
-  createdAt: string;
-  updatedAt: string;
-  status?: string;
-  rejection_reason?: string;
+const STATUS_PILL: Record<
+  PostStatus,
+  { label: string; icon: typeof CheckCircle2; className: string }
+> = {
+  approved: {
+    label: "Approved",
+    icon: CheckCircle2,
+    className: "bg-success-subtle text-success",
+  },
+  pending: {
+    label: "Pending",
+    icon: Clock,
+    className: "bg-warning-subtle text-warning",
+  },
+  rejected: {
+    label: "Rejected",
+    icon: AlertTriangle,
+    className: "bg-primary-subtle text-primary-subtle-foreground",
+  },
+};
+
+const AUDIENCE_ICON: Record<PostVisibility, LucideIcon> = {
+  everyone: Globe,
+  alumni: Users,
+  students: GraduationCap,
+};
+
+export type PostCardContext = "feed" | "my-posts" | "admin";
+
+export interface PostCardAction {
+  label: string;
+  icon: LucideIcon;
+  onClick: (post: PostRecord) => void;
 }
 
 interface PostCardProps {
-  post: Post;
-  onEdit?: (post: Post) => void;
-  onDelete?: (postId: string) => void;
-  showStatus?: boolean;
-  showRejectionReason?: boolean;
+  post: PostRecord;
+  context: PostCardContext;
+  index?: number;
+  onTagClick?: (tag: string) => void;
+  onDelete?: (post: PostRecord) => void;
+  primaryAction?: PostCardAction;
+  secondaryAction?: PostCardAction;
+  isHighlighted?: boolean;
 }
 
-const PostCard = ({
+export const PostCard = ({
   post,
-  onEdit,
+  context,
+  index = 0,
+  onTagClick,
   onDelete,
-  showStatus,
-  showRejectionReason,
+  primaryAction,
+  secondaryAction,
+  isHighlighted = false,
 }: PostCardProps) => {
-  const { profile } = useProfile();
   const navigate = useNavigate();
-  const isAuthor = profile?.user?._id === post.userId._id;
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
-  const [hasReported, setHasReported] = useState(false);
-  const [isTruncated, setIsTruncated] = useState(false);
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const contentRef = useRef<HTMLDivElement>(null);
+  const { user } = useAuth();
 
-  const handleUserClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    navigate(`/dashboard/alumni/${post.userId._id}`);
-  };
+  const [likes, setLikes] = useState<string[]>(likeIds(post));
+  const [likePending, setLikePending] = useState(false);
 
-  useEffect(() => {
-    if (contentRef.current && !isExpanded) {
-      setIsTruncated(
-        contentRef.current.scrollHeight > contentRef.current.clientHeight
-      );
+  const liked = !!user?.id && likes.includes(user.id);
+  const comments = post.commentCount ?? 0;
+  const status: PostStatus = post.status || "pending";
+  const rejected = status === "rejected";
+  const pinned = isPostPinned(post);
+  const clickable = context === "feed";
+  const visibility: PostVisibility = post.visibility || "everyone";
+  const AudienceIcon = AUDIENCE_ICON[visibility];
+
+  const attachmentUrls = (post.images || []).map(getPostImageUrl);
+
+  const toggleLike = async (event: React.MouseEvent) => {
+    event.stopPropagation();
+    if (likePending || !user?.id) return;
+
+    const previous = likes;
+    setLikePending(true);
+    setLikes(liked ? likes.filter((id) => id !== user.id) : [...likes, user.id]);
+
+    try {
+      const { data } = await api.post(`/posts/${post._id}/like`);
+      if (data.success && Array.isArray(data.likes)) setLikes(data.likes);
+    } catch (error) {
+      console.error("Error liking post:", error);
+      setLikes(previous);
+    } finally {
+      setLikePending(false);
     }
-  }, [post.content, isExpanded]);
+  };
 
-  useEffect(() => {
-    const checkReportStatus = async () => {
-      if (!isAuthor) {
-        try {
-          const { data } = await api.get(`/reports/post/${post._id}/check`);
-          setHasReported(data.hasReported);
-        } catch (error) {
-          console.error("Error checking report status:", error);
-        }
+  const share = async (event: React.MouseEvent) => {
+    event.stopPropagation();
+    const url = `${window.location.origin}/dashboard/posts/${post._id}`;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: post.title, url });
+        return;
+      } catch {
+        return; // sheet dismissed
       }
-    };
-    checkReportStatus();
-  }, [post._id, isAuthor]);
+    }
 
-  const getImageUrl = (imagePath: string) => {
-    if (imagePath.startsWith("http")) return imagePath;
-    return `${BASE_URL}/uploads/posts/${imagePath}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.success("Link copied to clipboard");
+    } catch {
+      toast.error("Could not copy the link");
+    }
   };
 
-  const getStatusBadge = () => {
-    if (!showStatus || !post.status) return null;
+  const openPost = () => navigate(`/dashboard/posts/${post._id}`);
 
-    const statusConfig = {
-      pending: {
-        color: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
-        text: "Pending Review",
-      },
-      approved: {
-        color: "bg-green-500/20 text-green-400 border-green-500/30",
-        text: "Approved",
-      },
-      rejected: {
-        color: "bg-red-500/20 text-red-400 border-red-500/30",
-        text: "Rejected",
-      },
-    };
+  const statusPill = STATUS_PILL[status];
+  const StatusIcon = statusPill.icon;
 
-    const config = statusConfig[post.status as keyof typeof statusConfig];
-    if (!config) return null;
-
-    return <Badge className={`${config.color} border`}>{config.text}</Badge>;
-  };
-
-  const goToNextImage = () => {
-    setCurrentImageIndex((prev) =>
-      prev === post.images.length - 1 ? 0 : prev + 1
-    );
-  };
-
-  const goToPreviousImage = () => {
-    setCurrentImageIndex((prev) =>
-      prev === 0 ? post.images.length - 1 : prev - 1
-    );
-  };
-
-  const goToImage = (index: number) => {
-    setCurrentImageIndex(index);
-  };
-
-  const handleImageClick = () => {
-    setSelectedImage(getImageUrl(post.images[currentImageIndex]));
-  };
-
-  const handlePostClick = () => {
-    if (isReportDialogOpen) return;
-    navigate(`/dashboard/posts/${post._id}`);
-  };
-
-  const isAdminPost = post.userId.role === "admin";
+  const dateLabel =
+    context === "feed"
+      ? formatDistanceToNow(new Date(post.createdAt), { addSuffix: true })
+      : new Date(post.createdAt).toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+        });
 
   return (
-    <div
-      className={`relative bg-white/5 backdrop-blur-md rounded-xl p-6 hover:bg-white/10 transition duration-200 cursor-pointer ${
-        isAdminPost ? "border-2 border-yellow-400/70" : "border border-white/10"
-      }`}
-      onClick={handlePostClick}
+    <motion.article
+      id={`post-${post._id}`}
+      role={clickable ? "link" : undefined}
+      tabIndex={clickable ? 0 : undefined}
+      {...blockEntrance(index)}
+      whileHover={CARD_HOVER}
+      whileTap={clickable ? CARD_TAP : undefined}
+      exit={context !== "feed" ? EXIT_BLOCK : undefined}
+      transition={SPRING}
+      layout={context !== "feed"}
+      onClick={clickable ? openPost : undefined}
+      onKeyDown={
+        clickable
+          ? (event) => event.key === "Enter" && openPost()
+          : undefined
+      }
+      className={cn(
+        "rounded-card border p-5 shadow-card transition-colors sm:p-6 bg-card",
+        pinned ? "border-4 border-primary" : "border-border",
+        rejected && context !== "feed" && "bg-accent",
+        clickable && !pinned && "cursor-pointer hover:border-primary/25",
+        clickable && pinned && "cursor-pointer",
+        isHighlighted && "border-4 border-tertiary animate-blink-twice"
+      )}
     >
-      {/* Action buttons in top-right */}
-      <div className="absolute top-4 right-4 flex gap-2">
-        {isAuthor ? (
-          <>
-            {post.status !== "rejected" && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onEdit?.(post);
-                }}
-                className="p-2 text-gray-400 hover:text-blue-400 hover:bg-blue-500/10 rounded-full transition-colors"
-                title="Edit Post"
-              >
-                <Edit className="w-4 h-4" />
-              </button>
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex min-w-0 items-center gap-3">
+          <UserAvatar
+            src={post.userId?.profile_picture || undefined}
+            name={post.userId?.name ?? "Unknown user"}
+            size="md"
+          />
+          <div className="min-w-0">
+            <p className="truncate text-label-md text-foreground">
+              {post.userId?.name ?? "Unknown user"}
+            </p>
+            <p className="text-body-sm text-muted-foreground">{dateLabel}</p>
+          </div>
+        </div>
+
+        {context !== "feed" && (
+          <span
+            className={cn(
+              "inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-label-sm uppercase tracking-wide",
+              statusPill.className
             )}
-            <button
-              onClick={(e) => { e.stopPropagation();onDelete?.(post._id); }}
-              className="p-2 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-full transition-colors"
-              title="Delete Post"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
-          </>
-        ) : (
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={(e) => { e.stopPropagation(); !hasReported && setIsReportDialogOpen(true)}}
-                  className={`p-2 rounded-full transition-colors ${
-                    hasReported
-                      ? "text-red-500 cursor-not-allowed"
-                      : "text-gray-400 hover:text-red-400 hover:bg-red-500/10"
-                  }`}
-                  title={hasReported ? "Already reported" : "Report Post"}
-                  disabled={hasReported}
-                >
-                  <Flag className="w-4 h-4" />
-                </button>
-              </TooltipTrigger>
-              {hasReported && (
-                <TooltipContent>
-                  <p>Already reported</p>
-                </TooltipContent>
-              )}
-            </Tooltip>
-          </TooltipProvider>
+          >
+            <StatusIcon className="h-3.5 w-3.5" />
+            {statusPill.label}
+          </span>
         )}
       </div>
 
-      {/* Header */}
-      <div className="flex items-center gap-3 mb-4">
-        <div
-          onClick={handleUserClick}
-          className="cursor-pointer hover:opacity-80 transition-opacity"
-        >
-          <UserAvatar
-            src={post.userId.profile_picture}
-            name={post.userId.name}
-            size="md"
-          />
+      <h3 className="mt-4 line-clamp-2 break-words text-headline-md text-foreground transition-colors hover:text-primary">
+        {post.title}
+      </h3>
+
+      <div className="mt-1.5">
+        <PostMarkdown content={post.content} attachments={attachmentUrls} compact />
+      </div>
+
+      {post.images && post.images.length > 0 && (
+        <div className="mt-3 max-w-md">
+          <PostImages images={post.images} alt={post.title} />
         </div>
-        <div>
-          <h3
-            onClick={handleUserClick}
-            className={`font-semibold cursor-pointer hover:text-blue-400 transition-colors ${ isAdminPost ? "text-yellow-400" : "text-white" }`}
-          >
-            {post.userId.name}
-          </h3>
-          <div className="flex items-center text-xs text-gray-400 gap-1">
-            <Clock className="h-3 w-3" />
-            <span>
-              updated{" "}
-              {formatDistanceToNow(new Date(post.updatedAt), {
-                addSuffix: true,
-              })}
+      )}
+
+      {rejected && context !== "feed" && (
+        <div className="mt-4 rounded-lg border-l-4 border-primary bg-card p-4">
+          <p className="mb-1 text-label-md text-foreground">Reviewer Feedback:</p>
+          <p className="text-body-sm text-muted-foreground">
+            {post.rejection_reason ||
+              "No specific reason was given. Review the community guidelines and resubmit."}
+          </p>
+        </div>
+      )}
+
+      {(post.tags || []).length > 0 && (
+        <div className="mt-4 flex flex-wrap gap-2">
+          {post.tags!.map((tag) =>
+            onTagClick ? (
+              <motion.button
+                key={tag}
+                type="button"
+                whileHover={{ y: -2 }}
+                whileTap={{ scale: 0.94 }}
+                transition={SPRING}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onTagClick(tag);
+                }}
+                className="ap-chip transition-colors hover:bg-primary-subtle hover:text-primary-subtle-foreground"
+              >
+                {tag}
+              </motion.button>
+            ) : (
+              <span key={tag} className="ap-chip">
+                {tag}
+              </span>
+            )
+          )}
+        </div>
+      )}
+
+      {context === "admin" && (
+        <div className="mt-4 flex flex-wrap items-center gap-6 border-t border-border pt-4 text-body-sm text-muted-foreground">
+          <div className="flex items-center gap-1.5">
+            <Eye className="h-4 w-4 text-primary" />
+            <span>Views:</span>
+            <span className="font-semibold text-foreground">{post.view_count || 0}</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <Flag className="h-4 w-4" />
+            <span>Reports:</span>
+            <span
+              className={cn(
+                "font-semibold",
+                (post.report_count ?? 0) > 0 ? "text-destructive" : "text-foreground"
+              )}
+            >
+              {post.report_count ?? 0}
             </span>
           </div>
         </div>
-      </div>
+      )}
 
-      {/* Content */}
-      <div className="space-y-3">
-        {showRejectionReason &&
-          post.status === "rejected" &&
-          post.rejection_reason && (
-            <Alert className="bg-red-500/10 border-red-500/30 text-red-400">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription className="ml-2">
-                <span className="font-semibold">Rejection Reason:</span>{" "}
-                {post.rejection_reason}
-              </AlertDescription>
-            </Alert>
-          )}
-        <div className="flex items-center gap-2">
-          {getStatusBadge()}
-        </div>
-        <div>
-          <div
-            ref={contentRef}
-            className={`text-gray-300 break-words leading-relaxed space-y-1 ${!isExpanded ? "line-clamp-4" : ""
-            }`}
+      {context === "feed" && (
+        <div className="mt-4 flex items-center gap-1 border-t border-border pt-3">
+          <motion.button
+            type="button"
+            whileTap={{ scale: 0.92 }}
+            transition={SPRING}
+            onClick={toggleLike}
+            aria-pressed={liked}
+            aria-label={liked ? "Remove upvote" : "Upvote post"}
+            className={cn(
+              "flex items-center gap-2 rounded-full px-3 py-2 text-label-md transition-colors",
+              liked
+                ? "bg-primary-subtle text-primary"
+                : "text-muted-foreground hover:bg-muted hover:text-primary"
+            )}
           >
-            {parseFormattedText(post.content)}
-          </div>
-          {isTruncated && !isExpanded && (
-            <button
-              onClick={() => setIsExpanded(true)}
-              className="text-blue-400 hover:text-blue-300 font-medium cursor-pointer transition-colors inline mt-1"
+            <motion.span
+              key={String(liked)}
+              initial={{ scale: 0.6 }}
+              animate={{ scale: 1 }}
+              transition={SPRING_POP}
+              className="flex"
             >
-              ...more
-            </button>
-          )}
-          {isExpanded && isTruncated && (
-            <button
-              onClick={() => setIsExpanded(false)}
-              className="text-blue-400 hover:text-blue-300 font-medium cursor-pointer transition-colors mt-2 block"
-            >
-              see less
-            </button>
-          )}
-        </div>
-      </div>
+              <ThumbsUp className={cn("h-4 w-4", liked && "fill-current")} />
+            </motion.span>
+            <AnimatePresence mode="popLayout" initial={false}>
+              <motion.span
+                key={likes.length}
+                initial={{ opacity: 0, y: liked ? 6 : -6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: liked ? -6 : 6 }}
+                transition={{ duration: 0.15 }}
+              >
+                {likes.length}
+              </motion.span>
+            </AnimatePresence>
+          </motion.button>
 
-      {/* Images */}
-      {post.images && post.images.length > 0 && (
-        <div className="mt-4 relative">
-          {/* Progress Indicators - Only show if multiple images */}
-          {post.images.length > 1 && (
-            <div className="absolute top-3 left-1/2 transform -translate-x-1/2 z-10 flex gap-1.5">
-              {post.images.map((_, index) => (
-                <div
-                  key={index}
-                  onClick={() => goToImage(index)}
-                  className={`h-0.5 rounded-full cursor-pointer transition-all duration-300 ${
-                    index === currentImageIndex
-                      ? "bg-white w-8"
-                      : "bg-white/50 w-8 hover:bg-white/70"
-                  }`}
-                />
-              ))}
+          <motion.button
+            type="button"
+            whileTap={{ scale: 0.92 }}
+            transition={SPRING}
+            onClick={(event) => {
+              event.stopPropagation();
+              openPost();
+            }}
+            className="flex items-center gap-2 rounded-full px-3 py-2 text-label-md text-muted-foreground transition-colors hover:bg-muted hover:text-primary"
+          >
+            <MessageSquare className="h-4 w-4" />
+            {comments}
+            <span className="hidden sm:inline">
+              {comments === 1 ? "Comment" : "Comments"}
+            </span>
+          </motion.button>
+
+          <motion.button
+            type="button"
+            whileTap={{ scale: 0.92 }}
+            transition={SPRING}
+            onClick={share}
+            className="ml-auto flex items-center gap-2 rounded-full px-3 py-2 text-label-md text-muted-foreground transition-colors hover:bg-muted hover:text-primary"
+          >
+            <Share2 className="h-4 w-4" />
+            <span className="hidden sm:inline">Share</span>
+          </motion.button>
+        </div>
+      )}
+
+      {context === "my-posts" && (
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-3">
+          {status === "approved" ? (
+            <div className="flex items-center gap-5 text-body-sm text-muted-foreground">
+              <span className="flex items-center gap-1.5">
+                <Heart className="h-4 w-4" />
+                {likes.length}
+              </span>
+              <span className="flex items-center gap-1.5">
+                <MessageSquare className="h-4 w-4" />
+                {comments}
+              </span>
             </div>
+          ) : status === "pending" ? (
+            <p className="text-body-sm italic text-muted-foreground">
+              Reviewing… an administrator will publish this shortly.
+            </p>
+          ) : (
+            <span />
           )}
 
-          {/* Image Container - Single image display */}
-          <div
-            className="relative overflow-hidden rounded-lg border border-white/10 group cursor-pointer"
-            onClick={handleImageClick}
-          >
-            <img
-              src={getImageUrl(post.images[currentImageIndex])}
-              alt={`Post image ${currentImageIndex + 1} of ${
-                post.images.length
-              }`}
-              className="w-full h-auto max-h-[600px] object-contain transition-transform duration-500 group-hover:scale-105"
-            />
-
-            {/* Navigation Arrows - Only show if multiple images */}
-            {post.images.length > 1 && (
-              <>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    goToPreviousImage();
-                  }}
-                  className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200"
-                  aria-label="Previous image"
-                >
-                  <ChevronLeft className="w-5 h-5" />
-                </button>
-
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    goToNextImage();
-                  }}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200"
-                  aria-label="Next image"
-                >
-                  <ChevronRight className="w-5 h-5" />
-                </button>
-              </>
+          <div className="flex shrink-0 items-center gap-2">
+            {status === "approved" && (
+              <Button
+                variant="outline"
+                onClick={openPost}
+                className="rounded-full border-primary px-5 text-label-md text-primary hover:bg-primary hover:text-primary-foreground"
+              >
+                View Post
+              </Button>
             )}
 
-            {/* Image Counter - Only show if multiple images */}
-            {post.images.length > 1 && (
-              <div className="absolute bottom-3 right-3 bg-black/70 text-white text-xs px-2.5 py-1 rounded-full font-medium">
-                {currentImageIndex + 1} / {post.images.length}
-              </div>
-            )}
+            <Button
+              variant={rejected ? "outline" : "ghost"}
+              onClick={() => navigate(`/dashboard/posts/${post._id}/edit`)}
+              className={cn(
+                "gap-1.5 rounded-full text-label-md",
+                rejected
+                  ? "border-primary px-5 text-primary hover:bg-primary hover:text-primary-foreground"
+                  : "px-3 text-muted-foreground hover:text-primary"
+              )}
+            >
+              <Pencil className="h-4 w-4" />
+              {rejected ? "Edit & Resubmit" : "Edit"}
+            </Button>
+
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label={status === "pending" ? "Withdraw post" : "Delete post"}
+              title={status === "pending" ? "Withdraw post" : "Delete post"}
+              onClick={() => onDelete?.(post)}
+              className="rounded-full text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
           </div>
         </div>
       )}
 
-      {/* Enlarged Image Modal using Dialog */}
-      {selectedImage && post.images && post.images.length > 0 && (
-        <Dialog
-          open={!!selectedImage}
-          onOpenChange={() => setSelectedImage(null)}
-        >
-          <DialogContent className="max-w-[95vw] max-h-[95vh] p-0 bg-black border-none">
-            {/* Close Button - TOP RIGHT */}
-            <button
-              onClick={() => setSelectedImage(null)}
-              className="absolute top-4 right-4 text-white hover:text-gray-300 p-2 bg-black/50 hover:bg-black/70 rounded-full transition-colors z-50"
-              aria-label="Close"
-            >
-              <X className="w-6 h-6" />
-            </button>
-
-            {/* Progress Indicators - TOP CENTER */}
-            {post.images.length > 1 && (
-              <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-50 flex gap-2">
-                {post.images.map((_, index) => (
-                  <div
-                    key={index}
-                    onClick={() => goToImage(index)}
-                    className={`h-1 rounded-full cursor-pointer transition-all duration-300 ${
-                      index === currentImageIndex
-                        ? "bg-white w-12"
-                        : "bg-white/50 w-12 hover:bg-white/70"
-                    }`}
-                  />
-                ))}
-              </div>
+      {context === "admin" && (primaryAction || secondaryAction) && (
+        <div className="mt-4 border-t border-border pt-4">
+          <div className="flex flex-wrap gap-2">
+            {primaryAction && (
+              <Button
+                onClick={() => primaryAction.onClick(post)}
+                className="bg-primary px-4 py-2 text-primary-foreground hover:bg-primary-hover"
+              >
+                <primaryAction.icon className="mr-1 h-4 w-4" />
+                {primaryAction.label}
+              </Button>
             )}
+            {secondaryAction && (
+              <Button
+                onClick={() => secondaryAction.onClick(post)}
+                variant="destructive"
+                className="px-4 py-2"
+              >
+                <secondaryAction.icon className="mr-1 h-4 w-4" />
+                {secondaryAction.label}
+              </Button>
+            )}
+          </div>
 
-            {/* Image Container */}
-            <div className="relative w-full h-[90vh] flex items-center justify-center">
-              <img
-                src={getImageUrl(post.images[currentImageIndex])}
-                alt={`Post image ${currentImageIndex + 1} of ${
-                  post.images.length
-                }`}
-                className="max-w-full max-h-full object-contain"
-              />
-
-              {/* Navigation Arrows */}
-              {post.images.length > 1 && (
-                <>
-                  <button
-                    onClick={goToPreviousImage}
-                    className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-3 rounded-full transition-colors"
-                    aria-label="Previous image"
-                  >
-                    <ChevronLeft className="w-6 h-6" />
-                  </button>
-
-                  <button
-                    onClick={goToNextImage}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-3 rounded-full transition-colors"
-                    aria-label="Next image"
-                  >
-                    <ChevronRight className="w-6 h-6" />
-                  </button>
-                </>
-              )}
-
-              {/* Image Counter */}
-              {post.images.length > 1 && (
-                <div className="absolute bottom-4 right-4 bg-black/70 text-white px-3 py-1.5 rounded-full text-sm font-medium">
-                  {currentImageIndex + 1} / {post.images.length}
-                </div>
-              )}
-            </div>
-          </DialogContent>
-        </Dialog>
+          <div className="mt-3 flex items-center gap-1.5 text-body-sm text-muted-foreground">
+            <AudienceIcon className="h-3.5 w-3.5" />
+            Visible to: {VISIBILITY_LABELS[visibility]}
+          </div>
+        </div>
       )}
-
-      {/* Report Dialog */}
-    <div onClick={(e) => e.stopPropagation()}>
-      <ReportDialog
-        postId={post._id}
-        isOpen={isReportDialogOpen}
-        onClose={() => setIsReportDialogOpen(false)}
-        onReportSubmitted={() => setHasReported(true)}
-      />
-    </div>
-    </div>
+    </motion.article>
   );
 };
 

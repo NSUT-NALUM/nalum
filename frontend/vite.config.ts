@@ -56,6 +56,8 @@ export default defineConfig(({ mode }) => {
             'socket': ['socket.io-client'],
             // Icons - split lucide separately as it's large
             'icons': ['lucide-react'],
+            // Markdown pipeline - only the post detail page pulls it in
+            'markdown': ['react-markdown', 'remark-gfm', 'rehype-raw', 'rehype-sanitize'],
           },
         },
       },

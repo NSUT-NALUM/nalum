@@ -4,23 +4,37 @@ const Event = require("../../models/admin/event.model");
 const Newsletter = require("../../models/admin/newsletter.model");
 const VerificationQueue = require("../../models/verificationQueue.model");
 const AdminActivity = require("../../models/admin/adminActivity.model");
+const Post = require("../../models/posts/post.model");
+const PageVisit = require("../../models/pageVisit.model");
 
 // Get dashboard statistics
 exports.getDashboardStats = async (req, res) => {
   try {
     console.log('[Dashboard Stats] Fetching statistics...');
     
-    // User statistics
-    const totalUsers = await User.countDocuments();
-    const totalStudents = await User.countDocuments({ role: "student" });
-    const totalAlumni = await User.countDocuments({ role: "alumni" });
-    const verifiedAlumni = await User.countDocuments({ role: "alumni", verified_alumni: true });
+    // User statistics (excluding banned users from user statistics counts)
+    const totalUsers = await User.countDocuments({ banned: { $ne: true } });
+    const totalStudents = await User.countDocuments({ role: "student", banned: { $ne: true } });
+    const totalAlumni = await User.countDocuments({ role: "alumni", banned: { $ne: true } });
+    const verifiedAlumni = await User.countDocuments({ role: "alumni", verified_alumni: true, banned: { $ne: true } });
     const bannedUsers = await User.countDocuments({ banned: true });
 
     console.log('[Dashboard Stats] User stats:', { totalUsers, totalStudents, totalAlumni, verifiedAlumni, bannedUsers });
 
+    // Website Visit statistics (Pre-login vs Post-login)
+    const preLoginVisits = await PageVisit.countDocuments({ is_authenticated: false });
+    const postLoginVisits = await PageVisit.countDocuments({ is_authenticated: true });
+    const totalVisits = preLoginVisits + postLoginVisits;
+
+    // Post View statistics
+    const totalPosts = await Post.countDocuments();
+    const totalPostViewsAggregate = await Post.aggregate([
+      { $group: { _id: null, total: { $sum: "$view_count" } } },
+    ]);
+    const totalPostViews = totalPostViewsAggregate[0]?.total || 0;
+
     // Verification statistics
-    const pendingVerifications = await VerificationQueue.countDocuments();
+    const pendingVerifications = await VerificationQueue.countDocuments({status: "pending"});
     console.log('[Dashboard Stats] Pending verifications:', pendingVerifications);
 
     // Event statistics
@@ -97,6 +111,15 @@ exports.getDashboardStats = async (req, res) => {
         active: activeBans,
         total: bannedUsers,
       },
+      website_visits: {
+        total: totalVisits,
+        pre_login: preLoginVisits,
+        post_login: postLoginVisits,
+      },
+      posts: {
+        total: totalPosts,
+        total_views: totalPostViews,
+      },
     };
 
     console.log('[Dashboard Stats] Final stats object:', JSON.stringify(stats, null, 2));
@@ -127,6 +150,7 @@ exports.getRegistrationGraph = async (req, res) => {
       {
         $match: {
           createdAt: { $gte: startDate },
+          banned: { $ne: true },
         },
       },
       {

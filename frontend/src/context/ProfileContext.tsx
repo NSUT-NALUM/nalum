@@ -13,11 +13,14 @@ export interface Profile {
     _id: string;
     name: string;
     email: string;
+    // Populated by GET /profile/me — drives the student vs. alumni sections.
+    role?: string;
   };
   profile_picture?: string;
   branch?: string;
   batch?: string;
   campus?: string;
+  bio?: string;
   current_company?: string;
   current_role?: string;
   location?: {

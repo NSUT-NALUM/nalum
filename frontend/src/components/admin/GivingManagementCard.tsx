@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Clock, CheckCircle, Eye, MessageCircle, Send, X } from "lucide-react";
+import { Clock, CheckCircle, Eye, MessageCircle, Send, X, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { DeleteConfirmDialog } from "@/components/ui/DeleteConfirmDialog";
 import { toast } from "sonner";
 import api from "@/lib/api";
 import { BASE_URL } from "@/lib/constants";
@@ -36,6 +37,22 @@ const GivingManagementCard = ({
   const [response, setResponse] = useState(giving.answer || "");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDelete = async () => {
+    setIsDeleting(true);
+    try {
+      await api.delete(`/givings/${giving._id}`);
+      toast.success("Giving submission deleted successfully");
+      setConfirmDeleteOpen(false);
+      onStatusUpdate();
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Failed to delete giving submission");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   const getStatusBadge = () => {
     switch (giving.status) {
@@ -120,7 +137,7 @@ const GivingManagementCard = ({
               {getStatusBadge()}
             </div>
             <div className="flex items-center gap-2 text-sm text-gray-500">
-              <span>By {giving.userId.name}</span>
+              <span>By {giving.userId?.name || "Unknown user"}</span>
               <span>•</span>
               <span>{giving.userId.email}</span>
               <span>•</span>
@@ -150,6 +167,14 @@ const GivingManagementCard = ({
                   Respond
                 </Button>
               )}
+              <Button
+                onClick={() => setConfirmDeleteOpen(true)}
+                variant="outline"
+                className="bg-red-50 hover:bg-red-100 text-red-600 border-red-200 p-2"
+                title="Delete Giving"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
             </div>
           )}
         </div>
@@ -259,6 +284,15 @@ const GivingManagementCard = ({
           />
         </div>
       )}
+
+      <DeleteConfirmDialog
+        open={confirmDeleteOpen}
+        onOpenChange={setConfirmDeleteOpen}
+        title="Delete Giving Submission?"
+        description="Are you sure you want to delete this giving submission?"
+        isDeleting={isDeleting}
+        onConfirm={handleDelete}
+      />
     </>
   );
 };

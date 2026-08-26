@@ -168,15 +168,30 @@ export const searchPosts = async (query: string) => {
   return api.get(`/posts/search?${params.toString()}`);
 };
 
+// There's no dedicated events search endpoint, so this pulls a batch of
+// upcoming approved events and matches client-side — fine for a quick-lookup
+// panel, not meant to replace the paginated listing on the Events page.
+export const searchEvents = async (query: string) => {
+  const response = await api.get("/events/approved?limit=50");
+  const events = response.data.data || [];
+  const needle = query.trim().toLowerCase();
+  return events.filter((event: any) =>
+    event.title?.toLowerCase().includes(needle) ||
+    event.location?.toLowerCase().includes(needle)
+  );
+};
+
 export const globalSearch = async (query: string, filters: any = {}) => {
-  const [usersResponse, postsResponse] = await Promise.all([
+  const [usersResponse, postsResponse, events] = await Promise.all([
     searchUsers(query, filters).catch(() => ({ data: { profiles: [] } })),
-    searchPosts(query).catch(() => ({ data: { data: [] } }))
+    searchPosts(query).catch(() => ({ data: { data: [] } })),
+    searchEvents(query).catch(() => [])
   ]);
 
   return {
     users: usersResponse.data.profiles || [],
-    posts: postsResponse.data.data || []
+    posts: postsResponse.data.data || [],
+    events
   };
 };
 

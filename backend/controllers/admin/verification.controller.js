@@ -1,6 +1,8 @@
 const VerificationQueue = require("../../models/verificationQueue.model");
 const User = require("../../models/user/user.model");
 const { logAdminActivity } = require("../../middleware/adminAuth");
+const mailService = require("../../mail/mailService");
+const { invalidateAlumniMapCache } = require("../../config/cacheKeys");
 
 // Get all pending verifications
 exports.getVerificationQueue = async (req, res) => {
@@ -73,6 +75,10 @@ exports.approveVerification = async (req, res) => {
     user.verified_alumni = true;
     await user.save();
 
+    // Newly verified alumni are eligible for the map — invalidate so they show
+    // up without waiting for the 1h cache TTL.
+    await invalidateAlumniMapCache();
+
     // Remove from queue
     await VerificationQueue.findByIdAndDelete(verificationRequest._id);
 
@@ -89,6 +95,31 @@ exports.approveVerification = async (req, res) => {
       },
       req.ip
     );
+
+    // Notify the alumnus that they've been verified
+    const shouldSkipEmail = process.env.NODE_ENV === "development" || process.env.DEBUG_MAIL === "true";
+    
+    if (shouldSkipEmail) {
+      console.log(`[DEBUG] Email sending SKIPPED for ${user.email} (DEBUG_MAIL=true)`);
+      console.log(`[DEBUG] Subject: Your Alumni Account Has Been Verified`);
+    } else {
+      const emailResult = await mailService.send({
+        to: user.email,
+        subject: "Your Alumni Account Has Been Verified",
+        template: "notification",
+        data: {
+          title: "Alumni Verification Approved",
+          name: user.name,
+          message:
+            "Great news! Your alumni account has been verified by our team. You now have full access to the NSUT Alumni Network.",
+          actionUrl: process.env.FRONTEND_URL || "",
+        },
+      });
+
+      if (emailResult.error) {
+        console.error("Failed to send verification approval email to:", user.email, emailResult.message);
+      }
+    }
 
     res.status(200).json({
       success: true,
@@ -156,7 +187,29 @@ exports.rejectVerification = async (req, res) => {
       req.ip
     );
 
-    // TODO: Send email notification to user about rejection
+    // Send email notification to user about rejection
+    const shouldSkipEmail = process.env.NODE_ENV === "development" || process.env.DEBUG_MAIL === "true";
+    
+    if (shouldSkipEmail) {
+      console.log(`[DEBUG] Email sending SKIPPED for ${user.email} (DEBUG_MAIL=true)`);
+      console.log(`[DEBUG] Subject: Update on your Alumni Account Verification`);
+    } else {
+      const emailResult = await mailService.send({
+        to: user.email,
+        subject: "Update on your Alumni Account Verification",
+        template: "notification",
+        data: {
+          title: "Alumni Verification Update",
+          name: user.name,
+          message: `Your alumni account verification was not approved at this time. Reason: ${reason}`,
+          actionUrl: process.env.FRONTEND_URL || "",
+        },
+      });
+
+      if (emailResult.error) {
+        console.error("Failed to send verification rejection email to:", user.email, emailResult.message);
+      }
+    }
 
     res.status(200).json({
       success: true,
