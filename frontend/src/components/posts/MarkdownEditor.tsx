@@ -42,6 +42,7 @@ interface MarkdownEditorProps {
   attachments?: string[];
   /** Called once on mount with a resolver that replaces @Name → @[Name](userId) */
   onResolverReady?: (resolver: (text: string) => string) => void;
+  enableSpecialMentions?: boolean;
 }
 
 type InsertMode = "link" | "image";
@@ -55,6 +56,7 @@ const MarkdownEditor = ({
   minHeight = "320px",
   attachments = [],
   onResolverReady,
+  enableSpecialMentions = false,
 }: MarkdownEditorProps) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -235,6 +237,7 @@ const MarkdownEditor = ({
             value={value}
             onChange={onChange}
             placement="bottom"
+            enableSpecialMentions={enableSpecialMentions}
             onResolverReady={(fn) => {
               resolverRef.current = fn;
               onResolverReady?.(fn);

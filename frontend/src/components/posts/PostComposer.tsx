@@ -61,10 +61,11 @@ interface PostComposerProps {
   initial?: PostComposerInitial;
   audienceOptions: PostVisibility[];
   sidebar?: ReactNode;
+  enableSpecialMentions?: boolean;
 }
 
 const PostComposer = forwardRef<PostComposerHandle, PostComposerProps>(
-  ({ mode, initial, audienceOptions, sidebar }, ref) => {
+  ({ mode, initial, audienceOptions, sidebar, enableSpecialMentions = false }, ref) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const resolverRef = useRef<(text: string) => string>((t) => t);
 
@@ -190,6 +191,7 @@ const PostComposer = forwardRef<PostComposerHandle, PostComposerProps>(
                 value={content}
                 attachments={attachmentUrls}
                 onResolverReady={(fn) => { resolverRef.current = fn; }}
+                enableSpecialMentions={enableSpecialMentions}
                 onChange={(next) => {
                   setContent(next);
                   if (errors.content)
@@ -197,6 +199,7 @@ const PostComposer = forwardRef<PostComposerHandle, PostComposerProps>(
                 }}
               />
             </div>
+            {enableSpecialMentions && <p className="mt-3 text-body-sm text-muted-foreground">@All, @Alumni, and @Student will send an email to all users in the selected group.</p>}
             {errors.content && (
               <p className="mt-2 flex items-center gap-1.5 text-body-sm text-destructive">
                 <AlertCircle className="h-4 w-4 shrink-0" />
