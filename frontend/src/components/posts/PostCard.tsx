@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { formatDistanceToNow } from "date-fns";
@@ -26,6 +26,7 @@ import PostMarkdown from "@/components/posts/PostMarkdown";
 import UserAvatar from "@/components/UserAvatar";
 import api from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
+import { useTrackPostView } from "@/hooks/useTrackPostView";
 import {
   CARD_HOVER,
   CARD_TAP,
@@ -103,11 +104,16 @@ export const PostCard = ({
 }: PostCardProps) => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const cardRef = useRef<HTMLElement>(null);
 
   const [likes, setLikes] = useState<string[]>(likeIds(post));
   const [likePending, setLikePending] = useState(false);
 
   const liked = !!user?.id && likes.includes(user.id);
+  const isOwner = !!user?.id && post.userId?._id === user.id;
+
+  useTrackPostView(cardRef, post._id, isOwner || context !== "feed");
+
   const comments = post.commentCount ?? 0;
   const status: PostStatus = post.status || "pending";
   const rejected = status === "rejected";
@@ -174,6 +180,7 @@ export const PostCard = ({
 
   return (
     <motion.article
+      ref={cardRef}
       id={`post-${post._id}`}
       role={clickable ? "link" : undefined}
       tabIndex={clickable ? 0 : undefined}

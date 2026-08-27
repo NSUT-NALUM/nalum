@@ -81,6 +81,7 @@ export default function ViewPost() {
   const [hasReported, setHasReported] = useState(false);
   const [showAdminQueryMessage, setShowAdminQueryMessage] = useState(false);
   const clearedForPostRef = useRef<string | null>(null);
+  const viewedForPostRef = useRef<string | null>(null);
 
   const isOwner = !!post && post.userId?._id === user?.id;
   const liked = !!user?.id && likes.includes(user.id);
@@ -114,6 +115,19 @@ export default function ViewPost() {
       })
       .catch((err) => console.error("Error fetching similar posts:", err));
   }, [postId]);
+
+  // Record a view once per post, but never for the post's own author.
+  useEffect(() => {
+    if (!postId || !post || post._id !== postId) return;
+    if (isOwner) return;
+    if (viewedForPostRef.current === postId) return;
+
+    viewedForPostRef.current = postId;
+    api.post(`/posts/${postId}/view`).catch((err) => {
+      console.error("Failed to record post view:", err);
+      viewedForPostRef.current = null; // allow retry on a future visit if this failed
+    });
+  }, [post, postId, isOwner]);
 
   // Reading a post clears any notification that pointed at it.
   useEffect(() => {
