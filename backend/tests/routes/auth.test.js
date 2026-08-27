@@ -49,6 +49,10 @@ jest.mock("../../models/user/user.model.js", () => ({
   findById: jest.fn(),
 }));
 
+jest.mock("../../models/auth/session.model.js", () => ({
+  deleteMany: jest.fn(),
+}));
+
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const users = require("../../controllers/user.controller.js");
