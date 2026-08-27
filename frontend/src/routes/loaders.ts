@@ -62,6 +62,7 @@ export const loadEventApprovals = () => import("@/pages/admin/EventApprovals");
 export const loadCurrentEvents = () => import("@/pages/admin/CurrentEvents");
 export const loadPostsApproval = () => import("@/pages/admin/PostsApproval");
 export const loadCurrentPosts = () => import("@/pages/admin/CurrentPosts");
+export const loadAdminPostEditor = () => import("@/pages/admin/AdminPostEditor");
 export const loadNewsletters = () => import("@/pages/admin/Newsletters");
 export const loadBannedUsers = () => import("@/pages/admin/BannedUsers");
 export const loadCodeManagement = () => import("@/pages/admin/CodeManagement");
@@ -69,6 +70,7 @@ export const loadAlumniDatabase = () => import("@/pages/admin/AlumniDatabase");
 export const loadReports = () => import("@/pages/admin/Reports");
 export const loadQueryManagement = () => import("@/pages/admin/QueryManagement");
 export const loadGivingManagement = () => import("@/pages/admin/GivingManagement");
+export const loadAdminAnalytics = () => import("@/pages/admin/AdminAnalytics");
 
 // Misc
 export const loadNotFound = () => import("@/pages/NotFound");
