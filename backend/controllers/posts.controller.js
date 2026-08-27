@@ -523,11 +523,11 @@ exports.getMyPosts = async (req, res) => {
 exports.recordView = async (req, res) => {
   try {
     const { id } = req.params;
-    const { user_id } = req.user;
+    const { session_id } = req.user;
 
     const updated = await Post.findOneAndUpdate(
-      { _id: id, viewed_by: { $ne: user_id } },
-      { $inc: { view_count: 1 }, $addToSet: { viewed_by: user_id } },
+      { _id: id, viewed_by: { $ne: session_id } },
+      { $inc: { view_count: 1 }, $addToSet: { viewed_by: session_id } },
       { new: true }
     ).select("view_count");
 
@@ -576,12 +576,12 @@ exports.getPopularTags = async (req, res) => {
 exports.recordViewsBatch = async (req, res) => {
   try {
     const { postIds } = req.body;
-    const { user_id } = req.user;
+    const { session_id } = req.user;
 
     if (Array.isArray(postIds) && postIds.length > 0) {
       await Post.updateMany(
-        { _id: { $in: postIds }, viewed_by: { $ne: user_id } },
-        { $inc: { view_count: 1 }, $addToSet: { viewed_by: user_id } }
+        { _id: { $in: postIds }, viewed_by: { $ne: session_id } },
+        { $inc: { view_count: 1 }, $addToSet: { viewed_by: session_id } }
       );
     }
     return res.status(200).json({
