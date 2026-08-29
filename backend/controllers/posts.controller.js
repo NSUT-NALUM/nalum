@@ -320,9 +320,11 @@ exports.getPostById = async (req, res) => {
         return res.status(403).json({ success: false, message: "Post not found" });
       }
 
-      const profile = await Profile.findOne({ user: safePost.userId._id })
-        .select("profile_picture batch branch current_role current_company bio")
-        .lean();
+      const profile = safePost.userId?._id
+        ? await Profile.findOne({ user: safePost.userId._id })
+            .select("profile_picture batch branch current_role current_company bio")
+            .lean()
+        : null;
 
       safePost.userId.profile_picture = profile?.profile_picture || null;
       safePost.userId.batch = profile?.batch || null;
@@ -481,7 +483,7 @@ exports.getMyPosts = async (req, res) => {
     const limit = parseInt(req.query.limit) || 50;
     const skip = (page - 1) * limit;
 
-    const posts = await Post.find({ userId: user_id })
+    const posts = await Post.find({ userId: user_id, isDeleted: { $ne: true } })
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
@@ -491,7 +493,7 @@ exports.getMyPosts = async (req, res) => {
     const safePosts = safeAuthor(posts);
     await attachPostMeta(safePosts);
 
-    const total = await Post.countDocuments({ userId: user_id });
+    const total = await Post.countDocuments({ userId: user_id, isDeleted: { $ne: true } });
 
     return res.status(200).json({
       success: true,
@@ -605,6 +607,7 @@ exports.getSimilarPosts = async (req, res) => {
       similar = await Post.find({
         _id: { $nin: exclude },
         status: "approved",
+        isDeleted: { $ne: true },
         tags: { $in: post.tags.map((tag) => new RegExp(`^${escapeRegex(tag)}$`, "i")) },
       })
         .sort({ createdAt: -1 })
@@ -617,6 +620,7 @@ exports.getSimilarPosts = async (req, res) => {
       const fill = await Post.find({
         _id: { $nin: [...exclude, ...similar.map((item) => item._id)] },
         status: "approved",
+        isDeleted: { $ne: true },
       })
         .sort({ createdAt: -1 })
         .limit(limit - similar.length)

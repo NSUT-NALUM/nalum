@@ -12,12 +12,13 @@ const { cleanupFiles, cleanupFile } = require("./deleteHelper");
 async function cascadeDeletePost(post) {
   // Lazy-require to avoid circular dependency issues at module load time
   const Comment = require("../models/posts/comment.model");
-  const result = await Comment.deleteMany({ postId: post._id });
   const Notification = require("../models/notification.model");
+  await Comment.deleteMany({ postId: post._id });
 
-  if (Notification) {
-    await Notification.deleteMany({ post: post._id });
-  }
+  await Notification.deleteMany({
+   "relatedEntity.entityType": "post",
+   "relatedEntity.entityId": post._id.toString(),
+ });
 
   // 2. Remove image files from uploads/posts/
   if (post.images && post.images.length > 0) {

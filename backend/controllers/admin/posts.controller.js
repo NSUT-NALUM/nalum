@@ -10,11 +10,12 @@ const { safeAuthor } = require("../../utils/safeAuthor");
 // Get all posts (with filters)
 exports.getAllPosts = async (req, res) => {
   try {
-    const { page = 1, limit = 10, status, userId } = req.query;
+    const { page = 1, limit = 10, status, userId, isDeleted } = req.query;
 
     const query = {};
     if (status) query.status = status;
     if (userId) query.userId = userId;
+    query.isDeleted = isDeleted === "true" ? true : { $ne: true };
 
     const posts = await Post.find(query)
       .populate("userId", "name email role")

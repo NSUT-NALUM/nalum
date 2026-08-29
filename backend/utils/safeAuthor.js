@@ -12,7 +12,7 @@ function safeAuthor(docOrArray) {
     if (!item) return item;
     const obj = item.toObject ? item.toObject() : item;
     if (obj.userId === null || obj.userId === undefined) {
-      obj.userId = DELETED_USER_PLACEHOLDER;
+      obj.userId = { ...DELETED_USER_PLACEHOLDER };
     }
     return obj;
   };

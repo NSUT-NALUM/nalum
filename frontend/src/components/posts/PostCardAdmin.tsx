@@ -5,7 +5,6 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { DeleteConfirmDialog } from "@/components/ui/DeleteConfirmDialog";
 
 export interface Post {
   _id: string;
@@ -48,8 +47,6 @@ const PostCardAdmin = ({
   isHighlighted = false,
 }: PostCardAdminProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
   const [isTruncated, setIsTruncated] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -139,7 +136,7 @@ const PostCardAdmin = ({
               {primaryButtonLabel}
             </Button>
             <Button
-                onClick={() => setIsDeleteDialogOpen(true)}
+                onClick={() => onDelete(post)}
                 className="bg-red-600 hover:bg-red-700 text-white px-4 py-2"
               >
                 <SecondaryIcon size={16} className="mr-1" />
@@ -148,22 +145,6 @@ const PostCardAdmin = ({
           </div>
         </div>
 
-        <DeleteConfirmDialog
-            open={isDeleteDialogOpen}
-            onOpenChange={setIsDeleteDialogOpen}
-            isDeleting={isDeleting}
-            title="Delete this post?"
-            description="This action cannot be undone. This will permanently delete the post."
-            onConfirm={async () => {
-              try {
-                setIsDeleting(true);
-                await onDelete(post);
-                setIsDeleteDialogOpen(false);
-              } finally {
-                setIsDeleting(false);
-              }
-            }}
-          />
 
         {post.status === "rejected" && post.rejection_reason && (
           <Alert className="mb-4 bg-red-50 border-red-200">
