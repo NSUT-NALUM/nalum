@@ -115,7 +115,7 @@ const ProfileMenu = ({ isOpen, onClose }: ProfileMenuProps) => {
                   <div className="flex items-center gap-2 mt-1 text-xs text-gray-500">
                     <span className="truncate">{profile.branch}</span>
                     <span>•</span>
-                    <span>Class of {profile.batch}</span>
+                    <span>{profile.batch}</span>
                   </div>
                 )}
               </div>

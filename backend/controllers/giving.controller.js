@@ -237,7 +237,7 @@ exports.deleteGiving = async (req, res) => {
 
     // Clean up associated image files from disk
     if (giving.images && giving.images.length > 0) {
-      cleanupFiles(giving.images, 'givings');
+      cleanupFiles(giving.images, 'giving');
     }
 
     // Soft delete

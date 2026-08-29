@@ -21,7 +21,8 @@ import {
   LogOut,
   Shield,
   MessageSquare,
-  Wallet
+  Wallet,
+  BarChart3
 } from 'lucide-react';
 import apiClient from '@/lib/api';
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip as ChartTooltip } from 'recharts';
@@ -225,13 +226,17 @@ const AdminDashboard = () => {
   const eventsCount = stats?.events.pending || 0;
   const queriesCount = pendingQueriesCount !== null ? pendingQueriesCount : 0;
   const givingsCount = pendingGivingsCount !== null ? pendingGivingsCount : 0;
+  const maxWebsiteVisitors = Math.max(
+    stats?.website_visits?.pre_login || 0,
+    stats?.website_visits?.post_login || 0
+  );
 
   const students = stats?.users.students || 0;
   const totalAlumni = stats?.users.alumni || 0;
   const verifiedAlumni = stats?.users.verified_alumni || 0;
-  const bannedUsers = stats?.users.banned || 0;
-
-  const totalUsers = stats?.users.total || (students + totalAlumni + bannedUsers);
+  const unverifiedAlumni = Math.max(0, totalAlumni - verifiedAlumni);
+  const totalUsers = stats?.users.total || (students + totalAlumni);
+  const admins = Math.max(0, totalUsers - (students + totalAlumni));
 
   const CustomTooltip = ({ active, payload, coordinate }: any) => {
     if (active && payload && payload.length && coordinate) {
@@ -277,10 +282,30 @@ const AdminDashboard = () => {
 
 
   const chartData = [
-    { name: 'Students', value: students, color: '#3b82f6', fill: 'url(#gradient-students)' },
-    { name: 'Alumni', value: totalAlumni, color: '#22c55e', fill: 'url(#gradient-alumni)' },
-    { name: 'Verified Alumni', value: verifiedAlumni, color: '#f97316', fill: 'url(#gradient-verified)' },
-    { name: 'Banned Users', value: bannedUsers, color: '#ef4444', fill: 'url(#gradient-banned)' },
+    {
+      name: 'Students',
+      value: students,
+      color: '#3b82f6',
+      fill: 'url(#gradient-students)',
+    },
+    {
+      name: 'Verified Alumni',
+      value: verifiedAlumni,
+      color: '#16a34a',
+      fill: 'url(#gradient-alumni)',
+    },
+    {
+      name: 'Unverified Alumni',
+      value: unverifiedAlumni,
+      color: '#f59e0b',
+      fill: 'url(#gradient-unverified)',
+    },
+    ...(admins > 0 ? [{
+      name: 'Admins',
+      value: admins,
+      color: '#6366f1',
+      fill: 'url(#gradient-admins)',
+    }] : []),
   ];
 
   const activeChartData = chartData.filter(d => d.value > 0).length > 0
@@ -342,13 +367,24 @@ const AdminDashboard = () => {
     <AdminLayout>
       <div className="space-y-6">
         {/* Welcome Section */}
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">
-            Welcome back, {user?.name}! 👋
-          </h1>
-          <p className="text-gray-600 mt-2">
-            Here's what's happening with your alumni portal today.
-          </p>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">
+              Welcome back, {user?.name}! 👋
+            </h1>
+            <p className="text-gray-600 mt-1">
+              Here's what's happening with your alumni portal today.
+            </p>
+          </div>
+          <Button
+            asChild
+            className="bg-gradient-to-r from-[#800000] to-[#5a0000] hover:from-[#950000] hover:to-[#6a0000] text-white shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer text-sm font-semibold px-5 py-2.5 rounded-xl flex items-center gap-2 shrink-0 border-0"
+          >
+            <Link to="/admin-panel/analytics">
+              <BarChart3 className="w-5 h-5" />
+              <span>Analytics & Insights</span>
+            </Link>
+          </Button>
         </div>
 
         {/* Stats Grid */}
@@ -363,7 +399,7 @@ const AdminDashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-gray-900">
-                {stats?.website_visits?.total || 0}
+                {maxWebsiteVisitors}
               </div>
               <p className="text-xs text-gray-500 mt-2 flex justify-between">
                 <span>Pre-login: <strong className="text-indigo-600">{stats?.website_visits?.pre_login || 0}</strong></span>
@@ -442,7 +478,7 @@ const AdminDashboard = () => {
                   <CardDescription>Visitor distribution before and after signing in</CardDescription>
                 </div>
                 <span className="text-xs bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-full font-semibold">
-                  Total: {stats?.website_visits?.total || 0} visits
+                  Visits: {maxWebsiteVisitors}
                 </span>
               </div>
             </CardHeader>
@@ -506,6 +542,7 @@ const AdminDashboard = () => {
                     <p className="text-2xl font-bold text-emerald-900">{stats?.website_visits?.post_login || 0}</p>
                   </div>
                 </div>
+                <CardDescription>Total Visits are counted since 17 August 2026</CardDescription>
               </div>
             </CardContent>
           </Card>
@@ -536,14 +573,14 @@ const AdminDashboard = () => {
                     <stop offset="100%" stopColor="#16a34a" />
                   </linearGradient>
 
-                  <linearGradient id="gradient-verified" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#f97316" />
-                    <stop offset="100%" stopColor="#c2410c" />
+                  <linearGradient id="gradient-unverified" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#fbbf24" />
+                    <stop offset="100%" stopColor="#d97706" />
                   </linearGradient>
 
-                  <linearGradient id="gradient-banned" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#f87171" />
-                    <stop offset="100%" stopColor="#dc2626" />
+                  <linearGradient id="gradient-admins" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#818cf8" />
+                    <stop offset="100%" stopColor="#4f46e5" />
                   </linearGradient>
                 </defs>
               </svg>

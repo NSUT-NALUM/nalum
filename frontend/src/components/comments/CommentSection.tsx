@@ -208,23 +208,41 @@ function CommentCard({
   };
 
   const authorId = comment.author?._id || comment.authorId;
+  const isAuthorAdmin = comment.author?.role === "admin";
 
   return (
     <div className={cn("flex flex-col gap-2", depth > 0 && "mt-4")}>
       <div className="flex gap-3">
-        <Link to={`/dashboard/alumni/${authorId}`} className="shrink-0">
-          <UserAvatar src={undefined} name={comment.author?.name || "User"} size="sm" />
-        </Link>
+        {isAuthorAdmin ? (
+          <div className="shrink-0">
+            <UserAvatar src={undefined} name={comment.author?.name || "Admin"} size="sm" />
+          </div>
+        ) : (
+          <Link to={`/dashboard/alumni/${authorId}`} className="shrink-0">
+            <UserAvatar src={undefined} name={comment.author?.name || "User"} size="sm" />
+          </Link>
+        )}
 
         <div className="min-w-0 flex-1">
           <div className="rounded-card border border-border bg-card p-4 shadow-card">
             <div className="mb-1 flex items-center justify-between gap-3">
-              <Link
-                to={`/dashboard/alumni/${authorId}`}
-                className="min-w-0 truncate text-label-md text-foreground hover:text-primary"
-              >
-                {comment.author?.name || "Unknown user"}
-              </Link>
+              {isAuthorAdmin ? (
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <span className="min-w-0 truncate text-label-md font-semibold text-foreground">
+                    {comment.author?.name || "Administrator"}
+                  </span>
+                  <span className="rounded bg-primary-subtle px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-primary">
+                    Admin
+                  </span>
+                </div>
+              ) : (
+                <Link
+                  to={`/dashboard/alumni/${authorId}`}
+                  className="min-w-0 truncate text-label-md text-foreground hover:text-primary"
+                >
+                  {comment.author?.name || "Unknown user"}
+                </Link>
+              )}
 
               <div className="flex shrink-0 items-center gap-1">
                 <span className="text-body-sm text-muted-foreground">
