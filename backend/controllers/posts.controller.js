@@ -3,7 +3,7 @@ const Comment = require("../models/posts/comment.model");
 const User = require("../models/user/user.model");
 const Profile = require("../models/user/profile.model");
 const Settings = require("../models/admin/settings.model");
-const { notifyMentions } = require("../services/mentionHelper");
+const { notifyMentions, extractSpecialMentionGroups } = require("../services/mentionHelper");
 const { queueAdminPostBroadcast } = require("../queues/emailQueue");
 const notificationService = require("../services/notificationService");
 const { assertDeletePermission } = require("../utils/deleteHelper");
@@ -137,7 +137,8 @@ exports.createPost = async (req, res) => {
       // If post is created by an admin and auto-approved, queue email broadcast
       if (user.role === "admin") {
         try {
-          await queueAdminPostBroadcast(post, user);
+          const recipientGroups = extractSpecialMentionGroups(content);
+          if (recipientGroups.length) await queueAdminPostBroadcast(post, user, recipientGroups);
           console.log(`[Post Create] Queued email broadcast for admin post ${post._id}`);
         } catch (error) {
           console.error(`[Post Create] Failed to queue email broadcast:`, error);

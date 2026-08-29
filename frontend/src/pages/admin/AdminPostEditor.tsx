@@ -136,6 +136,7 @@ const AdminPostEditor = ({ mode }: AdminPostEditorProps) => {
             mode={mode}
             initial={initial}
             audienceOptions={["everyone", "alumni", "students"]}
+            enableSpecialMentions={mode === "create"}
           />
         </div>
       )}
