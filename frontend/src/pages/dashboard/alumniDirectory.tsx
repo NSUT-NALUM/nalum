@@ -227,7 +227,7 @@ const AlumniDirectory = () => {
                       value={filters.batch}
                       onValueChange={(value) => handleFilterChange("batch", value)}
                       onClear={() => handleFilterChange("batch", "")}
-                      placeholder="Class Year"
+                      placeholder="Batch Year"
                       searchPlaceholder="Search year..."
                       options={CLASS_YEARS}
                       className="w-[45%] sm:w-auto"
