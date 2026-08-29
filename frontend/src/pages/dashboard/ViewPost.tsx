@@ -11,6 +11,7 @@ import {
   MoreHorizontal,
   Pencil,
   Share2,
+  ShieldCheck,
   ThumbsUp,
   Trash2,
   X,
@@ -26,6 +27,7 @@ import {
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Skeleton } from "@/components/ui/skeleton";
 import UserAvatar from "@/components/UserAvatar";
+import nsutLogo from "@/assets/nsut-logo.svg";
 import CommentSection from "@/components/comments/CommentSection";
 import PostMarkdown from "@/components/posts/PostMarkdown";
 import ReportDialog from "@/components/reports/ReportDialog";
@@ -236,6 +238,7 @@ export default function ViewPost() {
   }
 
   const author = post.userId;
+  const isAdminPost = author?.role === "admin";
   const allImages = post.images || [];
   const body = bodyWithoutTitle(post.content, post.title);
   const attachmentUrls = allImages.map(getPostImageUrl);
@@ -274,29 +277,57 @@ export default function ViewPost() {
 
               {/* Byline */}
               <div className="mt-5 flex flex-wrap items-center justify-between gap-4 border-b border-border pb-6">
-                <Link
-                  to={`/dashboard/alumni/${author._id}`}
-                  className="flex min-w-0 items-center gap-3"
-                >
-                  <UserAvatar
-                    src={author.profile_picture || undefined}
-                    name={author.name}
-                    size="md"
-                  />
-                  <span className="min-w-0">
-                    <span className="block truncate text-label-md text-foreground">
-                      {author.name}
+                {isAdminPost ? (
+                  <div className="flex min-w-0 items-center gap-3">
+                    <div className="relative shrink-0">
+                      <img
+                        src={nsutLogo}
+                        alt="Alumni Association"
+                        className="h-10 w-10 rounded-full object-contain shadow-xs border border-primary/20 bg-card p-1"
+                      />
+                      <span className="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-white ring-2 ring-card shadow-xs">
+                        <ShieldCheck className="h-2.5 w-2.5" />
+                      </span>
+                    </div>
+                    <span className="min-w-0">
+                      <span className="block truncate text-label-md font-bold text-foreground">
+                        Alumni Association
+                      </span>
+                      <span className="block text-body-sm text-muted-foreground">
+                        {new Date(post.createdAt).toLocaleDateString("en-US", {
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                        })}{" "}
+                        • {readingTime(post.content)} min read
+                      </span>
                     </span>
-                    <span className="block text-body-sm text-muted-foreground">
-                      {new Date(post.createdAt).toLocaleDateString("en-US", {
-                        year: "numeric",
-                        month: "long",
-                        day: "numeric",
-                      })}{" "}
-                      • {readingTime(post.content)} min read
+                  </div>
+                ) : (
+                  <Link
+                    to={`/dashboard/alumni/${author._id}`}
+                    className="flex min-w-0 items-center gap-3"
+                  >
+                    <UserAvatar
+                      src={author.profile_picture || undefined}
+                      name={author.name}
+                      size="md"
+                    />
+                    <span className="min-w-0">
+                      <span className="block truncate text-label-md text-foreground">
+                        {author.name}
+                      </span>
+                      <span className="block text-body-sm text-muted-foreground">
+                        {new Date(post.createdAt).toLocaleDateString("en-US", {
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                        })}{" "}
+                        • {readingTime(post.content)} min read
+                      </span>
                     </span>
-                  </span>
-                </Link>
+                  </Link>
+                )}
 
                 <div className="flex items-center gap-2">
                   <Button
@@ -434,42 +465,62 @@ export default function ViewPost() {
 
           {/* Sidebar */}
           <aside className="space-y-6">
-            <SidebarCard title="About the Author">
-              <div className="text-center">
-                <Link to={`/dashboard/alumni/${author._id}`} className="inline-block">
-                  <UserAvatar
-                    src={author.profile_picture || undefined}
-                    name={author.name}
-                    size="lg"
-                    className="mx-auto"
-                  />
-                </Link>
-                <p className="mt-3 break-words text-headline-md text-foreground">
-                  {author.name}
-                </p>
-                <p className="break-words text-body-sm text-muted-foreground">
-                  {authorHeadline(author)}
-                </p>
-                {author.batch && (
-                  <p className="mt-1 text-label-sm text-primary">
-                    Class of {author.batch}
+            {isAdminPost ? (
+              <SidebarCard title="Alumni Association">
+                <div className="text-center">
+                  <div className="relative mx-auto inline-block">
+                    <img
+                      src={nsutLogo}
+                      alt="Alumni Association"
+                      className="mx-auto h-16 w-16 rounded-full object-contain shadow-md border border-primary/20 bg-card p-2 ring-4 ring-primary/10"
+                    />
+                    <span className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-primary text-white ring-2 ring-card shadow-sm">
+                      <ShieldCheck className="h-3.5 w-3.5" />
+                    </span>
+                  </div>
+                  <p className="mt-4 break-words text-headline-md font-bold text-foreground">
+                    Alumni Association
                   </p>
-                )}
-                {author.bio && (
-                  <p className="mt-3 break-words text-body-sm text-muted-foreground">
-                    {author.bio}
+                </div>
+              </SidebarCard>
+            ) : (
+              <SidebarCard title="About the Author">
+                <div className="text-center">
+                  <Link to={`/dashboard/alumni/${author._id}`} className="inline-block">
+                    <UserAvatar
+                      src={author.profile_picture || undefined}
+                      name={author.name}
+                      size="lg"
+                      className="mx-auto"
+                    />
+                  </Link>
+                  <p className="mt-3 break-words text-headline-md text-foreground">
+                    {author.name}
                   </p>
-                )}
-                <Link to={`/dashboard/alumni/${author._id}`} className="mt-4 block">
-                  <Button
-                    variant="outline"
-                    className="w-full rounded-full border-border text-label-md text-foreground hover:border-primary hover:text-primary"
-                  >
-                    View Profile
-                  </Button>
-                </Link>
-              </div>
-            </SidebarCard>
+                  <p className="break-words text-body-sm text-muted-foreground">
+                    {authorHeadline(author)}
+                  </p>
+                  {author.batch && (
+                    <p className="mt-1 text-label-sm text-primary">
+                      {author.batch}
+                    </p>
+                  )}
+                  {author.bio && (
+                    <p className="mt-3 break-words text-body-sm text-muted-foreground">
+                      {author.bio}
+                    </p>
+                  )}
+                  <Link to={`/dashboard/alumni/${author._id}`} className="mt-4 block">
+                    <Button
+                      variant="outline"
+                      className="w-full rounded-full border-border text-label-md text-foreground hover:border-primary hover:text-primary"
+                    >
+                      View Profile
+                    </Button>
+                  </Link>
+                </div>
+              </SidebarCard>
+            )}
 
             {similar.length > 0 && (
               <SidebarCard title="Similar Posts">
@@ -487,8 +538,11 @@ export default function ViewPost() {
                           {toPlainText(item.content)}
                         </p>
                         <p className="mt-1 text-body-sm text-muted-foreground">
-                          {item.userId.name}
-                          {item.userId.batch && `, Class of ${item.userId.batch}`}
+                          {item.userId?.role === "admin"
+                            ? "Alumni Association"
+                            : `${item.userId?.name ?? "Unknown user"}${
+                                item.userId?.batch ? `, ${item.userId.batch}` : ""
+                              }`}
                         </p>
                       </Link>
                     </li>

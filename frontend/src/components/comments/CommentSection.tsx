@@ -6,6 +6,7 @@ import {
   MessageSquare,
   MoreVertical,
   PencilLine,
+  ShieldCheck,
   Trash2,
 } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -20,6 +21,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import MentionTextarea from "@/components/MentionTextarea";
 import UserAvatar from "@/components/UserAvatar";
+import nsutLogo from "@/assets/nsut-logo.svg";
 import PostMarkdown from "@/components/posts/PostMarkdown";
 import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
@@ -145,6 +147,7 @@ function CommentCard({
   const commentAuthorId = comment.author?._id ?? comment.authorId;
   const isOwner = String(currentUserId ?? "") === String(commentAuthorId ?? "");
   const canManage = isOwner || user?.role === "admin";
+  const isAuthorAdmin = comment.author?.role === "admin";
   // The API nulls the content of a deleted comment; we keep the node in the
   // thread and show a tombstone so replies below it stay anchored.
   const displayContent = comment.isDeleted
@@ -212,19 +215,38 @@ function CommentCard({
   return (
     <div className={cn("flex flex-col gap-2", depth > 0 && "mt-4")}>
       <div className="flex gap-3">
-        <Link to={`/dashboard/alumni/${authorId}`} className="shrink-0">
-          <UserAvatar src={undefined} name={comment.author?.name || "User"} size="sm" />
-        </Link>
+        {isAuthorAdmin ? (
+          <div className="relative shrink-0">
+            <img
+              src={nsutLogo}
+              alt="Alumni Association"
+              className="h-8 w-8 rounded-full object-contain shadow-xs border border-primary/20 bg-card p-0.5"
+            />
+            <span className="absolute -bottom-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-primary text-white ring-1 ring-card shadow-xs">
+              <ShieldCheck className="h-2 w-2" />
+            </span>
+          </div>
+        ) : (
+          <Link to={`/dashboard/alumni/${authorId}`} className="shrink-0">
+            <UserAvatar src={undefined} name={comment.author?.name || "User"} size="sm" />
+          </Link>
+        )}
 
         <div className="min-w-0 flex-1">
           <div className="rounded-card border border-border bg-card p-4 shadow-card">
             <div className="mb-1 flex items-center justify-between gap-3">
-              <Link
-                to={`/dashboard/alumni/${authorId}`}
-                className="min-w-0 truncate text-label-md text-foreground hover:text-primary"
-              >
-                {comment.author?.name || "Unknown user"}
-              </Link>
+              {isAuthorAdmin ? (
+                <span className="min-w-0 truncate text-label-md font-bold text-foreground">
+                  Alumni Association
+                </span>
+              ) : (
+                <Link
+                  to={`/dashboard/alumni/${authorId}`}
+                  className="min-w-0 truncate text-label-md text-foreground hover:text-primary"
+                >
+                  {comment.author?.name || "Unknown user"}
+                </Link>
+              )}
 
               <div className="flex shrink-0 items-center gap-1">
                 <span className="text-body-sm text-muted-foreground">
