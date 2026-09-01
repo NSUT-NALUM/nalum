@@ -43,6 +43,9 @@ export interface PostRecord {
 export const getPostImageUrl = (image: string) =>
   image.startsWith("http") ? image : `${BASE_URL}/uploads/posts/${image}`;
 
+export const isPostPinned = (post: Pick<PostRecord, "pinned_until">) =>
+  !!post.pinned_until && new Date(post.pinned_until).getTime() > Date.now();
+
 // Likes have been stored two ways over the life of this collection; everything
 // downstream wants the id array.
 export const likeIds = (post: Pick<PostRecord, "likes" | "liked_by">): string[] => {
