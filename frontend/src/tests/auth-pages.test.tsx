@@ -71,6 +71,7 @@ beforeEach(() => {
     isLoading: false,
     isAuthenticated: false,
     isAdmin: false,
+    isFaculty: false,
     isVerifiedAlumni: null,
     setAuth: setAuthMock,
     logout: vi.fn(),
@@ -88,7 +89,7 @@ describe("auth pages", () => {
     await user.click(screen.getByRole("button", { name: /sign in/i }));
 
     expect(
-      await screen.findByText("Students must use their @nsut.ac.in email address"),
+      await screen.findByText("Students/Faculty must use their @nsut.ac.in email address"),
     ).toBeInTheDocument();
     expect(mockedApi.post).not.toHaveBeenCalled();
     expect(setAuthMock).not.toHaveBeenCalled();
@@ -152,7 +153,7 @@ describe("auth pages", () => {
     await user.click(screen.getByRole("button", { name: /create account/i }));
 
     expect(
-      await screen.findByText("Students must use their @nsut.ac.in email address"),
+      await screen.findByText("Students/Faculty must use their @nsut.ac.in email address"),
     ).toBeInTheDocument();
     expect(screen.getByText("Password must be at least 8 characters long")).toBeInTheDocument();
     expect(screen.getByText("Passwords do not match")).toBeInTheDocument();

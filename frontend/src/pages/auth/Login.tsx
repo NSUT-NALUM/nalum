@@ -52,8 +52,8 @@ const Login = () => {
       newErrors.email = "Email is required";
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = "Please enter a valid email address";
-    } else if (formData.role === "student" && !formData.email.endsWith("@nsut.ac.in")) {
-      newErrors.email = "Students must use their @nsut.ac.in email address";
+    } else if (["student", "faculty"].includes(formData.role) && !formData.email.endsWith("@nsut.ac.in")) {
+      newErrors.email = "Students/Faculty must use their @nsut.ac.in email address";
     }
     if (!formData.password) {
       newErrors.password = "Password is required";
@@ -315,6 +315,7 @@ const Login = () => {
                     <SelectContent>
                       <SelectItem value="student">Student</SelectItem>
                       <SelectItem value="alumni">Alumni</SelectItem>
+                      <SelectItem value="faculty">Faculty</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -328,7 +329,7 @@ const Login = () => {
                   <Input
                     id="email"
                     type="email"
-                    placeholder={formData.role === "student" ? "Your student email ending with @nsut.ac.in" : "your.email@example.com"}
+                    placeholder={["student", "faculty"].includes(formData.role) ? "Your NSUT email ending with @nsut.ac.in" : "your.email@example.com"}
                     value={formData.email}
                     onChange={(e) => handleInputChange("email", e.target.value)}
                     className={`pl-10 h-12 text-base ${errors.email ? "border-red-500" : ""}`}
