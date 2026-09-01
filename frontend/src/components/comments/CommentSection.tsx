@@ -6,7 +6,6 @@ import {
   MessageSquare,
   MoreVertical,
   PencilLine,
-  ShieldCheck,
   Trash2,
 } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -21,7 +20,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import MentionTextarea from "@/components/MentionTextarea";
 import UserAvatar from "@/components/UserAvatar";
-import nsutLogo from "@/assets/nsut-logo.svg";
 import PostMarkdown from "@/components/posts/PostMarkdown";
 import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
@@ -147,7 +145,6 @@ function CommentCard({
   const commentAuthorId = comment.author?._id ?? comment.authorId;
   const isOwner = String(currentUserId ?? "") === String(commentAuthorId ?? "");
   const canManage = isOwner || user?.role === "admin";
-  const isAuthorAdmin = comment.author?.role === "admin";
   // The API nulls the content of a deleted comment; we keep the node in the
   // thread and show a tombstone so replies below it stay anchored.
   const displayContent = comment.isDeleted
@@ -211,20 +208,14 @@ function CommentCard({
   };
 
   const authorId = comment.author?._id || comment.authorId;
+  const isAuthorAdmin = comment.author?.role === "admin";
 
   return (
     <div className={cn("flex flex-col gap-2", depth > 0 && "mt-4")}>
       <div className="flex gap-3">
         {isAuthorAdmin ? (
-          <div className="relative shrink-0">
-            <img
-              src={nsutLogo}
-              alt="Alumni Association"
-              className="h-8 w-8 rounded-full object-contain shadow-xs border border-primary/20 bg-card p-0.5"
-            />
-            <span className="absolute -bottom-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-primary text-white ring-1 ring-card shadow-xs">
-              <ShieldCheck className="h-2 w-2" />
-            </span>
+          <div className="shrink-0">
+            <UserAvatar src={undefined} name={comment.author?.name || "Admin"} size="sm" />
           </div>
         ) : (
           <Link to={`/dashboard/alumni/${authorId}`} className="shrink-0">
@@ -236,9 +227,14 @@ function CommentCard({
           <div className="rounded-card border border-border bg-card p-4 shadow-card">
             <div className="mb-1 flex items-center justify-between gap-3">
               {isAuthorAdmin ? (
-                <span className="min-w-0 truncate text-label-md font-bold text-foreground">
-                  Alumni Association
-                </span>
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <span className="min-w-0 truncate text-label-md font-semibold text-foreground">
+                    {comment.author?.name || "Administrator"}
+                  </span>
+                  <span className="rounded bg-primary-subtle px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-primary">
+                    Admin
+                  </span>
+                </div>
               ) : (
                 <Link
                   to={`/dashboard/alumni/${authorId}`}
@@ -310,7 +306,13 @@ function CommentCard({
                 {displayContent}
               </p>
             ) : (
-              <PostMarkdown content={displayContent} compact className="mt-1" />
+              <div className="whitespace-pre-line">
+                <PostMarkdown
+                  content={displayContent}
+                  compact
+                  className="mt-1"
+                />
+              </div>
             )}
           </div>
 
@@ -398,7 +400,6 @@ export default function CommentSection({ postId }: CommentSectionProps) {
   const [totalPages, setTotalPages] = useState(1);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const commentResolverRef = useRef<(text: string) => string>((t) => t);
-
 
   const loadComments = async () => {
     try {

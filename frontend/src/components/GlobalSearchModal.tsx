@@ -251,9 +251,7 @@ const GlobalSearchModal = ({ open, onOpenChange }: GlobalSearchModalProps) => {
                     </span>
                     <div className="flex flex-col min-w-0">
                       <span className="text-sm font-medium text-slate-900 truncate">{post.title}</span>
-                      <span className="text-xs text-slate-500 truncate">
-                        by {post.userId?.role === "admin" ? "Alumni Association" : post.userId?.name}
-                      </span>
+                      <span className="text-xs text-slate-500 truncate">by {post.userId?.name}</span>
                     </div>
                   </ResultRow>
                 ))}

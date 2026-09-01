@@ -61,7 +61,7 @@ const Header = ({ setHeaderHeight }) => {
         id="site-header"
         ref={headerRef}
         className="w-full fixed top-0 z-50"
-        style={{ minHeight: scrolled ? '80px' : '120px' }}
+        style={{ minHeight: scrolled ? '80px' : '96px' }}
       >
         {/* === TOP BAR === */}
         <div
@@ -99,8 +99,7 @@ const Header = ({ setHeaderHeight }) => {
 
         {/* === MAIN NAVBAR === */}
         <div
-          className={`bg-white shadow-md transition-all duration-300 overflow-visible ${scrolled ? "py-4" : "py-10"
-            }`}
+          className={`bg-white shadow-md transition-all duration-300 overflow-visible py-5 `}
         >
           <div className="container mx-auto px-4 flex justify-between items-center overflow-visible">
             <PreloadLink
@@ -133,7 +132,7 @@ const Header = ({ setHeaderHeight }) => {
                   <PreloadLink
                     key={title}
                     to={`/${title.toLowerCase()}`}
-                    className="font-serif relative text-gray-800 transition-colors duration-300 hover:text-nsut-maroon after:content-[''] after:absolute after:-bottom-2 after:left-0 after:w-0 after:h-0.5 after:bg-gradient-to-r after:from-nsut-maroon after:to-nsut-yellow after:transition-all after:duration-400 after:ease-out after:rounded-sm hover:after:w-full"
+                    className="font-serif relative text-lg text-gray-800 transition-colors duration-300 hover:text-nsut-maroon after:content-[''] after:absolute after:-bottom-2 after:left-0 after:w-0 after:h-0.5 after:bg-gradient-to-r after:from-nsut-maroon after:to-nsut-yellow after:transition-all after:duration-400 after:ease-out after:rounded-sm hover:after:w-full"
                   >
                     <span className="relative">{title}</span>
                   </PreloadLink>
@@ -146,10 +145,10 @@ const Header = ({ setHeaderHeight }) => {
                       if (paths) preloadPaths(paths);
                     }}
                   >
-                    <button className="font-serif relative text-gray-800 transition-colors duration-300 hover:text-nsut-maroon after:content-[''] after:absolute after:-bottom-2 after:left-0 after:w-0 after:h-0.5 after:bg-gradient-to-r after:from-nsut-maroon after:to-nsut-yellow after:transition-all after:duration-400 after:ease-out after:rounded-sm hover:after:w-full">
+                    <button className="font-serif relative text-lg text-gray-800 transition-colors duration-300 hover:text-nsut-maroon after:content-[''] after:absolute after:-bottom-2 after:left-0 after:w-0 after:h-0.5 after:bg-gradient-to-r after:from-nsut-maroon after:to-nsut-yellow after:transition-all after:duration-400 after:ease-out after:rounded-sm hover:after:w-full">
                       <span className="relative">{title}</span>
                     </button>
-                    <div className={`absolute bg-white shadow-xl rounded-lg mt-2 py-2 w-48 z-[100] border border-gray-100 opacity-0 invisible -translate-y-2.5 transition-all duration-300 ease-out group-hover:opacity-100 group-hover:visible group-hover:translate-y-0 ${title === "Stories" ? "right-0 xl:left-0 xl:right-auto" : "left-0"}`}>
+                    <div className={`absolute bg-white shadow-xl rounded-lg mt-2 py-2 w-48 z-[100] border border-gray-100 opacity-0 invisible -translate-y-2.5 transition-all duration-300 ease-out group-hover:opacity-100 group-hover:visible group-hover:translate-y-0 ${title === "Stories" ? "right-0" : "left-0"}`}>
                       {sublinks.map((link) => (
                         <PreloadLink
                           key={link}
