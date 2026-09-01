@@ -156,6 +156,7 @@ const ProfileView = ({
   bioFallback,
   children,
 }: ProfileViewProps) => {
+  const isStudent = profile.user.role === "student";
   const social = profile.social_media ?? {};
   const skills = profile.skills ?? [];
   const experience = profile.experience ?? [];
@@ -166,7 +167,11 @@ const ProfileView = ({
       ? `${profile.current_role} at ${profile.current_company}`
       : profile.current_role || profile.current_company || "";
 
-  const classLabel = profile.batch || "";
+  const classLabel = profile.batch
+    ? isStudent
+      ? `Class of ${profile.batch} (expected)`
+      : `Class of ${profile.batch}`
+    : "";
 
   const hasCurrentPosition = Boolean(
     profile.current_role || profile.current_company,
@@ -239,11 +244,11 @@ const ProfileView = ({
                 className="h-24 w-24 md:h-28 md:w-28 text-3xl border-0 ring-4 ring-primary/10 shadow-card shrink-0"
               />
               <div className="text-center md:text-left min-w-0">
-                <h2 className="[overflow-wrap:anywhere] text-headline-lg-mobile md:text-headline-lg text-foreground">
+                <h2 className="break-words text-headline-lg-mobile md:text-headline-lg text-foreground">
                   {profile.user.name}
                 </h2>
                 {headline && (
-                  <p className="[overflow-wrap:anywhere] text-body-lg text-muted-foreground mt-1">
+                  <p className="break-words text-body-lg text-muted-foreground mt-1">
                     {headline}
                   </p>
                 )}
@@ -327,12 +332,12 @@ const ProfileView = ({
                             Current
                           </span>
                           {profile.current_role && (
-                            <h4 className="[overflow-wrap:anywhere] text-headline-md text-foreground mt-1">
+                            <h4 className="break-words text-headline-md text-foreground mt-1">
                               {profile.current_role}
                             </h4>
                           )}
                           {profile.current_company && (
-                            <p className="[overflow-wrap:anywhere] text-body-md font-medium text-primary">
+                            <p className="break-words text-body-md font-medium text-primary">
                               {profile.current_company}
                             </p>
                           )}
@@ -373,7 +378,7 @@ const ProfileView = ({
                             )}
                           />
                           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-1 sm:gap-4 mb-1">
-                            <h4 className="text-body-lg font-semibold text-foreground min-w-0 [overflow-wrap:anywhere]">
+                            <h4 className="min-w-0 break-words text-body-lg font-semibold text-foreground">
                               {exp.role || "—"}
                             </h4>
                             {exp.duration && (

@@ -15,8 +15,6 @@ const sendVerificationLink = require("./sendVerificationLink");
 const sendOTP = require("./sendOTP");
 const verifyAccountUsingLink = require("./verifyAccountUsingLink");
 const verifyAccountUsingOTP = require("./verifyAccountUsingOTP");
-const verifyResetToken = require("./verifyResetToken");
-const changePassword = require("./changePassword");
 const deleteAccount = require("./deleteAccount");
 
 
@@ -28,7 +26,6 @@ router.use("/sign-up", signUp);
 router.use("/refresh", refresh);
 router.use("/revoke-token", revokeToken);
 router.use("/logout", logout);
-router.use("/change-password", changePassword);
 router.use("/account", deleteAccount);
 
 // Email routes
@@ -40,6 +37,5 @@ router.use("/send-otp", sendOTP);
 // Verification routes
 router.use("/verify-account-link", verifyAccountUsingLink);
 router.use("/verify-account-otp", verifyAccountUsingOTP);
-router.use("/verify-reset-token", verifyResetToken);
 
 module.exports = router;

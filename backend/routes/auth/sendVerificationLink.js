@@ -36,7 +36,8 @@ router.post("/" , async (req , res) => {
     }
 
     // ? Create verification token
-    const tokenResponse = await verificationTokens.create(sanitizedEmail, "email_verification");
+  const tokenResponse = await verificationTokens.create(sanitizedEmail);
+
   if (tokenResponse.error) {
     return res.status(500).json(tokenResponse);
   }

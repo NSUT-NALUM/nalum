@@ -33,7 +33,6 @@ import api from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { useNotifications } from "@/context/NotificationContext";
 import {
-  PostAuthor,
   PostRecord,
   authorHeadline,
   bodyWithoutTitle,
@@ -79,11 +78,9 @@ export default function ViewPost() {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [reportOpen, setReportOpen] = useState(false);
   const [hasReported, setHasReported] = useState(false);
-  const [showAdminQueryMessage, setShowAdminQueryMessage] = useState(false);
   const clearedForPostRef = useRef<string | null>(null);
-  const viewedForPostRef = useRef<string | null>(null);
 
-  const isOwner = !!post && post.userId?._id === user?.id;
+  const isOwner = !!post && post.userId._id === user?.id;
   const liked = !!user?.id && likes.includes(user.id);
 
   useEffect(() => {
@@ -115,19 +112,6 @@ export default function ViewPost() {
       })
       .catch((err) => console.error("Error fetching similar posts:", err));
   }, [postId]);
-
-  // Record a view once per post, but never for the post's own author.
-  useEffect(() => {
-    if (!postId || !post || post._id !== postId) return;
-    if (isOwner) return;
-    if (viewedForPostRef.current === postId) return;
-
-    viewedForPostRef.current = postId;
-    api.post(`/posts/${postId}/view`).catch((err) => {
-      console.error("Failed to record post view:", err);
-      viewedForPostRef.current = null; // allow retry on a future visit if this failed
-    });
-  }, [post, postId, isOwner]);
 
   // Reading a post clears any notification that pointed at it.
   useEffect(() => {
@@ -251,8 +235,7 @@ export default function ViewPost() {
     );
   }
 
-  const author: PostAuthor = post.userId ?? { _id: "", name: "Unknown user" };
-  const isAdminPost = author.role === "admin";
+  const author = post.userId;
   const allImages = post.images || [];
   const body = bodyWithoutTitle(post.content, post.title);
   const attachmentUrls = allImages.map(getPostImageUrl);
@@ -291,62 +274,29 @@ export default function ViewPost() {
 
               {/* Byline */}
               <div className="mt-5 flex flex-wrap items-center justify-between gap-4 border-b border-border pb-6">
-                {isAdminPost ? (
-                  <div
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => setShowAdminQueryMessage((prev) => !prev)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        setShowAdminQueryMessage((prev) => !prev);
-                      }
-                    }}
-                    className="group/author flex min-w-0 cursor-pointer items-center gap-3"
-                  >
-                    <UserAvatar
-                      src={author.profile_picture || undefined}
-                      name={author.name}
-                      size="md"
-                    />
-                    <span className="min-w-0">
-                      <span className="block truncate text-label-md text-foreground transition-colors group-hover/author:text-primary">
-                        {author.name}
-                      </span>
-                      <span className="block text-body-sm text-muted-foreground">
-                        {new Date(post.createdAt).toLocaleDateString("en-US", {
-                          year: "numeric",
-                          month: "long",
-                          day: "numeric",
-                        })}{" "}
-                        • {readingTime(post.content)} min read
-                      </span>
+                <Link
+                  to={`/dashboard/alumni/${author._id}`}
+                  className="flex min-w-0 items-center gap-3"
+                >
+                  <UserAvatar
+                    src={author.profile_picture || undefined}
+                    name={author.name}
+                    size="md"
+                  />
+                  <span className="min-w-0">
+                    <span className="block truncate text-label-md text-foreground">
+                      {author.name}
                     </span>
-                  </div>
-                ) : (
-                  <Link
-                    to={`/dashboard/alumni/${author._id}`}
-                    className="group/author flex min-w-0 items-center gap-3"
-                  >
-                    <UserAvatar
-                      src={author.profile_picture || undefined}
-                      name={author.name}
-                      size="md"
-                    />
-                    <span className="min-w-0">
-                      <span className="block truncate text-label-md text-foreground transition-colors group-hover/author:text-primary">
-                        {author.name}
-                      </span>
-                      <span className="block text-body-sm text-muted-foreground">
-                        {new Date(post.createdAt).toLocaleDateString("en-US", {
-                          year: "numeric",
-                          month: "long",
-                          day: "numeric",
-                        })}{" "}
-                        • {readingTime(post.content)} min read
-                      </span>
+                    <span className="block text-body-sm text-muted-foreground">
+                      {new Date(post.createdAt).toLocaleDateString("en-US", {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      })}{" "}
+                      • {readingTime(post.content)} min read
                     </span>
-                  </Link>
-                )}
+                  </span>
+                </Link>
 
                 <div className="flex items-center gap-2">
                   <Button
@@ -417,22 +367,6 @@ export default function ViewPost() {
                 </div>
               </div>
 
-              {/* Admin Query Message Banner if toggled */}
-              {isAdminPost && showAdminQueryMessage && (
-                <div className="mt-4 flex flex-col gap-2 rounded-lg border border-warning/40 bg-warning-subtle p-4 text-body-sm text-foreground sm:flex-row sm:items-center sm:justify-between">
-                  <div className="flex items-center gap-2">
-                    <Info className="h-4 w-4 shrink-0 text-warning" />
-                    <span>Got any queries for the admin? You can submit them on the Queries page.</span>
-                  </div>
-                  <Link
-                    to="/dashboard/queries"
-                    className="inline-flex shrink-0 items-center gap-1 text-label-sm font-semibold text-primary hover:underline"
-                  >
-                    Go to Queries →
-                  </Link>
-                </div>
-              )}
-
               {/* Moderation state — only the author ever sees this */}
               {isOwner && post.status && post.status !== "approved" && (
                 <div
@@ -464,18 +398,24 @@ export default function ViewPost() {
 
               {/* Attached images */}
               {images.length > 0 && (
-                <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div
+                  className={cn(
+                    "mt-6 grid gap-4",
+                    images.length > 1 ? "sm:grid-cols-2" : "grid-cols-1"
+                  )}
+                >
                   {images.map((image, index) => (
                     <button
                       key={image}
                       type="button"
                       onClick={() => setLightboxIndex(index)}
-                      className="group relative overflow-hidden rounded-card border border-border bg-surface-low text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                      className="overflow-hidden rounded-card border border-border"
                     >
                       <img
                         src={getPostImageUrl(image)}
                         alt={`Attachment ${index + 1}`}
-                        className="h-48 w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        loading="lazy"
+                        className="h-full max-h-[420px] w-full object-cover transition-transform duration-500 hover:scale-[1.02]"
                       />
                     </button>
                   ))}
@@ -483,9 +423,9 @@ export default function ViewPost() {
               )}
             </div>
 
-            {/* Comments */}
+            {/* Discussion */}
             <div
-              id="comments"
+              id="comments-section"
               className="rounded-card border border-border bg-card p-6 shadow-card md:p-8"
             >
               <CommentSection postId={post._id} />
@@ -496,25 +436,14 @@ export default function ViewPost() {
           <aside className="space-y-6">
             <SidebarCard title="About the Author">
               <div className="text-center">
-                {isAdminPost ? (
-                  <div className="inline-block">
-                    <UserAvatar
-                      src={author.profile_picture || undefined}
-                      name={author.name}
-                      size="lg"
-                      className="mx-auto"
-                    />
-                  </div>
-                ) : (
-                  <Link to={`/dashboard/alumni/${author._id}`} className="inline-block">
-                    <UserAvatar
-                      src={author.profile_picture || undefined}
-                      name={author.name}
-                      size="lg"
-                      className="mx-auto"
-                    />
-                  </Link>
-                )}
+                <Link to={`/dashboard/alumni/${author._id}`} className="inline-block">
+                  <UserAvatar
+                    src={author.profile_picture || undefined}
+                    name={author.name}
+                    size="lg"
+                    className="mx-auto"
+                  />
+                </Link>
                 <p className="mt-3 break-words text-headline-md text-foreground">
                   {author.name}
                 </p>
@@ -523,7 +452,7 @@ export default function ViewPost() {
                 </p>
                 {author.batch && (
                   <p className="mt-1 text-label-sm text-primary">
-                    {author.batch}
+                    Class of {author.batch}
                   </p>
                 )}
                 {author.bio && (
@@ -531,25 +460,14 @@ export default function ViewPost() {
                     {author.bio}
                   </p>
                 )}
-                {isAdminPost ? (
-                  <Link to="/dashboard/queries" className="mt-4 block">
-                    <Button
-                      variant="outline"
-                      className="w-full rounded-full border-border text-label-md text-foreground hover:border-primary hover:text-primary"
-                    >
-                      Ask a Query
-                    </Button>
-                  </Link>
-                ) : (
-                  <Link to={`/dashboard/alumni/${author._id}`} className="mt-4 block">
-                    <Button
-                      variant="outline"
-                      className="w-full rounded-full border-border text-label-md text-foreground hover:border-primary hover:text-primary"
-                    >
-                      View Profile
-                    </Button>
-                  </Link>
-                )}
+                <Link to={`/dashboard/alumni/${author._id}`} className="mt-4 block">
+                  <Button
+                    variant="outline"
+                    className="w-full rounded-full border-border text-label-md text-foreground hover:border-primary hover:text-primary"
+                  >
+                    View Profile
+                  </Button>
+                </Link>
               </div>
             </SidebarCard>
 
@@ -565,12 +483,12 @@ export default function ViewPost() {
                         <p className="line-clamp-1 break-words text-label-md text-foreground group-hover:text-primary">
                           {item.title}
                         </p>
-                        <p className="mt-1 line-clamp-2 whitespace-pre-line text-body-sm text-muted-foreground">
+                        <p className="mt-1 line-clamp-2 text-body-sm text-muted-foreground">
                           {toPlainText(item.content)}
                         </p>
                         <p className="mt-1 text-body-sm text-muted-foreground">
-                          {item.userId?.name ?? "Unknown user"}
-                          {item.userId?.batch && `, ${item.userId.batch}`}
+                          {item.userId.name}
+                          {item.userId.batch && `, Class of ${item.userId.batch}`}
                         </p>
                       </Link>
                     </li>
@@ -636,7 +554,9 @@ export default function ViewPost() {
                     type="button"
                     aria-label="Previous image"
                     onClick={() =>
-                      setLightboxIndex((lightboxIndex - 1 + images.length) % images.length)
+                      setLightboxIndex(
+                        (lightboxIndex - 1 + images.length) % images.length
+                      )
                     }
                     className="absolute left-4 rounded-full bg-surface-inverse/70 p-3 text-surface-inverse-foreground hover:bg-surface-inverse"
                   >

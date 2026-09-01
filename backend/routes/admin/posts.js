@@ -2,8 +2,7 @@ const express = require("express");
 const router = express.Router();
 const postsController = require("../../controllers/admin/posts.controller");
 const { protectAdmin } = require("../../middleware/adminAuth");
-const uploadPostImage = require("../../config/postImage.multer");
-const { compressionPresets } = require("../../middleware/imageCompression");
+const multer = require("../../config/multer.config");
 const Settings = require("../../models/admin/settings.model");
 
 // All routes are protected (admin only)
@@ -15,8 +14,7 @@ router.put("/:postId/reject", protectAdmin, postsController.rejectPost);
 router.put(
   "/:postId",
   protectAdmin,
-  uploadPostImage.array("images", 2),
-  compressionPresets.postImage,
+  multer.array("images", 2),
   postsController.updatePost
 );
 router.delete("/:postId", protectAdmin, postsController.deletePost);

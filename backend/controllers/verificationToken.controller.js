@@ -2,12 +2,12 @@ const VerificationToken = require("../models/auth/verificationToken.model.js");
 const crypto = require("crypto");
 
 // Create or update verification token
-exports.create = async (email, purpose, ttlMs = 1000 * 60 * 60 * 24) => {
+exports.create = async (email) => {
   try {
     const token = crypto.randomBytes(32).toString("hex");
-    const expiresAt = new Date(Date.now() + ttlMs);
+    const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24); // 24 hours
     const doc = await VerificationToken.findOneAndUpdate(
-      { email: email.toLowerCase(), purpose },
+      { email: email.toLowerCase() },
       { token: token, expires_at: expiresAt },
       { new: true, upsert: true, setDefaultsOnInsert: true }
     );
@@ -23,12 +23,11 @@ exports.create = async (email, purpose, ttlMs = 1000 * 60 * 60 * 24) => {
 };
 
 // Find verification token
-exports.find = async (email, token, purpose) => {
+exports.find = async (email, token) => {
   try {
     const data = await VerificationToken.findOne({
       email: email.toLowerCase(),
       token: token,
-      purpose: purpose,
     });
     if (!data) {
       return { error: true, message: "Verification token not found" };
@@ -46,12 +45,11 @@ exports.find = async (email, token, purpose) => {
 };
 
 // Remove verification token
-exports.remove = async (email, token, purpose) => {
+exports.remove = async (email, token) => {
   try {
     await VerificationToken.deleteOne({
       email: email.toLowerCase(),
       token: token,
-      purpose: purpose,
     });
     return { error: false, message: "Token deleted successfully" };
   } catch (err) {
@@ -60,25 +58,4 @@ exports.remove = async (email, token, purpose) => {
       message: err.message || "Error while deleting verification token",
     };
   }
-};
-
-exports.findByToken = async (token, purpose) => {
-    try {
-        const data = await VerificationToken.findOne({ token, purpose });
-
-        if (!data) {
-            return { error: true, message: "Verification token not found" };
-        }
-
-        if (data.expires_at < new Date()) {
-            return { error: true, message: "Verification token expired" };
-        }
-
-        return { error: false, data };
-    } catch (err) {
-        return {
-            error: true,
-            message: err.message,
-        };
-    }
 };

@@ -1,4 +1,3 @@
-
 export const BRANCH_ABBREVIATIONS: Record<string, string> = {
   "Bachelor of Architecture (B.Arch)": "B.Arch",
   "Bachelor of Business Administration (BBA)": "BBA",

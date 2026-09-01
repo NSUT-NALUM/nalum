@@ -18,7 +18,6 @@ import {
   ArrowLeft,
   Github,
   Globe,
-  KeyRound,
   Linkedin,
   Loader2,
   Lock,
@@ -704,7 +703,7 @@ const UpdateProfile = () => {
                 : "Manage your academic and public identity on the alumni portal."}
             </p>
           </div>
-          <div className="flex flex-wrap items-center gap-2 shrink-0">
+          <div className="flex gap-2 shrink-0">
             <Button
               type="button"
               variant="outline"
@@ -1378,8 +1377,9 @@ const UpdateProfile = () => {
                                   handleExperienceChange(
                                     index,
                                     "duration",
-                                    `${startPart ||
-                                    "Jan " + new Date().getFullYear()
+                                    `${
+                                      startPart ||
+                                      "Jan " + new Date().getFullYear()
                                     } - ${newEnd}`,
                                   );
                                 }}
@@ -1423,8 +1423,9 @@ const UpdateProfile = () => {
                                     handleExperienceChange(
                                       index,
                                       "duration",
-                                      `${startPart ||
-                                      "Jan " + new Date().getFullYear()
+                                      `${
+                                        startPart ||
+                                        "Jan " + new Date().getFullYear()
                                       } - ${newEnd}`,
                                     );
                                   }}
@@ -1461,32 +1462,6 @@ const UpdateProfile = () => {
 
         {/* Deliberately outside the form: this is an account action, not a
             profile edit, and it must not be reachable by submitting. */}
-        <section className="mt-6 rounded-card border border-border bg-card shadow-card p-6">
-          <div className="flex items-center gap-2 pb-4 mb-5 border-b border-border">
-            <KeyRound className="h-5 w-5 text-primary" />
-            <h3 className="text-headline-md text-foreground">Password & Security</h3>
-          </div>
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h4 className="text-body-md font-medium text-foreground">
-                Reset Password
-              </h4>
-              <p className="text-body-sm text-muted-foreground mt-1 max-w-2xl">
-                Update your account password to keep your alumni portal access secure.
-              </p>
-            </div>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => navigate("/dashboard/change-password")}
-              className="border-border bg-card text-foreground hover:bg-accent hover:text-accent-foreground shrink-0"
-            >
-              <KeyRound className="h-4 w-4 mr-2 text-primary" />
-              Reset Password
-            </Button>
-          </div>
-        </section>
-
         <section className="mt-6 rounded-card border border-destructive/30 bg-destructive/5 p-6">
           <div className="flex items-center gap-2 pb-4 mb-5 border-b border-destructive/20">
             <AlertTriangle className="h-5 w-5 text-destructive" />

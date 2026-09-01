@@ -27,12 +27,7 @@ jest.mock("../../controllers/session.controller.js", () => ({
 jest.mock("../../controllers/verificationToken.controller.js", () => ({
   create: jest.fn(),
   find: jest.fn(),
-  findByToken: jest.fn(),
   remove: jest.fn(),
-}));
-
-jest.mock("../../models/auth/session.model.js", () => ({
-  deleteMany: jest.fn().mockResolvedValue({ acknowledged: true, deletedCount: 1 }),
 }));
 
 jest.mock("../../controllers/otp.controller.js", () => ({
@@ -47,10 +42,6 @@ jest.mock("../../mail/mailService.js", () => ({
 
 jest.mock("../../models/user/user.model.js", () => ({
   findById: jest.fn(),
-}));
-
-jest.mock("../../models/auth/session.model.js", () => ({
-  deleteMany: jest.fn(),
 }));
 
 const bcrypt = require("bcrypt");
@@ -528,13 +519,7 @@ describe("auth routes", () => {
         error: false,
         data: verifiedUser({ email: "test@example.com" }),
       });
-      verificationTokens.create.mockResolvedValue({
-        error: false,
-        data: {
-          token: "reset-token-123",
-          expires_at: new Date(Date.now() + 1000 * 60 * 5),
-        },
-      });
+      jwt.sign.mockReturnValue("reset-token-123");
       mailer.send.mockResolvedValue({ error: false });
 
       const response = await request(app).post("/api/auth/forget-password").send({
@@ -543,10 +528,10 @@ describe("auth routes", () => {
 
       expect(response.status).toBe(200);
       expect(users.findOne).toHaveBeenCalledWith("test@example.com");
-      expect(verificationTokens.create).toHaveBeenCalledWith(
-        "test@example.com",
-        "password_reset",
-        1000 * 60 * 5,
+      expect(jwt.sign).toHaveBeenCalledWith(
+        { email: "test@example.com" },
+        expect.any(String),
+        { expiresIn: "5m" },
       );
       expect(mailer.send).toHaveBeenCalledWith({
         to: "test@example.com",
@@ -588,11 +573,7 @@ describe("auth routes", () => {
 
   describe("POST /api/auth/reset-password", () => {
     it("resets a password with a valid token", async () => {
-      verificationTokens.findByToken.mockResolvedValue({
-        error: false,
-        data: { email: "test@example.com", token: "reset-token-123" },
-      });
-      verificationTokens.remove.mockResolvedValue({ error: false });
+      jwt.verify.mockReturnValue({ email: "test@example.com" });
       bcrypt.hash.mockResolvedValue("new-hashed-password");
       users.update.mockResolvedValue({
         error: false,
@@ -605,19 +586,11 @@ describe("auth routes", () => {
       });
 
       expect(response.status).toBe(200);
-      expect(verificationTokens.findByToken).toHaveBeenCalledWith(
-        "reset-token-123",
-        "password_reset",
-      );
+      expect(jwt.verify).toHaveBeenCalledWith("reset-token-123", expect.any(String));
       expect(bcrypt.hash).toHaveBeenCalledWith("newPassword123", 10);
       expect(users.update).toHaveBeenCalledWith("test@example.com", {
         password: "new-hashed-password",
       });
-      expect(verificationTokens.remove).toHaveBeenCalledWith(
-        "test@example.com",
-        "reset-token-123",
-        "password_reset",
-      );
       expect(response.body).toEqual({
         error: false,
         message: "Password reset successfully",
@@ -637,9 +610,8 @@ describe("auth routes", () => {
     });
 
     it("rejects reset-password with an invalid token", async () => {
-      verificationTokens.findByToken.mockResolvedValue({
-        error: true,
-        message: "Invalid or expired token.",
+      jwt.verify.mockImplementation(() => {
+        throw new Error("invalid token");
       });
 
       const response = await request(app).post("/api/auth/reset-password").send({
@@ -650,15 +622,12 @@ describe("auth routes", () => {
       expect(response.status).toBe(400);
       expect(response.body).toEqual({
         error: true,
-        message: "Invalid or expired token.",
+        message: "Invalid or expired token",
       });
     });
 
     it("rejects reset-password with a short password", async () => {
-      verificationTokens.findByToken.mockResolvedValue({
-        error: false,
-        data: { email: "test@example.com", token: "reset-token-123" },
-      });
+      jwt.verify.mockReturnValue({ email: "test@example.com" });
 
       const response = await request(app).post("/api/auth/reset-password").send({
         token: "reset-token-123",
@@ -695,10 +664,7 @@ describe("auth routes", () => {
 
       expect(response.status).toBe(200);
       expect(users.findOne).toHaveBeenCalledWith("test@example.com");
-      expect(verificationTokens.create).toHaveBeenCalledWith(
-        "test@example.com",
-        "email_verification",
-      );
+      expect(verificationTokens.create).toHaveBeenCalledWith("test@example.com");
       expect(mailer.send).toHaveBeenCalledWith({
         to: "test@example.com",
         subject: "Verify Your Account - NSUT AlumniNet",
@@ -820,7 +786,6 @@ describe("auth routes", () => {
       expect(verificationTokens.find).toHaveBeenCalledWith(
         "test@example.com",
         "verify-token-123",
-        "email_verification",
       );
       expect(users.update).toHaveBeenCalledWith("test@example.com", {
         email_verified: true,
@@ -828,7 +793,6 @@ describe("auth routes", () => {
       expect(verificationTokens.remove).toHaveBeenCalledWith(
         "test@example.com",
         "verify-token-123",
-        "email_verification",
       );
       expect(response.body).toEqual({
         error: false,

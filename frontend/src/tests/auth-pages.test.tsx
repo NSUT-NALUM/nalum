@@ -6,7 +6,6 @@ import Login from "@/pages/auth/Login";
 import Signup from "@/pages/auth/SignUp";
 import ForgotPassword from "@/pages/auth/ForgotPassword";
 import ResetPassword from "@/pages/auth/ResetPassword";
-import ChangePassword from "@/pages/dashboard/ChangePassword";
 import apiClient from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 
@@ -217,13 +216,11 @@ describe("auth pages", () => {
 
   it("submits a valid password reset token and shows success", async () => {
     const user = userEvent.setup();
-    (mockedApi.get as Mock).mockResolvedValueOnce({ data: { valid: true } });
     (mockedApi.post as Mock).mockResolvedValueOnce({ data: { error: false } });
 
     renderWithRouter(<ResetPassword />, "/reset-password?token=reset-token");
 
-    const newPasswordInput = await screen.findByLabelText(/^new password$/i);
-    await user.type(newPasswordInput, "newPassword123");
+    await user.type(screen.getByLabelText(/^new password$/i), "newPassword123");
     await user.type(
       screen.getByLabelText(/confirm new password/i),
       "newPassword123",
@@ -240,33 +237,4 @@ describe("auth pages", () => {
       await screen.findByRole("heading", { name: /password reset successful/i }),
     ).toBeInTheDocument();
   });
-
-  it("validates fields and submits ChangePassword form", async () => {
-    const user = userEvent.setup();
-    (mockedApi.post as Mock).mockResolvedValueOnce({
-      data: { error: false, message: "Password changed successfully" },
-    });
-
-    renderWithRouter(<ChangePassword />, "/dashboard/change-password");
-
-    await user.type(
-      screen.getByLabelText(/^current password$/i),
-      "oldPassword123",
-    );
-    await user.type(screen.getByLabelText(/^new password$/i), "newPassword456");
-    await user.type(
-      screen.getByLabelText(/confirm new password/i),
-      "newPassword456",
-    );
-    await user.click(screen.getByRole("button", { name: /reset password/i }));
-
-    await waitFor(() => {
-      expect(mockedApi.post).toHaveBeenCalledWith("/auth/change-password", {
-        currentPassword: "oldPassword123",
-        newPassword: "newPassword456",
-      });
-    });
-    expect(navigateMock).toHaveBeenCalledWith("/dashboard/profile");
-  });
 });
-

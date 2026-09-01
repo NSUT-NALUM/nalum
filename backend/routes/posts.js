@@ -12,8 +12,6 @@ const {
   deletePost,
   searchPosts,
   getMyPosts,
-  recordView,
-  recordViewsBatch,
   toggleLikePost,
   getPopularTags,
   getSimilarPosts,
@@ -26,8 +24,6 @@ router.get("/my/all", protect, getMyPosts);
 router.get("/search", protect, searchPosts);
 router.get("/tags", protect, getPopularTags);
 router.use("/:postId/comments", commentsRoutes);
-router.post("/views-batch", protect, recordViewsBatch);
-router.post("/:id/view", protect, recordView);
 router.get("/:id/similar", protect, getSimilarPosts);
 router.get("/:id", protect, getPostById);
 router.post("/:id/like", protect, toggleLikePost);

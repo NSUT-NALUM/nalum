@@ -24,7 +24,6 @@ const PAGE_TITLES: Record<string, string> = {
   "/dashboard/giving": "Give",
   "/dashboard/profile": "Profile",
   "/dashboard/update-profile": "Account Settings",
-  "/dashboard/change-password": "Reset Password",
   "/dashboard/host-event": "Host Event",
 };
 

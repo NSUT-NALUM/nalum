@@ -45,15 +45,6 @@ export interface DashboardStats {
     active: number;
     total: number;
   };
-  website_visits?: {
-    total: number;
-    pre_login: number;
-    post_login: number;
-  };
-  posts?: {
-    total: number;
-    total_views: number;
-  };
 }
 
 export interface VerificationQueueItem {

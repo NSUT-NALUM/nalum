@@ -17,7 +17,6 @@ export interface PostAuthor {
 }
 
 export type PostStatus = "pending" | "approved" | "rejected";
-export type PostVisibility = "everyone" | "alumni" | "students";
 
 export interface PostRecord {
   _id: string;
@@ -34,17 +33,10 @@ export interface PostRecord {
   /** Server returns an array of user ids; older documents may hold a count. */
   likes?: string[] | number;
   liked_by?: string[];
-  pinned_until?: string | null;
-  view_count?: number;
-  report_count?: number;
-  visibility?: PostVisibility;
 }
 
 export const getPostImageUrl = (image: string) =>
   image.startsWith("http") ? image : `${BASE_URL}/uploads/posts/${image}`;
-
-export const isPostPinned = (post: Pick<PostRecord, "pinned_until">) =>
-  !!post.pinned_until && new Date(post.pinned_until).getTime() > Date.now();
 
 // Likes have been stored two ways over the life of this collection; everything
 // downstream wants the id array.
@@ -64,24 +56,22 @@ export const bodyWithoutTitle = (content: string, title: string) => {
   return content;
 };
 
-// Strips markdown scaffolding while preserving explicit line breaks (\n).
-export const toPlainText = (markdown: string) => {
-  if (!markdown) return "";
-  return markdown
+// Strips the markdown scaffolding so a body can be used as a plain-text
+// preview line or fed to a word count.
+export const toPlainText = (markdown: string) =>
+  markdown
     .replace(/```[\s\S]*?```/g, " ")
     .replace(/!\[[^\]]*\]\([^)]*\)/g, " ")
     .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
     .replace(/<\/?[^>]+>/g, " ")
+    .replace(/^[>#\-*+\s]+/gm, " ")
     .replace(/[*_~`]/g, "")
-    .split(/\r?\n/)
-    .map((line) => line.replace(/^[>#\-*+\s]+/, "").trim())
-    .join("\n")
+    .replace(/\s+/g, " ")
     .trim();
-};
 
 export const wordCount = (markdown: string) => {
   const text = toPlainText(markdown);
-  return text ? text.split(/\s+/).length : 0;
+  return text ? text.split(" ").length : 0;
 };
 
 // 200 wpm is the usual reading-speed assumption for prose of this kind.
@@ -99,10 +89,4 @@ export const STATUS_LABELS: Record<PostStatus, string> = {
   approved: "Approved",
   pending: "Pending",
   rejected: "Rejected",
-};
-
-export const VISIBILITY_LABELS: Record<PostVisibility, string> = {
-  everyone: "Everyone",
-  alumni: "Alumni",
-  students: "Students",
 };

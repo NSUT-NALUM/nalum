@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import AdminLayout from "../../components/admin/AdminLayout";
 import { FileText, RefreshCw, Search, Filter, Edit, Trash2, PlusCircle } from "lucide-react";
 import api from "../../lib/api";
@@ -9,14 +9,14 @@ import { Label } from "../../components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../components/ui/dialog";
 import { toast } from "sonner";
-import PostCard from "../../components/posts/PostCard";
-import { PostRecord } from "../../lib/posts";
+import PostCardAdmin, { Post } from "../../components/posts/PostCardAdmin";
+import AdminCreatePostModal from "../../components/posts/AdminCreatePostModal";
+import EditPostModal from "../../components/posts/EditPostModal";
 
 const CurrentPosts = () => {
   const location = useLocation();
-  const navigate = useNavigate();
-  const [posts, setPosts] = useState<PostRecord[]>([]);
-  const [filteredPosts, setFilteredPosts] = useState<PostRecord[]>([]);
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [filteredPosts, setFilteredPosts] = useState<Post[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -24,8 +24,14 @@ const CurrentPosts = () => {
   const [togglingApproval, setTogglingApproval] = useState(false);
   const [highlightPostId, setHighlightPostId] = useState<string | null>(null);
 
+  const [createPostModalOpen, setCreatePostModalOpen] = useState(false);
+
+  // Edit Modal State
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [selectedPost, setSelectedPost] = useState<Post | null>(null);
+
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [postToDelete, setPostToDelete] = useState<PostRecord | null>(null);
+  const [postToDelete, setPostToDelete] = useState<Post | null>(null);
   const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
@@ -121,11 +127,27 @@ const CurrentPosts = () => {
     setFilteredPosts(filtered);
   };
 
-  const handleEditClick = (post: PostRecord) => {
-    navigate(`/admin-panel/current-posts/${post._id}/edit`);
+  // Cleaned up Edit click handler
+  const handleEditClick = (post: Post) => {
+    setSelectedPost(post);
+    setEditModalOpen(true);
   };
 
-  const handleDeleteClick = (post: PostRecord) => {
+  
+  const handleAdminEditSubmit = async (formData: FormData) => {
+    if (!selectedPost) return;
+    try {
+      await api.put(`/admin/posts/${selectedPost._id}`, {
+        title: formData.get("title") as string,
+        content: formData.get("content") as string,
+      });
+      
+    } catch (error: any) {
+      throw error; 
+    }
+  };
+
+  const handleDeleteClick = (post: Post) => {
     setPostToDelete(post);
     setDeleteDialogOpen(true);
   };
@@ -189,7 +211,7 @@ const CurrentPosts = () => {
               </span>
             </div>
             <Button
-              onClick={() => navigate("/admin-panel/current-posts/new")}
+              onClick={() => setCreatePostModalOpen(true)}
               className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
             >
               <PlusCircle size={18} />
@@ -255,19 +277,35 @@ const CurrentPosts = () => {
           </div>
         ) : (
           <div className="grid gap-4">
-            {filteredPosts.map((post, index) => (
-              <PostCard
+            {filteredPosts.map((post) => (
+              <PostCardAdmin
                 key={post._id}
-                context="admin"
                 post={post}
-                index={index}
-                primaryAction={{ label: "Edit", icon: Edit, onClick: handleEditClick }}
-                secondaryAction={{ label: "Delete", icon: Trash2, onClick: handleDeleteClick }}
+                onEdit={handleEditClick}
+                onDelete={handleDeleteClick}
+                primaryButtonLabel="Edit"
+                secondaryButtonLabel="Delete"
+                primaryButtonIcon={Edit}
+                secondaryButtonIcon={Trash2}
                 isHighlighted={post._id === highlightPostId}
               />
             ))}
           </div>
         )}
+
+        {/* Edit Post Modal */}
+        <EditPostModal
+          open={editModalOpen}
+          post={selectedPost as any}
+          userName={selectedPost?.userId?.name}
+          userAvatar={selectedPost?.userId?.profile_picture}
+          customSubmit={handleAdminEditSubmit} 
+          onClose={() => {
+            setEditModalOpen(false);
+            setSelectedPost(null);
+          }}
+          onPostUpdated={fetchPosts}
+        />
 
         {/* Delete Confirmation Dialog */}
         <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
@@ -296,6 +334,13 @@ const CurrentPosts = () => {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Create Post Modal */}
+        <AdminCreatePostModal
+          open={createPostModalOpen}
+          onClose={() => setCreatePostModalOpen(false)}
+          onPostCreated={fetchPosts}
+        />
       </div>
     </AdminLayout>
   );

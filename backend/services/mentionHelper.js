@@ -11,17 +11,6 @@
 const User = require("../models/user/user.model");
 const notificationService = require("./notificationService");
 
-const SPECIAL_MENTION_GROUPS = { all: "all", alumni: "alumni", student: "students" };
-const SPECIAL_MENTION_NAMES = new Set(Object.keys(SPECIAL_MENTION_GROUPS));
-function extractSpecialMentionGroups(text) {
-  if (!text) return [];
-  const groups = new Set();
-  const re = /@(All|Alumni|Student)(?=[.,!?;:]*(?:\s|$))/gi;
-  let match;
-  while ((match = re.exec(text)) !== null) groups.add(SPECIAL_MENTION_GROUPS[match[1].toLowerCase()]);
-  return [...groups];
-}
-
 /**
  * Extract mentioned names from a piece of text.
  * Handles:
@@ -39,8 +28,7 @@ function extractMentionNames(text) {
   const legacyRe = /@\[([^\]]+)\]\([^)]+\)/g;
   let m;
   while ((m = legacyRe.exec(text)) !== null) {
-    const name = m[1].trim().toLowerCase();
-    if (!SPECIAL_MENTION_NAMES.has(name)) names.add(name);
+    names.add(m[1].trim().toLowerCase());
   }
 
   // Remove legacy tokens so remaining @words aren't re-scanned for them
@@ -128,4 +116,4 @@ function escapeRegex(str) {
   return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-module.exports = { notifyMentions, extractMentionNames, extractSpecialMentionGroups };
+module.exports = { notifyMentions, extractMentionNames };

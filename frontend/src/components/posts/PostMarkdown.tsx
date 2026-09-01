@@ -181,7 +181,7 @@ const PostMarkdown = ({
   return (
     <div
       className={cn(
-        "prose max-w-none [overflow-wrap:anywhere] text-muted-foreground",
+        "prose max-w-none break-words text-muted-foreground",
         "prose-headings:text-foreground prose-headings:font-semibold",
         "prose-h1:text-headline-lg prose-h2:text-headline-md prose-h3:text-body-lg",
         "prose-p:text-muted-foreground prose-li:text-muted-foreground",

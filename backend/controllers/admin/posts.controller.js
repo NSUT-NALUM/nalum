@@ -3,12 +3,8 @@ const User = require("../../models/user/user.model");
 const { logAdminActivity } = require("../../middleware/adminAuth");
 const { notifyMentions } = require("../../services/mentionHelper");
 const { cascadeDeletePost } = require("../../utils/cascadeDelete");
-const { cleanupFiles } = require("../../utils/deleteHelper");
-const {
-  normalizeTags,
-  normalizeImageList,
-  normalizeVisibility,
-} = require("../../utils/postHelpers");
+const fs = require("fs");
+const path = require("path");
 
 // Get all posts (with filters)
 exports.getAllPosts = async (req, res) => {
@@ -251,6 +247,7 @@ exports.deletePost = async (req, res) => {
       });
     }
 
+    // Task 2.1: cascade — deletes child Comments + image files
     await cascadeDeletePost(post);
     await Post.findByIdAndDelete(postId);
 
@@ -298,30 +295,11 @@ exports.updatePost = async (req, res) => {
     if (title) post.title = title;
     if (content) post.content = content;
     if (status) post.status = status;
-    if (req.body.tags !== undefined) post.tags = normalizeTags(req.body.tags);
-    if (req.body.visibility !== undefined) {
-      post.visibility = normalizeVisibility(req.body.visibility);
+
+    // Handle image upload
+    if (req.files && req.files.length > 0) {
+      post.images = req.files.map((file) => file.filename);
     }
-
-    // `existing_images` lists the already-uploaded files the editor still
-    // shows. Anything removed is deleted from disk; new uploads are appended.
-    // Omitting the field keeps the legacy behaviour: uploads replace everything.
-    const newImages = req.files ? req.files.map((file) => file.filename) : [];
-    const keptImages =
-      req.body.existing_images !== undefined
-        ? normalizeImageList(req.body.existing_images).filter((filename) =>
-            post.images.includes(filename)
-          )
-        : newImages.length > 0
-          ? []
-          : post.images;
-
-    const removed = post.images.filter((filename) => !keptImages.includes(filename));
-    if (removed.length > 0) {
-      cleanupFiles(removed, "posts");
-    }
-
-    post.images = [...keptImages, ...newImages].slice(0, 2);
 
     await post.save();
 
