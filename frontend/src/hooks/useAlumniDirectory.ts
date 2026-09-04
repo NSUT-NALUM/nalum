@@ -15,6 +15,7 @@ export interface AlumniProfile {
   };
   batch: string;
   branch: string;
+  department?: string;
   campus: string;
   current_company?: string;
   current_role?: string;
@@ -47,6 +48,7 @@ interface SearchParams {
   city?: string;
   country?: string;
   skills?: string;
+  role?: string;
 }
 
 export const useAlumniDirectory = () => {
@@ -123,6 +125,7 @@ export const useAlumniDirectory = () => {
       if (filters.city) params.city = filters.city;
       if (filters.country) params.country = filters.country;
       if (filters.skills.length > 0) params.skills = filters.skills.join(",");
+      if (filters.roleFilter !== "all") params.role = filters.roleFilter;
 
       const response = await api.get("/profile/search", {
         params,
@@ -328,9 +331,6 @@ export const useAlumniDirectory = () => {
       } else if (filters.connectionFilter === "not_connected") {
         if (alumnus.connectionStatus === "accepted") return false;
       }
-
-      // Apply role filter (generic: matches alumni, student, faculty, …)
-      if (filters.roleFilter !== "all" && alumnus.user.role !== filters.roleFilter) return false;
 
       return true;
     });

@@ -54,8 +54,8 @@ const ProfileMenu = ({ isOpen, onClose }: ProfileMenuProps) => {
     },
   ];
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     onClose();
   };
 
