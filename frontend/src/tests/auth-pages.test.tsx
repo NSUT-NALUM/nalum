@@ -146,6 +146,9 @@ describe("auth pages", () => {
     const user = userEvent.setup();
     renderWithRouter(<Signup />, "/signup");
 
+    // Step 1: pick a role and continue to the details step
+    await user.click(screen.getByRole("button", { name: /^continue$/i }));
+
     await user.type(screen.getByLabelText(/full name/i), "New Student");
     await user.type(screen.getByLabelText(/email address/i), "new@example.com");
     await user.type(screen.getByLabelText(/^password$/i), "short");
@@ -170,6 +173,9 @@ describe("auth pages", () => {
     });
 
     renderWithRouter(<Signup />, "/signup");
+
+    // Step 1: pick a role and continue to the details step
+    await user.click(screen.getByRole("button", { name: /^continue$/i }));
 
     await user.type(screen.getByLabelText(/full name/i), "New Student");
     await user.type(screen.getByLabelText(/email address/i), "new@nsut.ac.in");

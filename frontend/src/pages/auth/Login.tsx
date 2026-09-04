@@ -3,14 +3,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Eye, EyeOff, Mail, Lock, Briefcase, Home } from "lucide-react";
+import { SegmentedToggle } from "@/components/ui/SegmentedToggle";
+import { Eye, EyeOff, Mail, Lock, GraduationCap, Users, Briefcase, Home } from "lucide-react";
 import { toast } from "sonner";
 import nsutLogo from "@/assets/nsut-logo.svg";
 import nsutCampusHero from "@/assets/hero.webp";
@@ -305,20 +299,18 @@ const Login = () => {
             <div className="space-y-4 rounded-md">
               {/* Role */}
               <div className="space-y-2">
-                <Label htmlFor="role" className="text-base">I am a...</Label>
-                <div className="relative">
-                  <Briefcase className="absolute left-3 top-3 h-5 w-5 text-gray-400 z-10" />
-                  <Select onValueChange={(value) => handleInputChange("role", value)} defaultValue={formData.role}>
-                    <SelectTrigger id="role" className="pl-10 h-12 text-base">
-                      <SelectValue placeholder="Select your role" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="student">Student</SelectItem>
-                      <SelectItem value="alumni">Alumni</SelectItem>
-                      <SelectItem value="faculty">Faculty</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                <Label id="role-label" className="text-base">I am a...</Label>
+                <SegmentedToggle
+                  label="I am a..."
+                  value={formData.role}
+                  onChange={(value) => handleInputChange("role", value)}
+                  options={[
+                    { value: "student", label: "Student", icon: GraduationCap },
+                    { value: "alumni", label: "Alumni", icon: Users },
+                    { value: "faculty", label: "Faculty", icon: Briefcase },
+                  ]}
+                  className="w-full"
+                />
               </div>
 
               {/* Email */}
