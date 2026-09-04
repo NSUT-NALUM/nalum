@@ -21,8 +21,9 @@ export const AlumniCard = ({
   index = 0,
 }: AlumniCardProps) => {
   const isStudent = alumni.user.role === "student";
+  const isFaculty = alumni.user.role === "faculty";
   const classLabel = alumni.batch
-    ? `${isStudent ? "Student - " : ""}${alumni.batch}`
+    ? `${isStudent ? "Student - " : isFaculty ? "Faculty - " : ""}${alumni.batch}`
     : undefined;
 
   return (
