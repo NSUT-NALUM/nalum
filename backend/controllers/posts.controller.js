@@ -90,13 +90,13 @@ exports.createPost = async (req, res) => {
       });
     }
 
-    // Allow admins and verified alumni to create posts
+    // Allow admins, verified alumni, and faculty to create posts
     if (user.role === "admin") {
       // Admins can always create posts - continue to post creation
-    } else if (user.role !== "alumni" || !user.verified_alumni) {
+    } else if (!["alumni", "faculty"].includes(user.role) || (user.role === "alumni" && !user.verified_alumni)) {
       return res.status(403).json({
         success: false,
-        message: "Only verified alumni can create posts",
+        message: "Only verified alumni and faculty can create posts",
       });
     }
 
