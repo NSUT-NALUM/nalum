@@ -17,14 +17,19 @@ router.post("/", async (req, res) => {
       });
     }
 
-    const tokenResponse = await verificationToken.findByToken(token, "password_reset");
+    const tokenResponse = await verificationToken.find(sanitizedEmail,  token,  "password_reset");
 
     if (tokenResponse.error) {
       return res.status(400).json({
         error: true,
-        message: "Invalid or expired token.",
+        message: "Invalid or expired token",
       });
     }
+
+    return res.status(200).json({
+      error: false,
+      message: "Password reset successfully",
+    });
 
     const sanitizedEmail = tokenResponse.data.email;
 

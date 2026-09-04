@@ -84,9 +84,9 @@ router.post("/", async (req, res) => {
   catch (error) {
     console.error("[forgetPassword] Error:", error?.message ?? error ?? "Unknown error");
     // Don't expose internal errors to client  
-    return res.json({
-      error: false,
-      message: "If this email exists, a reset link has been sent.",
+    return res.status(500).json({
+      error: true,
+      message: "Internal server error",
     });
   }
 });
