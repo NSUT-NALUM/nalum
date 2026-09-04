@@ -156,7 +156,6 @@ const ProfileView = ({
   bioFallback,
   children,
 }: ProfileViewProps) => {
-  const isStudent = profile.user.role === "student";
   const social = profile.social_media ?? {};
   const skills = profile.skills ?? [];
   const experience = profile.experience ?? [];
@@ -167,11 +166,7 @@ const ProfileView = ({
       ? `${profile.current_role} at ${profile.current_company}`
       : profile.current_role || profile.current_company || "";
 
-  const classLabel = profile.batch
-    ? isStudent
-      ? `Class of ${profile.batch} (expected)`
-      : `Class of ${profile.batch}`
-    : "";
+  const classLabel = profile.batch || "";
 
   const hasCurrentPosition = Boolean(
     profile.current_role || profile.current_company,
