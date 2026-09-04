@@ -52,7 +52,8 @@ const searchProfiles = async (req, res) => {
     }
 
     if (branch) {
-      profileQuery.branch = { $regex: `^${branch}$`, $options: "i" };
+      const escapedBranch = branch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      profileQuery.branch = { $regex: `^${escapedBranch}$`, $options: "i" };
     }
 
     if (company) {
