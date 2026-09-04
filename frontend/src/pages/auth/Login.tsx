@@ -20,6 +20,8 @@ import { resolvePostLoginPath } from "@/lib/roleConfig";
 import { preloadDashboard, preloadPath } from "@/lib/preloadRoutes";
 import axios from "axios";
 import { trackLogin, trackEvent } from "@/lib/analytics";
+import { GoogleLogin, CredentialResponse } from '@react-oauth/google';
+
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -27,7 +29,6 @@ const Login = () => {
     password: "",
     role: "student",
   });
-  const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -61,6 +62,39 @@ const Login = () => {
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
+  const handleGoogleSuccess = async (credentialResponse: CredentialResponse) => {
+    setIsLoading(true);
+    try {
+
+      const response = await apiClient.post("/auth/google", {
+        credential: credentialResponse.credential,
+      });
+
+      const { access_token, user: loggedInUser } = response.data.data;
+
+
+      setAuth(access_token, loggedInUser);
+      trackLogin(loggedInUser.role);
+
+      toast.success("Google Login Successful!", {
+        description: "Welcome back to the NSUT Alumni Portal 🎉",
+        style: { background: "#800000", color: "white", border: "2px solid #FFD700", fontSize: "16px" },
+        classNames: { title: "text-xl font-bold text-white", description: "text-base text-white" },
+      });
+
+
+      const path = await resolvePostLoginPath(loggedInUser.role, access_token);
+      navigate(path);
+
+    } catch (error) {
+      console.error("Google Login error:", error);
+      toast.error("Google Login Failed", {
+        description: "Unable to authenticate with Google.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,7 +109,6 @@ const Login = () => {
     try {
       const response = await apiClient.post("/auth/sign-in", {
         ...formData,
-        rememberMe,
       });
       const { access_token, user } = response.data.data;
 
@@ -363,19 +396,7 @@ const Login = () => {
             </div>
 
             <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <input
-                  id="remember-me"
-                  name="remember-me"
-                  type="checkbox"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                  className="h-4 w-4 rounded border-gray-300 text-nsut-maroon focus:ring-nsut-maroon"
-                />
-                <Label htmlFor="remember-me" className="ml-2 block text-base text-gray-900">
-                  Remember me
-                </Label>
-              </div>
+              <div></div>
               <div className="text-base">
                 <Link to="/forgot-password" className="font-medium text-nsut-maroon hover:text-nsut-maroon/80">
                   Forgot your password?
@@ -397,6 +418,29 @@ const Login = () => {
                 "Sign In"
               )}
             </Button>
+            {/* Divider */}
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-gray-300" />
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="bg-gray-50 px-2 text-gray-500">Or continue with</span>
+              </div>
+            </div>
+
+            {/* Google Button */}
+            <div className="flex justify-center w-full mt-4">
+              <GoogleLogin
+                onSuccess={handleGoogleSuccess}
+                onError={() => {
+                  toast.error("Google Login Failed", {
+                    description: "Something went wrong while communicating with Google.",
+                  });
+                }}
+                useOneTap
+              />
+            </div>
+
           </form>
         </div>
       </div>

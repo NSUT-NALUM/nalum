@@ -14,7 +14,7 @@ router.post("/", async (req, res) => {
     });
   }
 
-  const { email, password, rememberMe } = req.body;
+  const { email, password } = req.body;
   let data = await users.findOne(email);
 
   if (data.error) {
@@ -80,7 +80,7 @@ router.post("/", async (req, res) => {
     });
   }
 
-  const sessionData = await sessions.getOrCreate(email, data.data._id, rememberMe);
+  const sessionData = await sessions.getOrCreate(email, data.data._id);
 
   if (sessionData.error) {
     return res.status(500).json(sessionData);
@@ -95,9 +95,7 @@ router.post("/", async (req, res) => {
     path: "/",
   };
 
-  if (rememberMe) {
-    cookieOptions.maxAge = 30 * 24 * 60 * 60 * 1000; // 30 days
-  }
+  cookieOptions.maxAge = 3650 * 24 * 60 * 60 * 1000; // 10 years
 
   // Set refresh token in httpOnly cookie
   res.cookie("refresh_token", refresh_token, cookieOptions);

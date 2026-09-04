@@ -41,9 +41,7 @@ router.post("/", async (req, res) => {
     path: "/",
   };
 
-  if (data.data.remember_me) {
-    cookieOptions.maxAge = 30 * 24 * 60 * 60 * 1000; // 30 days
-  }
+  cookieOptions.maxAge = 3650 * 24 * 60 * 60 * 1000; // 10 years
 
   res.cookie("refresh_token", new_refresh_token, cookieOptions);
 

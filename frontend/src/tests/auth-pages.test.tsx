@@ -2,6 +2,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi, Mock } from "vitest";
+import { GoogleOAuthProvider } from "@react-oauth/google";
 import Login from "@/pages/auth/Login";
 import Signup from "@/pages/auth/SignUp";
 import ForgotPassword from "@/pages/auth/ForgotPassword";
@@ -45,6 +46,7 @@ vi.mock("react-router-dom", async () => {
   return {
     ...actual,
     useNavigate: () => navigateMock,
+    useSearchParams: () => [new URLSearchParams(window.location.search)],
   };
 });
 
@@ -55,12 +57,14 @@ const renderWithRouter = (ui: React.ReactElement, route = "/") => {
   window.history.pushState({}, "Test page", route);
 
   return render(
-    <MemoryRouter
-      initialEntries={[route]}
-      future={{ v7_relativeSplatPath: true, v7_startTransition: true }}
-    >
-      {ui}
-    </MemoryRouter>,
+    <GoogleOAuthProvider clientId="test-client-id">
+      <MemoryRouter
+        initialEntries={[route]}
+        future={{ v7_relativeSplatPath: true, v7_startTransition: true }}
+      >
+        {ui}
+      </MemoryRouter>
+    </GoogleOAuthProvider>,
   );
 };
 
@@ -128,7 +132,6 @@ describe("auth pages", () => {
         email: "student@nsut.ac.in",
         password: "password123",
         role: "student",
-        rememberMe: false,
       });
     });
     expect(setAuthMock).toHaveBeenCalledWith(
@@ -191,7 +194,7 @@ describe("auth pages", () => {
 
   it("shows the forgot-password confirmation even when the API rejects", async () => {
     const user = userEvent.setup();
-    vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.spyOn(console, "error").mockImplementation(() => { });
     (mockedApi.post as Mock).mockRejectedValueOnce(new Error("network down"));
 
     renderWithRouter(<ForgotPassword />, "/forgot-password");
@@ -269,4 +272,3 @@ describe("auth pages", () => {
     expect(navigateMock).toHaveBeenCalledWith("/dashboard/profile");
   });
 });
-
