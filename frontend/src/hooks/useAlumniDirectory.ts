@@ -329,12 +329,8 @@ export const useAlumniDirectory = () => {
         if (alumnus.connectionStatus === "accepted") return false;
       }
 
-      // Apply role filter
-      if (filters.roleFilter === "alumni") {
-        if (alumnus.user.role !== "alumni") return false;
-      } else if (filters.roleFilter === "student") {
-        if (alumnus.user.role !== "student") return false;
-      }
+      // Apply role filter (generic: matches alumni, student, faculty, …)
+      if (filters.roleFilter !== "all" && alumnus.user.role !== filters.roleFilter) return false;
 
       return true;
     });

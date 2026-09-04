@@ -19,21 +19,23 @@ const ProfileMenu = ({ isOpen, onClose }: ProfileMenuProps) => {
   
   if (!profile?.user) return null;
 
-  const isAlumni = (profile.user as any)?.role === "alumni";
+  const canCreate = ["alumni", "faculty", "admin"].includes(
+    (profile.user as any)?.role ?? ""
+  );
 
   const menuItems = [
     {
       icon: FileText,
       label: "My Posts",
       href: "/dashboard/posts?tab=my",
-      show: isAlumni,
+      show: canCreate,
       description: "Manage your posts",
     },
     {
       icon: Calendar,
       label: "My Events",
       href: "/dashboard/events?tab=my",
-      show: isAlumni,
+      show: canCreate,
       description: "Manage your events",
     },
     {
