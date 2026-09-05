@@ -28,7 +28,7 @@ const Signup = () => {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
-    role: "student",
+    role: "", // Require explicit selection
     password: "",
   });
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -84,8 +84,12 @@ const Signup = () => {
       newErrors.email = "Email is required";
     } else if (!emailRegex.test(formData.email)) {
       newErrors.email = "Please enter a valid email address";
-    } else if (formData.role === "student" && !formData.email.endsWith("@nsut.ac.in")) {
-      newErrors.email = "Students must use their @nsut.ac.in email address";
+    } else if ((formData.role === "student" || formData.role === "faculty") && !formData.email.endsWith("@nsut.ac.in")) {
+      newErrors.email = "Students and Faculty must use their @nsut.ac.in email address";
+    }
+
+    if (!formData.role) {
+      newErrors.role = "Please select your role";
     }
 
     if (!formData.password) {
@@ -105,10 +109,17 @@ const Signup = () => {
   };
 
   const handleGoogleSuccess = async (credentialResponse: CredentialResponse) => {
+    if (!formData.role) {
+      setErrors((prev) => ({ ...prev, role: "Please select your role first" }));
+      toast.error("Role Required", { description: "Please select 'I am a...' before continuing with Google." });
+      return;
+    }
+
     setIsLoading(true);
     try {
       const response = await api.post("/auth/google", {
-        credential: credentialResponse.credential
+        credential: credentialResponse.credential,
+        role: formData.role
       });
       const { access_token, user: loggedInUser } = response.data.data;
       // Log the user in on the frontend
@@ -277,7 +288,7 @@ return (
                 <Input
                   id="email"
                   type="email"
-                  placeholder={formData.role === "student" ? "Your student email ending with @nsut.ac.in" : "your.email@example.com"}
+                  placeholder={(formData.role === "student" || formData.role === "faculty") ? "Your official email ending with @nsut.ac.in" : "your.email@example.com"}
                   value={formData.email}
                   onChange={(e) => handleChange("email", e.target.value)}
                   className={`pl-10 h-12 text-base ${errors.email ? "border-red-500" : ""}`}
@@ -291,12 +302,13 @@ return (
               <Label htmlFor="role" className="text-base">I am a...</Label>
               <div className="relative">
                 <Briefcase className="absolute left-3 top-3 h-5 w-5 text-gray-400 z-10" />
-                <Select onValueChange={(value) => handleChange("role", value)} defaultValue={formData.role}>
+                <Select onValueChange={(value) => handleChange("role", value)} value={formData.role}>
                   <SelectTrigger id="role" className={`pl-10 h-12 text-base ${errors.role ? "border-red-500" : ""}`}>
                     <SelectValue placeholder="Select your role" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="student">Student</SelectItem>
+                    <SelectItem value="faculty">Faculty</SelectItem>
                     <SelectItem value="alumni">Alumni</SelectItem>
                   </SelectContent>
                 </Select>

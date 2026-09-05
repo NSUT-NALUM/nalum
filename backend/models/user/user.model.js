@@ -18,16 +18,16 @@ const userSchema = new mongoose.Schema(
           // Basic email validation
           if (!/^\S+@\S+\.\S+$/.test(v)) return false;
 
-          // If role is student, email must end with @nsut.ac.in
-          if (this.role === "student" && !v.endsWith("@nsut.ac.in")) {
+          // If role is student or faculty, email must end with @nsut.ac.in
+          if ((this.role === "student" || this.role === "faculty") && !v.endsWith("@nsut.ac.in")) {
             return false;
           }
 
           return true;
         },
         message: function (props) {
-          if (props.instance.role === "student") {
-            return "Student email must end with @nsut.ac.in";
+          if (props.instance.role === "student" || props.instance.role === "faculty") {
+            return "Students and Faculty must use an @nsut.ac.in email address";
           }
           return "Invalid email format";
         },
@@ -64,7 +64,7 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ["student", "alumni", "admin"],
+      enum: ["student", "alumni", "faculty", "admin"],
       required: true,
     },
     // Only applicable for alumni - students and admins don't have this field

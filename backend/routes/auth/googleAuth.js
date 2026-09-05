@@ -10,7 +10,7 @@ const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 router.post("/", async (req, res) => {
   try {
-    const { credential } = req.body; // This is the JWT token Google gives our frontend
+    const { credential, role } = req.body; // This is the JWT token Google gives our frontend
 
     if (!credential) {
       return res.status(401).json({ error: true, message: "Google token not provided" });
@@ -33,8 +33,13 @@ router.post("/", async (req, res) => {
 
     // 3. IF NEW USER, CREATE THEM
     if (!user) {
-      // Auto-determine role based on NSUT email (since Nalum requires a role)
-      const role = email.endsWith('@nsut.ac.in') ? 'student' : 'alumni';
+      if (!role) {
+        return res.status(400).json({ error: true, message: "Please select your role before signing up." });
+      }
+
+      if ((role === "student" || role === "faculty") && !email.endsWith('@nsut.ac.in')) {
+        return res.status(400).json({ error: true, message: "Students and Faculty must use an @nsut.ac.in email address." });
+      }
 
       user = new User({
         name: name,

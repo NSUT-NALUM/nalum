@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
-import { beforeEach, describe, expect, it, vi, Mock } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi, Mock } from "vitest";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import Login from "@/pages/auth/Login";
 import Signup from "@/pages/auth/SignUp";
@@ -10,6 +10,17 @@ import ResetPassword from "@/pages/auth/ResetPassword";
 import ChangePassword from "@/pages/dashboard/ChangePassword";
 import apiClient from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
+
+// Polyfill for Radix UI pointer capture methods (jsdom doesn't support these)
+if (!Element.prototype.hasPointerCapture) {
+  Element.prototype.hasPointerCapture = () => false;
+}
+if (!Element.prototype.setPointerCapture) {
+  Element.prototype.setPointerCapture = () => {};
+}
+if (!Element.prototype.releasePointerCapture) {
+  Element.prototype.releasePointerCapture = () => {};
+}
 
 const navigateMock = vi.fn();
 const setAuthMock = vi.fn();
@@ -46,7 +57,6 @@ vi.mock("react-router-dom", async () => {
   return {
     ...actual,
     useNavigate: () => navigateMock,
-    useSearchParams: () => [new URLSearchParams(window.location.search)],
   };
 });
 
@@ -83,19 +93,41 @@ beforeEach(() => {
 });
 
 describe("auth pages", () => {
-  it("keeps student login on the client when the email is not an NSUT address", async () => {
+  it("logs in with any email address without client-side role restriction", async () => {
     const user = userEvent.setup();
+    (mockedApi.post as Mock).mockResolvedValueOnce({
+      data: {
+        data: {
+          access_token: "access-token",
+          email: "student@example.com",
+          user: {
+            id: "user-1",
+            name: "Test User",
+            email: "student@example.com",
+            role: "alumni",
+            email_verified: true,
+            profileCompleted: true,
+            verified_alumni: true,
+          },
+        },
+      },
+    });
+    (mockedApi.get as Mock).mockResolvedValueOnce({
+      data: { profileCompleted: true },
+    });
+
     renderWithRouter(<Login />, "/login");
 
     await user.type(screen.getByLabelText(/email address/i), "student@example.com");
     await user.type(screen.getByLabelText(/^password$/i), "password123");
     await user.click(screen.getByRole("button", { name: /sign in/i }));
 
-    expect(
-      await screen.findByText("Students must use their @nsut.ac.in email address"),
-    ).toBeInTheDocument();
-    expect(mockedApi.post).not.toHaveBeenCalled();
-    expect(setAuthMock).not.toHaveBeenCalled();
+    await waitFor(() => {
+      expect(mockedApi.post).toHaveBeenCalledWith("/auth/sign-in", {
+        email: "student@example.com",
+        password: "password123",
+      });
+    });
   });
 
   it("logs in and redirects completed profiles to the dashboard", async () => {
@@ -131,7 +163,6 @@ describe("auth pages", () => {
       expect(mockedApi.post).toHaveBeenCalledWith("/auth/sign-in", {
         email: "student@nsut.ac.in",
         password: "password123",
-        role: "student",
       });
     });
     expect(setAuthMock).toHaveBeenCalledWith(
@@ -148,6 +179,10 @@ describe("auth pages", () => {
     const user = userEvent.setup();
     renderWithRouter(<Signup />, "/signup");
 
+    // Select the 'Student' role first
+    await user.click(screen.getByRole("combobox", { name: /i am a/i }));
+    await user.click(screen.getByRole("option", { name: /student/i }));
+
     await user.type(screen.getByLabelText(/full name/i), "New Student");
     await user.type(screen.getByLabelText(/email address/i), "new@example.com");
     await user.type(screen.getByLabelText(/^password$/i), "short");
@@ -155,7 +190,7 @@ describe("auth pages", () => {
     await user.click(screen.getByRole("button", { name: /create account/i }));
 
     expect(
-      await screen.findByText("Students must use their @nsut.ac.in email address"),
+      await screen.findByText("Students and Faculty must use their @nsut.ac.in email address"),
     ).toBeInTheDocument();
     expect(screen.getByText("Password must be at least 8 characters long")).toBeInTheDocument();
     expect(screen.getByText("Passwords do not match")).toBeInTheDocument();
@@ -172,6 +207,10 @@ describe("auth pages", () => {
     });
 
     renderWithRouter(<Signup />, "/signup");
+
+    // Select the 'Student' role first
+    await user.click(screen.getByRole("combobox", { name: /i am a/i }));
+    await user.click(screen.getByRole("option", { name: /student/i }));
 
     await user.type(screen.getByLabelText(/full name/i), "New Student");
     await user.type(screen.getByLabelText(/email address/i), "new@nsut.ac.in");
