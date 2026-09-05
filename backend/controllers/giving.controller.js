@@ -1,6 +1,7 @@
 const Giving = require('../models/giving.model');
 const User = require('../models/user/user.model');
 const { cleanupFiles, assertDeletePermission, createHttpError } = require('../utils/deleteHelper');
+const { safeAuthor } = require('../utils/safeAuthor');
 
 // Create a new giving submission (Alumni only)
 exports.createGiving = async (req, res) => {
@@ -128,7 +129,7 @@ exports.getAllGiving = async (req, res) => {
     return res.status(200).json({
       success: true,
       count: givings.length,
-      data: givings,
+      data: safeAuthor(givings),
       message: 'Giving submissions fetched successfully',
     });
   } catch (error) {
