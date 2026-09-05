@@ -15,6 +15,7 @@ const {
   visibilityFilter,
   isVisibleTo,
 } = require("../utils/postHelpers");
+const { safeAuthor } = require("../utils/safeAuthor");
 
 const PIN_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -166,7 +167,11 @@ exports.getPosts = async (req, res) => {
     const limit = parseInt(req.query.limit) || 5;
     const skip = (page - 1) * limit;
 
-    const filter = { status: "approved", ...visibilityFilter(req.user.role) };
+    const filter = {
+      status: "approved",
+      isDeleted: { $ne: true },
+      ...visibilityFilter(req.user.role),
+    };
     if (req.query.tag) {
       filter.tags = new RegExp(`^${escapeRegex(req.query.tag)}$`, "i");
     }
@@ -197,6 +202,12 @@ exports.getPosts = async (req, res) => {
       },
       { $unwind: "$userId" },
       {
+        $unwind: {
+          path: "$userId",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
         $project: {
           title: 1,
           content: 1,
@@ -220,6 +231,8 @@ exports.getPosts = async (req, res) => {
     ]);
 
     await attachPostMeta(posts);
+    const safePosts = safeAuthor(posts);
+    await attachPostMeta(safePosts);
 
     const total = await Post.countDocuments(filter);
 
@@ -227,6 +240,7 @@ exports.getPosts = async (req, res) => {
       success: true,
       data: {
         posts,
+        posts: safePosts,
         pagination: {
           current: page,
           pages: Math.ceil(total / limit),
@@ -264,6 +278,7 @@ exports.searchPosts = async (req, res) => {
     // Find posts matching title, tag, or userId in the found users
     const posts = await Post.find({
       status: "approved",
+      isDeleted: { $ne: true },
       $and: [
         visibilityFilter(req.user.role),
         {
@@ -280,10 +295,13 @@ exports.searchPosts = async (req, res) => {
       .lean();
 
     await attachPostMeta(posts);
+    const safePosts = safeAuthor(posts);
+    await attachPostMeta(safePosts);
 
     return res.status(200).json({
       success: true,
       data: posts,
+      data: safePosts,
       message: "Posts found successfully",
     });
   } catch (error) {
@@ -300,19 +318,23 @@ exports.getPostById = async (req, res) => {
       .populate("userId", "name email role")
       .lean();
 
-    if (!post) {
+    if (!post || post.isDeleted) {
       return res.status(404).json({
         success: false,
         message: "Post not found",
       });
     }
 
+    const safePost = safeAuthor(post);
+
     // Check if user is post owner, admin, or if post is approved and visible to their role
     const { user_id } = req.user;
-    const isOwner = post.userId._id.toString() === user_id.toString();
+    const isOwner = safePost.userId?._id
+      ? safePost.userId._id.toString() === user_id.toString()
+      : false;
     const isAdmin = req.user.role === "admin";
     if (!isOwner && !isAdmin) {
-      if (post.status !== "approved" || !isVisibleTo(post, req.user.role)) {
+      if (safePost.status !== "approved" || !isVisibleTo(safePost, req.user.role)) {
         return res.status(403).json({
           success: false,
           message: "Post not found",
@@ -322,20 +344,22 @@ exports.getPostById = async (req, res) => {
 
     // The detail page renders an "About the author" card, so it needs more of
     // the author's profile than the list endpoints do.
-    const profile = await Profile.findOne({ user: post.userId._id })
-      .select("profile_picture batch branch current_role current_company bio")
-      .lean();
+    const profile = safePost.userId?._id
+      ? await Profile.findOne({ user: safePost.userId._id })
+          .select("profile_picture batch branch current_role current_company bio")
+          .lean()
+      : null;
 
-    post.userId.profile_picture = profile?.profile_picture || null;
-    post.userId.batch = profile?.batch || null;
-    post.userId.branch = profile?.branch || null;
-    post.userId.current_role = profile?.current_role || null;
-    post.userId.current_company = profile?.current_company || null;
-    post.userId.bio = profile?.bio || null;
+    safePost.userId.profile_picture = profile?.profile_picture || null;
+    safePost.userId.batch = profile?.batch || null;
+    safePost.userId.branch = profile?.branch || null;
+    safePost.userId.current_role = profile?.current_role || null;
+    safePost.userId.current_company = profile?.current_company || null;
+    safePost.userId.bio = profile?.bio || null;
 
     return res.status(200).json({
       success: true,
-      data: post,
+      data: safePost,
       message: "Post fetched successfully",
     });
   } catch (error) {
@@ -490,21 +514,22 @@ exports.getMyPosts = async (req, res) => {
     const limit = parseInt(req.query.limit) || 50;
     const skip = (page - 1) * limit;
 
-    const posts = await Post.find({ userId: user_id })
+    const posts = await Post.find({ userId: user_id, isDeleted: { $ne: true } })
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
       .populate("userId", "name email role")
       .lean();
 
-    await attachPostMeta(posts);
+    const safePosts = safeAuthor(posts);
+    await attachPostMeta(safePosts);
 
-    const total = await Post.countDocuments({ userId: user_id });
+    const total = await Post.countDocuments({ userId: user_id, isDeleted: { $ne: true } });
 
     return res.status(200).json({
       success: true,
       data: {
-        posts,
+        posts: safePosts,
         pagination: {
           current: page,
           pages: Math.ceil(total / limit),
@@ -618,6 +643,7 @@ exports.getSimilarPosts = async (req, res) => {
       similar = await Post.find({
         _id: { $nin: exclude },
         status: "approved",
+        isDeleted: { $ne: true },
         tags: { $in: post.tags.map((tag) => new RegExp(`^${escapeRegex(tag)}$`, "i")) },
       })
         .sort({ createdAt: -1 })
@@ -630,6 +656,7 @@ exports.getSimilarPosts = async (req, res) => {
       const fill = await Post.find({
         _id: { $nin: [...exclude, ...similar.map((item) => item._id)] },
         status: "approved",
+        isDeleted: { $ne: true },
       })
         .sort({ createdAt: -1 })
         .limit(limit - similar.length)
@@ -639,11 +666,12 @@ exports.getSimilarPosts = async (req, res) => {
       similar = [...similar, ...fill];
     }
 
-    await attachPostMeta(similar);
+    const safeSimilar = safeAuthor(similar);
+    await attachPostMeta(safeSimilar);
 
     return res.status(200).json({
       success: true,
-      data: similar,
+      data: safeSimilar,
       message: "Similar posts fetched successfully",
     });
   } catch (error) {

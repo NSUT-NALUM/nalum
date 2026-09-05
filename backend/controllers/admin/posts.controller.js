@@ -9,15 +9,17 @@ const {
   normalizeImageList,
   normalizeVisibility,
 } = require("../../utils/postHelpers");
+const { safeAuthor } = require("../../utils/safeAuthor");
 
 // Get all posts (with filters)
 exports.getAllPosts = async (req, res) => {
   try {
-    const { page = 1, limit = 10, status, userId } = req.query;
+    const { page = 1, limit = 10, status, userId, isDeleted } = req.query;
 
     const query = {};
     if (status) query.status = status;
     if (userId) query.userId = userId;
+    query.isDeleted = isDeleted === "true" ? true : { $ne: true };
 
     const posts = await Post.find(query)
       .populate("userId", "name email role")
@@ -30,6 +32,7 @@ exports.getAllPosts = async (req, res) => {
     res.status(200).json({
       success: true,
       data: posts,
+      data: safeAuthor(posts),
       pagination: {
         total,
         page: parseInt(page),
@@ -51,17 +54,19 @@ exports.getPendingPosts = async (req, res) => {
   try {
     const { page = 1, limit = 10 } = req.query;
 
-    const posts = await Post.find({ status: "pending" })
+    const query = { status: "pending", isDeleted: { $ne: true } };
+
+    const posts = await Post.find(query)
       .populate("userId", "name email role")
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(parseInt(limit));
 
-    const total = await Post.countDocuments({ status: "pending" });
+    const total = await Post.countDocuments(query);
 
     res.status(200).json({
       success: true,
-      data: posts,
+      data: safeAuthor(posts),
       pagination: {
         total,
         page: parseInt(page),
@@ -228,6 +233,7 @@ exports.getPostById = async (req, res) => {
     res.status(200).json({
       success: true,
       data: post,
+      data: safeAuthor(post),
     });
   } catch (error) {
     console.error("Error fetching post:", error);

@@ -80,6 +80,14 @@ const postSchema = new mongoose.Schema(
       enum: ["everyone", "alumni", "students"],
       default: "everyone",
     },
+    isDeleted: {
+      type: Boolean,
+      default: false,
+    },
+    deletedAt: {
+      type: Date,
+      default: null,
+    },
   },
   { timestamps: true }
 );
@@ -92,5 +100,6 @@ postSchema.index({ likes: -1 });
 postSchema.index({ tags: 1, status: 1, createdAt: -1 });
 postSchema.index({ status: 1, pinned_until: -1, createdAt: -1 });
 postSchema.index({ status: 1, visibility: 1, createdAt: -1 });
+postSchema.index({ isDeleted: 1, status: 1, createdAt: -1 });
 
 module.exports = mongoose.model("Post", postSchema);

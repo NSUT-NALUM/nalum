@@ -163,6 +163,8 @@ const deleteAdmin = async () => {
       return;
     }
 
+    const { cascadeDeleteUser } = require('../utils/cascadeDelete');
+    await cascadeDeleteUser(admin._id);
     await User.deleteOne({ _id: admin._id });
     console.log('✅ Admin user deleted successfully\n');
     

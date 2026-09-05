@@ -2,6 +2,7 @@ const Query = require('../models/query.model');
 const User = require('../models/user/user.model');
 const { notifyMentions } = require('../services/mentionHelper');
 const { cleanupFiles, assertDeletePermission } = require('../utils/deleteHelper');
+const { safeAuthor } = require('../utils/safeAuthor');
 
 // Create a new query (Students & Alumni)
 exports.createQuery = async (req, res) => {
@@ -125,7 +126,7 @@ exports.getAllQueries = async (req, res) => {
     return res.status(200).json({
       success: true,
       count: queries.length,
-      data: queries,
+      data: safeAuthor(queries),
       message: 'Queries fetched successfully',
     });
   } catch (error) {
